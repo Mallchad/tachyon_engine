@@ -26,3 +26,26 @@ _XDisplay
 The  X  "Display"  is  more  or  a  connection  to  an  Xserver  rather  than  a
 "display". The "display_name" is also rather  poorly named and is actually not a
 name at all and rather a transport protocol/x display number specifier.
+
+* glXGetProcAddress Dynamic GL function loading
+Whilst this is touted as an important feature its completely irrelevant for
+casual prototyping and gets in the way. It is essentially a mechanism to improve
+portable of an executable by finding the right functions for the platform at
+runtime.
+
+TODO: I still need to find out why this is so important
+
+* Do while Loop Escape Sequence
+Just jumping to the end of a function without gotos can be awkward as heck. I
+divised a do while loop cheat to give a quick and dirty way to jump across a
+section of code using break;. A sensible way to do it would be classes and
+constructors.  However for quick prototyping this feels cumbersome for no
+reason. I could have still done the goto but I had issues with the program
+complaining I was trying to put gotos after declarations, which kind of defeated
+the point of me using the goto... ie, getting around doing extra work to get
+around basic control flow problems. Exceptions feels rather useless in this
+place because they have no access to variables even within the same block for
+some reason.
+
+I guess you could use a try-catch block in a similar way but you have to put the
+actual contination code OUTSIDE the exception block.

@@ -44,14 +44,14 @@ int main()
         };
 
     // Trick to allow jump to cleanup
-    do
+    try
     {
         // Setup X11 Window and OpenGL Context
         rx_display = XOpenDisplay(nullptr);
         if (rx_display == nullptr)
         {
             std::cout << "Could not open X display" << std::endl;
-            break;
+            throw(1);
         }
         vglx_fbconfigurations = glXChooseFBConfig(rx_display, DefaultScreen(rx_display), vglx_visual_attributes, &vglx_fb_count);
         vglx_fbselection = vglx_fbconfigurations[4];
@@ -79,13 +79,12 @@ int main()
         glClearColor( 0, 0.5, 1, 1 );
         glClear ( GL_COLOR_BUFFER_BIT );
         glXSwapBuffers ( rx_display, vx_window );
-
+        throw(1);
         // Main Program Loop
         while (g_kill_program == false)
         {
         }
-    } while (false);
-
+    } catch (...) {}
     // Cleanup
     std::cout << "Exiting Application" << std::endl;
     XFree(vx_buffer_config);
