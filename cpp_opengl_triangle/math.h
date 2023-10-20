@@ -1,23 +1,26 @@
 #pragma once
 
-#include <cstdint>
+#include "code_helpers.h"
 
-#define  VECTOR3_BASE vector3<t_calculable>
+#include <cstdint>
 
 template <typename t_calculable>
 class vector3
 {
-// Public Interface
 public:
-    vector3(t_calculable x, t_calculable y, t_calculable z);
-    bool operator<=> (vector3<t_calculable> rhs) const = default;
+    t_calculable mx, my, mz = 0;
+
+// Public Interface
+    CONSTRUCTOR vector3() = default;
+    CONSTRUCTOR vector3(t_calculable all);
+    CONSTRUCTOR vector3(t_calculable x, t_calculable y, t_calculable z);
     vector3 operator+ (const vector3<t_calculable> rhs) const;
     vector3 operator- (const vector3<t_calculable> rhs) const;
     vector3 operator* (const vector3<t_calculable> rhs) const;
     vector3 operator/ (const vector3<t_calculable> rhs) const;
+    vector3 operator= (t_calculable all);
 
-    t_calculable mx, my, mz = 0;
-private:
+    private:
 };
 
 typedef vector3<float> float3;

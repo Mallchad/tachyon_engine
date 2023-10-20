@@ -1,1 +1,11 @@
 
+# Ignore Root
+/
+
+# Whitelist
+
+# Blacklist
+*.out
+*.gch
+*~
+~*

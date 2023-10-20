@@ -49,3 +49,6 @@ some reason.
 
 I guess you could use a try-catch block in a similar way but you have to put the
 actual contination code OUTSIDE the exception block.
+
+* Stack is too small for pixel buffers
+For cache reasons the memory stack is rather small and 12MB of data will randomaly cause a segfault
