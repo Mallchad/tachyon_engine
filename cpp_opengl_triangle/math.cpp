@@ -3,15 +3,6 @@
 
 #define  VECTOR3_BASE vector3<t_calculable>
 
-template <typename t_calculable>
-CONSTRUCTOR VECTOR3_BASE::vector3(t_calculable x, t_calculable y, t_calculable z) :
-    mx(x), my(y), mz(z)
-{}
-template <typename t_calculable>
-CONSTRUCTOR VECTOR3_BASE::vector3(t_calculable all) :
-    mx(all), my(all), mz(all)
-{}
-
 template <typename t_calculable> VECTOR3_BASE
 VECTOR3_BASE::operator+ (const vector3<t_calculable> rhs) const
 {
@@ -52,3 +43,6 @@ VECTOR3_BASE::operator= (t_calculable all)
     my = all;
     mz = all;
 }
+
+#define  VECTOR4_BASE vector4<t_calculable>
+

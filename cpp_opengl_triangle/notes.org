@@ -1,3 +1,4 @@
+
 * GLEW_ERROR_NO_GL_VERSION
 If glewInit() is called before an OpenGL context is made then it will return the error code GLEW_ERROR_NO_GL_VERSION
 
@@ -52,3 +53,12 @@ actual contination code OUTSIDE the exception block.
 
 * Stack is too small for pixel buffers
 For cache reasons the memory stack is rather small and 12MB of data will randomaly cause a segfault
+
+* template class functions can't be in cpp files
+The implementation isn't generated upfront with templated functions and for some
+reason will fail if its not defined in the header that was included
+
+* OpenGL is column major
+OpenGL is  column major  and runs down  the y-axis first.  C++ doesn't  have any
+major at all and is completely dependent  on implementation since 2D arrays in C
+isn't a real thing but rather a quirky hack of how pointers work
