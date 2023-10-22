@@ -166,22 +166,6 @@ bool renderer::draw_test_triangle(float4 color)
     unsigned int shader_program = 0;
     shader_program = glCreateProgram();
 
-    // Square Rendering
-    GLfloat square_width = 200;
-    GLfloat square_height = 200;
-// (top-right corner anchored)
-    GLfloat square_x = (1920.f / 2.f) - (square_width/2.f);
-    GLfloat square_y = (1080.f / 2.f) - (square_height/2.f) + 200.f;
-
-    for (int y = float(square_y); y < square_y + square_height; ++y)
-    {
-        for (int x = float(square_x); x < square_x+square_width; ++x)
-        {
-            if ( x + (1920*y) > (1920*1080) ) break;
-            mbuffer[x + (1920*y)] = mrectangle_color;
-        }
-    }
-
     return true;
 }
 
@@ -221,6 +205,21 @@ bool renderer::draw_test_circle(float4 p_color)
 
 bool renderer::draw_test_rectangle(float4 p_color)
 {
+    GLfloat square_width = 200;
+    GLfloat square_height = 200;
+// (top-right corner anchored)
+    GLfloat square_x = (1920.f / 2.f) - (square_width/2.f);
+    GLfloat square_y = (1080.f / 2.f) - (square_height/2.f) + 200.f;
+
+    for (int y = float(square_y); y < square_y + square_height; ++y)
+    {
+        for (int x = float(square_x); x < square_x+square_width; ++x)
+        {
+            if ( x + (1920*y) > (1920*1080) ) break;
+            mbuffer[x + (1920*y)] = mrectangle_color;
+        }
+    }
+
     return true;
 }
 

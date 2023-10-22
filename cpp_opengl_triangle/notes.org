@@ -62,3 +62,9 @@ reason will fail if its not defined in the header that was included
 OpenGL is  column major  and runs down  the y-axis first.  C++ doesn't  have any
 major at all and is completely dependent  on implementation since 2D arrays in C
 isn't a real thing but rather a quirky hack of how pointers work
+
+* glSetPos2f is -0.5 off from rendering glDrawPixel where it should be
+I have no idea why this is. it just is.
+
+* OpenGL uses standard bottom-left up coordinate systems
+Interesting anecdote different to how CRts work
