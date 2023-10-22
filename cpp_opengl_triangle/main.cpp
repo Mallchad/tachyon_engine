@@ -23,7 +23,7 @@ int main()
     try
     {
 
-        renderer render = renderer();
+        renderer render = {};
         while ( global.kill_program == false )
         {
             // render.draw_test_triangle();
@@ -31,7 +31,7 @@ int main()
             // render.draw_test_circle(render.mcircle_color);
             render.draw_test_signfield(render.msignfield_color);
             render.refresh();
-            FrameMark("Main Render Thread");
+            (void)FrameMark("Main Render Thread");
 
             // DO NOT REMOVE, can lock computer if it runs too fast
             std::this_thread::sleep_for(1.6ms);
