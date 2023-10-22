@@ -42,7 +42,7 @@ public:
     CONSTRUCTOR vector4(t_calculable x, t_calculable y, t_calculable z, t_calculable w) :
         mx(x), my(y), mz(z), mw(w) {}
 
-    vector4<t_calculable>& operator+ (const vector4<t_calculable> rhs) const
+    vector4<t_calculable> operator+ (const vector4<t_calculable>& rhs) const
     {
         vector4<t_calculable> out(mx + rhs.mx,
                                   my + rhs.my,
@@ -51,8 +51,8 @@ public:
         return out;
     }
 
-    vector4<t_calculable>&
-    operator- (const vector4<t_calculable> rhs) const
+    vector4<t_calculable>
+    operator- (const vector4<t_calculable>& rhs) const
     {
         vector4<t_calculable> out(mx - rhs.mx,
                                   my - rhs.my,
@@ -60,8 +60,8 @@ public:
                                   mw - rhs.mw);
         return out;
     }
-    vector4<t_calculable>&
-    operator* (const vector4<t_calculable> rhs) const
+    vector4<t_calculable>
+    operator* (const vector4<t_calculable>& rhs) const
     {
         vector4<t_calculable> out(mx * rhs.mx,
                                   my * rhs.my,
@@ -69,8 +69,8 @@ public:
                                   mw * rhs.mw);
         return out;
     }
-    vector4<t_calculable>&
-    operator* (float rhs) const
+    vector4<t_calculable>
+    operator* (t_calculable rhs) const
     {
         vector4<t_calculable> out(mx * rhs,
                                   my * rhs,
@@ -78,7 +78,7 @@ public:
                                   mw * rhs);
         return out;
     }
-    vector4<t_calculable>&
+    vector4<t_calculable>
     operator/ (const vector4<t_calculable> rhs) const
     {
         vector4<t_calculable> out(mx / rhs.mx,

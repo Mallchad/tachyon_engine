@@ -34,14 +34,17 @@ class renderer
     bool vx_window_closed = false;
 
 public:
-    float4 mtest_rectangle_color = {.5f, .1f, .5f, 1.f};
-    float4 circle_color = { .2f, .9f, .2f, 1.f };
-
+    float4 mrectangle_color = {.5f, .1f, .5f, 1.f};
+    float4 mcircle_color = { .2f, .9f, .2f, 1.f };
+    float4 msignfield_color = {1.f/255*98.f, 1.f/255*42.f, 1.f/255*125.f, 1.f};
+    float4 gradient_approximation[10000] = {};
 
     CONSTRUCTOR renderer();
     GLXContext get_gl_context() const;
-    bool draw_test_triangle();
-    bool draw_test_circle();
+    bool draw_test_triangle(float4 p_color);
+    bool draw_test_circle(float4 p_color);
+    bool draw_test_rectangle(float4 p_color);
+    bool draw_test_signfield(float4 p_color);
     bool refresh();
     DESTRUCTOR virtual ~renderer();
 };

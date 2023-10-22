@@ -69,8 +69,9 @@ GLXContext renderer::get_gl_context() const
     return vglx_context;
 }
 
-bool renderer::draw_test_triangle()
+bool renderer::draw_test_triangle(float4 color)
 {
+    color = mrectangle_color;
     auto glBindBuffer    = reinterpret_cast<PFNGLBINDBUFFERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBuffer" )));
     auto glGenBuffers    = reinterpret_cast<PFNGLGENBUFFERSPROC>(
@@ -155,41 +156,76 @@ bool renderer::draw_test_triangle()
         for (int x = square_x; x < square_x+square_width; ++x)
         {
             if ( x + (1920*y) > (1920*1080) ) break;
-            mbuffer[x + (1920*y)] = mtest_rectangle_color;
+            mbuffer[x + (1920*y)] = mrectangle_color;
         }
     }
 
     return true;
 }
 
-bool renderer::draw_test_circle()
+bool renderer::draw_test_circle(float4 p_color)
 {
     // (center anchored)
     GLfloat circle_x = 1920/2;
-    GLfloat circle_y = 1080/2 - 200;
+    GLfloat circle_y = 1080/2;
     GLfloat circle_radius = 200.f;
     GLfloat circle_radius_squared = circle_radius * circle_radius;
-    GLfloat circle_feather = 0.2f;          // percentage
+    GLfloat circle_feather = 0.03f;          // percentage
+    GLfloat circle_feather_thickness = circle_radius * circle_feather;
 
     GLfloat distance = 0;
+    GLfloat color_mult = 0.f;
     for (int y = 0; y < 1080; ++y)
     {
         for (int x = 0; x < 1920; ++x)
         {
             distance = std::abs( (x-circle_x ) * ( x-circle_x)) + std::abs( (y - circle_y) * (y - circle_y));
-            // distance = std::abs( (x*x ) - ( circle_x*circle_x)) + std::abs( (y*y ) - ( circle_y*circle_y)); // Parallelagram
-            // distance = (x * x) + (y + y);
             if (distance < circle_radius_squared)
             {
                 // Row Major
-                mbuffer[x + (1920*y)] = circle_color;
+                mbuffer[x + (1920*y)] = p_color;
             }
             else if (distance <
                      (circle_radius_squared * (1+circle_feather)) + (circle_radius * (1+circle_feather)) )
-{
-    // mbuffer[x + (1920*y)] = circle_color * ( 1/((sqrt(distance) - circle_radius) * (circle_feather)));
-        mbuffer[x + (1920*y)] = mtest_rectangle_color;
+            {
+                color_mult = (1- (1 / circle_feather_thickness) * (sqrtf(distance) - circle_radius) );
+                mbuffer[x + (1920*y)] = p_color * (color_mult > 1.f ? 1 : color_mult);
+            }
+        }
+    }
+    return true;
+
 }
+
+bool renderer::draw_test_rectangle(float4 p_color)
+{
+    return true;
+}
+
+bool renderer::draw_test_signfield(float4 p_color)
+{
+    // (center anchored)
+    GLfloat circle_x = 1920/2;
+    GLfloat circle_y = 1080/2;
+    GLfloat circle_radius = 200.f;
+    GLfloat circle_radius_squared = circle_radius * circle_radius;
+    GLfloat circle_feather = 0.02f;          // percentage
+    GLfloat circle_feather_thickness = circle_radius * circle_feather;
+
+    GLfloat distance = 0;
+    GLfloat color_mult = 0.f;
+
+    for (int y = 0; y < 1080; ++y)
+    {
+        for (int x = 0; x < 1920; ++x)
+        {
+            distance = std::abs( (x-circle_x ) * ( x-circle_x)) + std::abs( (y - circle_y) * (y - circle_y));
+            // color_mult = ((1 / circle_radius) * sqrtf(distance) ) * 0.8;
+            // mbuffer[x + (1920*y)] = p_color * color_mult;
+
+            // Fast Approximation
+            int approx_point =  static_cast<int>( (float)floorf( (10000.f / 1920.f) * distance * .0002) );
+            mbuffer[x + (1920*y)] = gradient_approximation[ approx_point < 10000 ? approx_point :  999 ];
         }
     }
     return true;
@@ -202,8 +238,8 @@ bool renderer::refresh()
     // XCheckTypedEvent(rx_display, DestroyNotify, &vx_event_query);
     // if (vx_window_closed) break;
     try {
-        glClearColor( 0, 0.5, 1, 1 );
-        glClear( GL_COLOR_BUFFER_BIT );
+        // glClearColor( 0, 0.5, 1, 1 );
+        // glClear( GL_COLOR_BUFFER_BIT );
         // glRasterPos2f(.5f, .5f); // dunno what this does
         glDrawPixels(1920, 1080, GL_RGBA, GL_FLOAT, mbuffer.get());
         glXSwapBuffers ( rx_display, vx_window );
