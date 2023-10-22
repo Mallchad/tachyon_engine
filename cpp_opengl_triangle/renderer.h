@@ -38,6 +38,7 @@ public:
     float4 mcircle_color = { .2f, .9f, .2f, 1.f };
     float4 msignfield_color = {1.f/255*98.f, 1.f/255*42.f, 1.f/255*125.f, 1.f};
     float4 gradient_approximation[10000] = {};
+    int buffer_damage_size = 1920*1080;
 
     CONSTRUCTOR renderer();
     GLXContext get_gl_context() const;

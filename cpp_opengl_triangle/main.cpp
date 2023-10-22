@@ -26,12 +26,11 @@ int main()
         renderer render = renderer();
         while ( global.kill_program == false )
         {
-
-            render.refresh();
             // render.draw_test_triangle();
             // render.draw_test_rectangle(render.mrectangle_color);
             // render.draw_test_circle(render.mcircle_color);
             render.draw_test_signfield(render.msignfield_color);
+            render.refresh();
 
             // DO NOT REMOVE, can lock computer if it runs too fast
             std::this_thread::sleep_for(1.6ms);

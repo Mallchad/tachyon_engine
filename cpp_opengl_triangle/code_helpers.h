@@ -71,7 +71,7 @@
 
 // Will break the Unreal Header Tool if defined
 // (It's parsing system is particularly basic and will misinterpret tokens)
-#if  !(__UNREAL__)
+#ifndef __UNREAL__
 #define ABSTRACT
 #define ABSTRACT_CLASS class
 #define DECLARE_CLASS class

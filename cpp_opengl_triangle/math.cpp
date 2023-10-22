@@ -43,6 +43,3 @@ VECTOR3_BASE::operator= (t_calculable all)
     my = all;
     mz = all;
 }
-
-#define  VECTOR4_BASE vector4<t_calculable>
-
