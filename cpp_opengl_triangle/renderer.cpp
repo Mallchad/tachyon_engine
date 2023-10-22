@@ -11,6 +11,8 @@
 #include <cmath>
 #include <iostream>
 
+#include "Tracy.hpp"
+
 using namespace std::chrono_literals;
 
 CONSTRUCTOR renderer::renderer()

@@ -1,5 +1,4 @@
 
-
 // Standard Lirary
 #include <iostream>
 #include <bits/this_thread_sleep.h>
@@ -8,6 +7,7 @@
 // Project Local
 #include "global.h"
 #include "renderer.h"
+#include "../tracy/Tracy.hpp"
 
 #include <GL/gl.h>
 
@@ -31,6 +31,7 @@ int main()
             // render.draw_test_circle(render.mcircle_color);
             render.draw_test_signfield(render.msignfield_color);
             render.refresh();
+            FrameMark("Main Render Thread");
 
             // DO NOT REMOVE, can lock computer if it runs too fast
             std::this_thread::sleep_for(1.6ms);
