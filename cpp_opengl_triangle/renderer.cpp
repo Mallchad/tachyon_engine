@@ -11,12 +11,59 @@
 #include <cmath>
 #include <iostream>
 
+#include "global.h"
 #include "Tracy.hpp"
 
 using namespace std::chrono_literals;
 
 CONSTRUCTOR renderer::renderer()
 {
+    glXCreateContextAttribsARB = reinterpret_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXCreateContextAttribsARB" )));
+    _glXChooseFBConfig= reinterpret_cast<PFNGLXCHOOSEFBCONFIGPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXChooseFBConfig" )));
+
+    glBindBuffer        = reinterpret_cast<PFNGLBINDBUFFERPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBuffer" )));
+    glGenBuffers        = reinterpret_cast<PFNGLGENBUFFERSPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenBufers" )));
+    glBufferData        = reinterpret_cast<PFNGLBUFFERDATAPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBufferData" )));
+    glCreateShader      = reinterpret_cast<PFNGLCREATESHADERPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateShader" )));
+    glShaderSource      = reinterpret_cast<PFNGLSHADERSOURCEPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glShaderSource" )));
+    glCompileShader     = reinterpret_cast<PFNGLCOMPILESHADERPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCompileShader" )));
+    glGetShaderiv       = reinterpret_cast<PFNGLGETSHADERIVPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetShaderiv" )));
+    glGetShaderInfoLog  = reinterpret_cast<PFNGLGETSHADERINFOLOGPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetShaderInfoLog" )));
+    glCreateProgram     = reinterpret_cast<PFNGLCREATEPROGRAMPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateProgram" )));
+    glAttachShader      = reinterpret_cast<PFNGLATTACHSHADERPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glAttachShader" )));
+    glLinkProgram       = reinterpret_cast<PFNGLLINKPROGRAMPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glLinkProgram" )));
+    glGetProgramiv      = reinterpret_cast<PFNGLGETPROGRAMIVPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetProgramiv" )));
+    glGetProgramInfoLog = reinterpret_cast<PFNGLGETPROGRAMINFOLOGPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetProgramInfoLog" )));
+    glDeleteShader      = reinterpret_cast<PFNGLDELETESHADERPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDeleteShader" )));
+    glVertexAttribPointer=reinterpret_cast<PFNGLVERTEXATTRIBPOINTERPROC>(
+       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glVertexAttribPointer" )));
+    glEnableVertexAttribArray = reinterpret_cast<PFNGLENABLEVERTEXATTRIBARRAYPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glEnableVertexAttribArray" )));
+        glUseProgram = reinterpret_cast<PFNGLUSEPROGRAMPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glUseProgram" )));
+    glBindVertexArray = reinterpret_cast<PFNGLBINDVERTEXARRAYPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindVertexArray" )));
+    glDrawArraysExt = reinterpret_cast<PFNGLDRAWARRAYSEXTPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArraysExt" )));
+    glGenVertexArrays = reinterpret_cast<PFNGLGENVERTEXARRAYSPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenVertexArrays" ) ));
+
     std::cout << "Starting renderer\n" ;
 
     GLfloat circle_x = 1920.f / 2.f;
@@ -94,28 +141,6 @@ GLXContext renderer::get_gl_context() const
 bool renderer::draw_test_triangle(float4 color)
 {
     color = mrectangle_color;
-    auto glBindBuffer    = reinterpret_cast<PFNGLBINDBUFFERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBuffer" )));
-    auto glGenBuffers    = reinterpret_cast<PFNGLGENBUFFERSPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenBufers" )));
-    auto glBufferData    = reinterpret_cast<PFNGLBUFFERDATAPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBufferData" )));
-    auto glCreateShader  = reinterpret_cast<PFNGLCREATESHADERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateShader" )));
-    auto glShaderSource  = reinterpret_cast<PFNGLSHADERSOURCEPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glShaderSource" )));
-    auto glCompileShader = reinterpret_cast<PFNGLCOMPILESHADERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCompileShader" )));
-    auto glGetShaderiv   = reinterpret_cast<PFNGLGETSHADERIVPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetShaderiv" )));
-    auto glGetShaderInfoLog = reinterpret_cast<PFNGLGETSHADERINFOLOGPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetShaderInfoLog" )));
-    auto glCreateProgram = reinterpret_cast<PFNGLCREATEPROGRAMPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateProgram" )));
-
-    auto glXGetFBConfigAttrib = reinterpret_cast<PFNGLXGETFBCONFIGATTRIBPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXGetFBConfigAttrib" )));
-
     unsigned int vbo = 0;
     glGenBuffers( 1, &vbo);
     glBindBuffer( GL_ARRAY_BUFFER, vbo);
