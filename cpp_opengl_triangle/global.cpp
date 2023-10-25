@@ -1,9 +1,9 @@
 
 #include "global.h"
 
-global_database global_database::primary_database = {};
+global_database* global_database::primary_database = nullptr;
 
-global_database& global_database::get_database()
+global_database* global_database::get_primary()
 {
-    return this->primary_database;
+    return primary_database;
 }
