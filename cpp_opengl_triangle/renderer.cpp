@@ -49,7 +49,7 @@ renderer::renderer()
     glBindBuffer        = reinterpret_cast<PFNGLBINDBUFFERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBuffer" )));
     glGenBuffers        = reinterpret_cast<PFNGLGENBUFFERSPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenBufers" )));
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenBuffers" )));
     glBufferData        = reinterpret_cast<PFNGLBUFFERDATAPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBufferData" )));
     glCreateShader      = reinterpret_cast<PFNGLCREATESHADERPROC>(
