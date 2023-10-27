@@ -25,15 +25,18 @@ class renderer
     XSetWindowAttributes vx_window_attributes = {};
     std::vector<Atom> vx_window_protocols = {};
     Atom vx_wm_delete_window = 0;
-
+    Atom wm_state = 0;
+    Atom wm_fullscreen = 0;
     // GL X extensions
     GLXContext vglx_context = nullptr;
     GLXFBConfig* vglx_fbconfigurations = nullptr;
     GLXFBConfig vglx_fbselection = nullptr;
+    const char* vglx_extensions_string = nullptr;
     int vglx_fb_count = -1;
     int vglx_major = -1;
     int bglx_minor = -1;
 
+    unsigned int vbo_actives[10] = {};
     unsigned int vbo = 0;
     unsigned int vao[10] = {};
 
@@ -64,6 +67,9 @@ class renderer
         0.5f, -0.5f, 0.0f,
         0.0f,  0.5f, 0.0f
     };
+
+    int progress_x = 0;
+    int progress_y = 0;
 
 public:
     float4 mtriangle_color = { .2f, .9f, .2f, 1.f };

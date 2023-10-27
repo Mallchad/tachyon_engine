@@ -10,14 +10,16 @@
 #include "renderer.h"
 #include "../tracy/Tracy.hpp"
 
-#include <GL/gl.h>
-
-int main() 
+int main()
 {
     using namespace std::chrono_literals;
     global_database global = {};
     global_database::primary_database = &global;
     global.kill_program = false;
+
+    #ifdef TRACY_ENABLE
+    std::cout << "Tracy Client has been enabled for profiling \n";
+    #endif
 
     // Trick to allow jump to cleanup
     try
@@ -26,7 +28,7 @@ int main()
         while ( global.kill_program == false )
         {
             render.refresh();
-            (void)( FrameMark( "Main Render Thread" ) );
+            FrameMark( "Main Render Thread" );
 
             // DO NOT REMOVE, can lock computer if it runs too fast
             std::this_thread::sleep_for(1.6ms);

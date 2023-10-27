@@ -2,7 +2,10 @@
 #include "renderer.h"
 
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
+
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <GL/glx.h>
 #include <GL/glxext.h>
 
@@ -18,7 +21,7 @@
 using namespace std::chrono_literals;
 
 // Try to temrinate gracefully after attempt to kill X window
-void
+static void
 sigterm_handler(int sig)
 {
     (void)(sig);
@@ -41,10 +44,16 @@ renderer::renderer()
 
     }
 
+    // -- GLX and X11 Initialization --
+
     glXCreateContextAttribsARB = reinterpret_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXCreateContextAttribsARB" )));
     _glXChooseFBConfig= reinterpret_cast<PFNGLXCHOOSEFBCONFIGPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXChooseFBConfig" )));
+    glXSwapIntervalMESA = reinterpret_cast<PFNGLXSWAPINTERVALMESAPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXSwapIntervalMESA" )));
+    glXSwapIntervalEXT = reinterpret_cast<PFNGLXSWAPINTERVALEXTPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXSwapIntervalEXT" )));
 
     glBindBuffer        = reinterpret_cast<PFNGLBINDBUFFERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBuffer" )));
@@ -94,8 +103,10 @@ renderer::renderer()
     glUnmapBuffer  = reinterpret_cast<PFNGLUNMAPBUFFERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glUnmapBuffer" )));
 
-    glDrawArraysExt = reinterpret_cast<PFNGLDRAWARRAYSEXTPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArraysExt" )));
+    intern_glDrawArrays = reinterpret_cast<PFNGLDRAWARRAYSPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArrays" )));
+    glDrawArraysEXT = reinterpret_cast<PFNGLDRAWARRAYSEXTPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArraysEXT" )));
     glDebugMessageCallback  = reinterpret_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDebugMessageCallback" )));
 
@@ -165,6 +176,19 @@ renderer::renderer()
                                vx_buffer_config->visual,
                                CWBorderPixel|CWColormap|CWEventMask,
                                &vx_window_attributes );
+
+
+    // Fullscreen the window if allowed
+    wm_state      = XInternAtom (rx_display, "_NET_WM_STATE", true );
+    wm_fullscreen = XInternAtom (rx_display, "_NET_WM_STATE_FULLSCREEN", true );
+    if (wm_state != 0 && wm_fullscreen != 0)
+    {
+        XChangeProperty(rx_display, vx_window,
+                        wm_state, XA_ATOM, 32,
+                        PropModeReplace, (unsigned char *)(&wm_fullscreen),
+                        1);
+    }
+
     // Set the window name
     XStoreName( rx_display, vx_window, "cpp triangle test" );
     XMapWindow( rx_display, vx_window );
@@ -185,7 +209,7 @@ renderer::renderer()
     }
 
     // -- Initialize OpenGL --
-
+    vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
     // Setup shaders
     shader_vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(shader_vertex, 1, &shader_vertex_source, nullptr);
@@ -241,8 +265,8 @@ renderer::renderer()
     glBindVertexArray(vao[5]);
 
     // Copy vertecies into vbo
-    glGenBuffers( 10, &vbo);
-    vbo = 5;
+    glGenBuffers( 10, vbo_actives);
+    vbo = vbo_actives[5];
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mtest_triangle), &mtest_triangle, GL_STATIC_DRAW);
 
@@ -250,7 +274,11 @@ renderer::renderer()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void*>(0));
 
     // glUnmapBuffer(GL_ARRAY_BUFFER);
-    glEnableVertexAttribArray(vbo);
+    glEnableVertexAttribArray(0);
+
+    // Disabled VSync for performance
+    glXSwapIntervalEXT(rx_display, vx_window, 0);
+
 }
 
 GLXContext renderer::get_gl_context() const
@@ -260,11 +288,10 @@ GLXContext renderer::get_gl_context() const
 
 bool renderer::draw_test_triangle(float4 color)
 {
-    
     glUseProgram(shader_program);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBindVertexArray(vao[5]);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    intern_glDrawArrays(GL_TRIANGLES, 0, 3);
 
     return true;
 }
@@ -325,9 +352,10 @@ bool renderer::draw_test_rectangle(float4 p_color)
 
 bool renderer::draw_test_signfield(float4 p_color)
 {
+    // Performance optimization, can be disabled when it runs fast enough
     if (buffer_damage_size <= 0)
     {
-        return false;
+        // return false;
     }
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
@@ -354,12 +382,15 @@ bool renderer::draw_test_signfield(float4 p_color)
         }
     }
     buffer_damage_size = 1920*1080;
+
     return true;
 
 }
 
 bool renderer::refresh()
 {
+    ZoneScopedN("graphics refresh");
+
     try
     {
         // XEvent processing
@@ -373,8 +404,9 @@ bool renderer::refresh()
             switch (event.type)
             {
                 case ClientMessage:
-                    // Window Manager wants us to quit
+                    // Window Manager requested application exit
                     // This is an oppurtunity to ignore it and just close the window if needed
+                    std::cout << "[XServer] Requested application exit \n";
                     if (static_cast<Atom>( event.xclient.data.l[0] ) == vx_wm_delete_window)
                     {
                         global->kill_program = true;
@@ -388,15 +420,21 @@ bool renderer::refresh()
         }
 
         // Rendering
-        glClearColor( 0.f, 0.5, 1.f, 1.f );
+        glClearColor( 1.f, 0.5, 1.f, 1.f );
         glClear( GL_COLOR_BUFFER_BIT );
 
-        draw_test_triangle(mtriangle_color);
         // render.draw_test_rectangle(render.mrectangle_color);
         // render.draw_test_circle(render.mcircle_color);
-           draw_test_signfield(msignfield_color);
+        draw_test_signfield(msignfield_color);
+        // draw_test_triangle(mtriangle_color);
 
-        glDrawPixels(1920, 1080, GL_RGBA, GL_FLOAT, mbuffer.get());
+        // Interferes with fragment shader
+        if (progress_x < 1920) progress_x += 5;
+        else progress_x = 1920;
+        if (progress_y < 1080) ++progress_y += 5;
+        else progress_y = 1080;
+
+        glDrawPixels(1920, progress_y, GL_RGBA, GL_FLOAT, mbuffer.get());
         glXSwapBuffers ( rx_display, vx_window );
 
         buffer_damage_size = 0;
