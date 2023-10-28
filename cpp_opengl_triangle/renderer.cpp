@@ -278,7 +278,15 @@ renderer::renderer()
     glEnableVertexAttribArray(0);
 
     // Disabled VSync for performance
-    glXSwapIntervalEXT(rx_display, vx_window, 0);
+    enum
+    {
+        vsync_adaptive        = -1,
+        vsync_no              = 0,
+        vsync_double_buffered = 1,
+        vsync_triple_buffered = 2
+    };
+    // GL_EXT_swap_control
+    glXSwapIntervalEXT(rx_display, vx_window, vsync_adaptive);
 
 }
 
