@@ -16,7 +16,8 @@
 #include <csignal>
 
 #include "global.h"
-#include "Tracy.hpp"
+
+#include "include_tracy.h"
 
 using namespace std::chrono_literals;
 
