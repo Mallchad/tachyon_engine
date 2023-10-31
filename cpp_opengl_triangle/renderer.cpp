@@ -169,6 +169,7 @@ renderer::renderer()
     vx_window_attributes.background_pixmap = None ;
     vx_window_attributes.border_pixel      = 0;
     vx_window_attributes.event_mask        = StructureNotifyMask;
+    vx_window_attributes.override_redirect = true;
     vx_window = XCreateWindow( rx_display,
                                RootWindow( rx_display, vx_buffer_config->screen ),
                                500, 500, 500, 500, 0,
