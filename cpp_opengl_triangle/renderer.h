@@ -6,27 +6,36 @@
 #include <bits/unique_ptr.h>
 #include <vector>
 
-#include "math.h"
+#include "math.hpp"
 #include "global.h"
 
 using std::unique_ptr;
 using std::make_unique;
 
 
-class renderer
+class renderer final
 {
     global_database* global = nullptr;
 
     Display* rx_display = nullptr;
     Window vx_window = {};
+    fint32 vx_default_screen = -1;
+    fint32 display_width = -1;
+    fint32 display_height = -1;
     int vx_connection_number = -1;
     char vx_connection_string[20] = {};
+
     XVisualInfo* vx_buffer_config = nullptr;
     XSetWindowAttributes vx_window_attributes = {};
     std::vector<Atom> vx_window_protocols = {};
     Atom vx_wm_delete_window = 0;
     Atom wm_state = 0;
-    Atom wm_fullscreen = 0;
+    Atom wm_state_fullscreen = 0;
+    Atom wm_state_maximized_vert = 0;
+    Atom wm_state_maximized_horz = 0;
+    Atom wm_state_above = 0;
+    Atom wm_allowed_actions = 0;
+
     // GL X extensions
     GLXContext vglx_context = nullptr;
     GLXFBConfig* vglx_fbconfigurations = nullptr;

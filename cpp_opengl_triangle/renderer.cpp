@@ -170,6 +170,7 @@ renderer::renderer()
     vx_window_attributes.border_pixel      = 0;
     vx_window_attributes.event_mask        = StructureNotifyMask;
     vx_window_attributes.override_redirect = true;
+
     vx_window = XCreateWindow( rx_display,
                                RootWindow( rx_display, vx_buffer_config->screen ),
                                500, 500, 500, 500, 0,
@@ -179,16 +180,31 @@ renderer::renderer()
                                CWBorderPixel|CWColormap|CWEventMask,
                                &vx_window_attributes );
 
+    vx_default_screen = DefaultScreen( rx_display );
 
     // Fullscreen the window if allowed
-    wm_state      = XInternAtom (rx_display, "_NET_WM_STATE", true );
-    wm_fullscreen = XInternAtom (rx_display, "_NET_WM_STATE_FULLSCREEN", true );
-    if (wm_state != 0 && wm_fullscreen != 0)
+    wm_state      = XInternAtom( rx_display, "_NET_WM_STATE", true );
+    wm_state_fullscreen = XInternAtom( rx_display, "_NET_WM_STATE_FULLSCREEN", true );
+    wm_state_maximized_horz = XInternAtom( rx_display, "_NET_WM_STATE_MAXIMIZED_HORZ", true );
+    wm_state_maximized_vert = XInternAtom( rx_display, "_NET_WM_STATE_MAXIMIZED_VERT", true );
+    wm_state_above = XInternAtom( rx_display, "_NET_WM_STATE_ABOVE", true );
+    wm_allowed_actions = XInternAtom( rx_display, "_NET_WM_ALLOWED_ACTIONS", true );
+
+    Atom wm_state_new[4] =
+    {
+        wm_state_fullscreen,
+        wm_state_maximized_horz,
+        wm_state_maximized_vert,
+        wm_state_above
+    };
+    if (wm_state != 0 && wm_state_fullscreen != 0 && wm_state_maximized_horz!= 0 &&
+        wm_state_maximized_vert != 0 && wm_state_above != 0)
     {
         XChangeProperty(rx_display, vx_window,
                         wm_state, XA_ATOM, 32,
-                        PropModeReplace, (unsigned char *)(&wm_fullscreen),
-                        1);
+                        PropModeReplace,
+                        reinterpret_cast<unsigned char*>( &wm_state_new ),
+                        4);
     }
 
     // Set the window name
