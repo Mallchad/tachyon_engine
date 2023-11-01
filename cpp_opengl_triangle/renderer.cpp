@@ -312,7 +312,7 @@ GLXContext renderer::get_gl_context() const
     return vglx_context;
 }
 
-bool renderer::draw_test_triangle(float4 color)
+bool renderer::draw_test_triangle(vfloat4 color)
 {
     glUseProgram(shader_program);
     glBindVertexArray(vao[5]);
@@ -322,7 +322,7 @@ bool renderer::draw_test_triangle(float4 color)
     return true;
 }
 
-bool renderer::draw_test_circle(float4 p_color)
+bool renderer::draw_test_circle(vfloat4 p_color)
 {
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
@@ -356,7 +356,7 @@ bool renderer::draw_test_circle(float4 p_color)
 
 }
 
-bool renderer::draw_test_rectangle(float4 p_color)
+bool renderer::draw_test_rectangle(vfloat4 p_color)
 {
     GLfloat square_width = 200;
     GLfloat square_height = 200;
@@ -376,7 +376,7 @@ bool renderer::draw_test_rectangle(float4 p_color)
     return true;
 }
 
-bool renderer::draw_test_signfield(float4 p_color)
+bool renderer::draw_test_signfield(vfloat4 p_color)
 {
     // Performance optimization, can be disabled when it runs fast enough
     if (buffer_damage_size <= 0)

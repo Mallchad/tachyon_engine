@@ -69,7 +69,7 @@ class renderer final
     int shader_compiled = false;
     int shader_link_sucess = 0;
 
-    unique_ptr<float4[]> mbuffer = make_unique<float4[]>( 1920*1080 );
+    unique_ptr<vfloat4[]> mbuffer = make_unique<vfloat4[]>( 1920*1080 );
     float mtest_triangle[9] =
     {
         -0.5f, -0.5f, 0.0f,
@@ -81,19 +81,19 @@ class renderer final
     int progress_y = 0;
 
 public:
-    float4 mtriangle_color = { .2f, .9f, .2f, 1.f };
-    float4 mrectangle_color = {.5f, .1f, .5f, 1.f};
-    float4 mcircle_color = { .2f, .9f, .2f, 1.f };
-    float4 msignfield_color = {1.f/255*98.f, 1.f/255*42.f, 1.f/255*125.f, 1.f};
-    float4 gradient_approximation[10000] = {};
+    vfloat4 mtriangle_color = { .2f, .9f, .2f, 1.f };
+    vfloat4 mrectangle_color = {.5f, .1f, .5f, 1.f};
+    vfloat4 mcircle_color = { .2f, .9f, .2f, 1.f };
+    vfloat4 msignfield_color = {1.f/255*98.f, 1.f/255*42.f, 1.f/255*125.f, 1.f};
+    vfloat4 gradient_approximation[10000] = {};
     int buffer_damage_size = 1920*1080;
 
     CONSTRUCTOR renderer();
     GLXContext get_gl_context() const;
-    bool draw_test_triangle(float4 p_color);
-    bool draw_test_circle(float4 p_color);
-    bool draw_test_rectangle(float4 p_color);
-    bool draw_test_signfield(float4 p_color);
+    bool draw_test_triangle(vfloat4 p_color);
+    bool draw_test_circle(vfloat4 p_color);
+    bool draw_test_rectangle(vfloat4 p_color);
+    bool draw_test_signfield(vfloat4 p_color);
     bool refresh();
     DESTRUCTOR virtual ~renderer();
 };

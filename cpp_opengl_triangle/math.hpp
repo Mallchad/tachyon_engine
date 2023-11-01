@@ -5,8 +5,22 @@
 
 #include <cstdint>
 
+typedef int8_t   fint8;
+typedef int16_t fint16;
+typedef int32_t fint32;
+typedef int64_t fint64;
+
+typedef uint8_t   fuint8;
+typedef uint16_t fuint16;
+typedef uint32_t fuint32;
+typedef uint64_t fuint64;
+
+// Fixed width floats only supported
+typedef float ffloat;
+typedef double fdouble;
+
 template <typename t_calculable>
-class vector3
+class vector3 final
 {
 public:
     t_calculable mx, my, mz = 0;
@@ -17,19 +31,48 @@ public:
         mx(all), my(all), mz(all) {}
     CONSTRUCTOR vector3(t_calculable x, t_calculable y, t_calculable z) :
         mx(x), my(y), mz(z) {}
-    vector3 operator+ (const vector3<t_calculable> rhs) const;
-    vector3 operator- (const vector3<t_calculable> rhs) const;
-    vector3 operator* (const vector3<t_calculable> rhs) const;
-    vector3 operator/ (const vector3<t_calculable> rhs) const;
-    vector3 operator= (t_calculable all);
 
-    private:
+    vector3<t_calculable>&
+    operator+ (const vector3<t_calculable> rhs) const
+    {
+        vector3 out = vector3(mx + rhs.mx,
+                              my + rhs.my,
+                              mz + rhs.mz);
+        return out;
+    }
+    vector3<t_calculable>&
+    operator- (const vector3<t_calculable> rhs) const
+    {
+        vector3 out = vector3(mx - rhs.mx,
+                              my - rhs.my,
+                              mz - rhs.mz);
+        return out;
+    }
+    vector3<t_calculable>&
+    // Pairwise multiplication, it is never assumed to be standard maths
+    operator* (const vector3<t_calculable> rhs) const
+    {
+        vector3 out = vector3(mx * rhs.mx,
+                              my * rhs.my,
+                              mz * rhs.mz);
+        return out;
+    }
+    vector3<t_calculable>&
+    operator/ (const vector3<t_calculable> rhs) const
+    {
+        vector3 out = vector3(mx / rhs.mx,
+                              my / rhs.my,
+                              mz / rhs.mz);
+        return out;
+    }
+    vector3<t_calculable>&
+    operator= (t_calculable all)
+    {
+        mx = all;
+        my = all;
+        mz = all;
+    }
 };
-
-typedef vector3<float> float3;
-typedef vector3<int32_t> int3;
-typedef vector3<int64_t> long3;
-
 template <typename t_calculable>
 class vector4
 {
@@ -101,7 +144,10 @@ public:
 private:
 };
 
-typedef vector4<float> float4;
-typedef vector4<int32_t> int4;
-typedef vector4<int64_t> long4;
+typedef vector3<ffloat> vfloat3;
+typedef vector3<fint32> vint3;
+typedef vector3<fint64> vlong3;
 
+typedef vector4<ffloat> vfloat4;
+typedef vector4<fint32> vint4;
+typedef vector4<fint64> vlong4;
