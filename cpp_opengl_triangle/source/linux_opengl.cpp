@@ -44,6 +44,8 @@ renderer_opengl::renderer_opengl()
 
     }
 
+    vglx_context_list.reserve(100);
+
     // -- GLX and X11 Initialization --
     glXCreateContextAttribsARB = reinterpret_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXCreateContextAttribsARB" )));
@@ -113,9 +115,10 @@ renderer_opengl::renderer_opengl()
     // During init, enable debug output
     glEnable( GL_DEBUG_OUTPUT );
 
+    this->create_context();
+
     std::cout << "Starting renderer\n" ;
 
-    this->create_context();
     vx_window_attributes.colormap = XCreateColormap( rx_display,
                                                      RootWindow(rx_display,
                                                                 vx_buffer_config->screen),
@@ -175,11 +178,12 @@ renderer_opengl::renderer_opengl()
         vx_wm_delete_window = test_atom;
         vx_window_protocols.push_back(test_atom);
         std::cout << "WM_DELETE_WINDOW protocol loaded \n";
-        XSetWMProtocols( rx_display, vx_window, vx_window_protocols.data(), vx_window_protocols.size());
+        XSetWMProtocols( rx_display, vx_window, vx_window_protocols.data(), fuint32(vx_window_protocols.size()) );
     }
 
     // -- Initialize OpenGL --
-    this->create_context();
+    vglx_context = vglx_context_list[ vglx_context_id ];
+
     glXMakeCurrent( rx_display, vx_window, vglx_context );
 
     vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
@@ -268,6 +272,19 @@ renderer_opengl::renderer_opengl()
 
 FUNCTION fint32 renderer_opengl::create_context()
 {
+    GLXContext context_tmp = nullptr;
+    fint32 context_id = 0;
+
+    // Load GL core profile
+    int vglx_context_attribs[] =
+        {
+            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+            //GLX_CONTEXT_FLAGS_ARB        , GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+            None
+        };
+
     // Get a matching FB config
     static int vglx_visual_attributes[] =
         {
@@ -302,17 +319,11 @@ FUNCTION fint32 renderer_opengl::create_context()
     vglx_fbselection = vglx_fbconfigurations[0];
     vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
 
-    // Load GL core profile
-    int vglx_context_attribs[] =
-        {
-            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
-            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
-            //GLX_CONTEXT_FLAGS_ARB        , GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-            None
-        };
-    vglx_context =  glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
+    context_tmp =  glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
+    vglx_context_list.push_back(context_tmp);
 
+    context_id = fint32( vglx_context_list.size() - 1 );
+    return context_id;
 }
 
 GLXContext renderer_opengl::get_gl_context() const
@@ -411,7 +422,7 @@ bool renderer_opengl::draw_test_signfield(vfloat4 p_color)
         {
             distance = std::abs( (0.f +x-circle_x ) * ( 0.f +x-circle_x)) + std::abs( (y - circle_y) * (y - circle_y));
 
-            color_mult = ((1.f / circle_radius) * sqrtf(distance) ) * 0.8;
+            color_mult = ((1.f / circle_radius) * sqrtf(distance) ) * 0.8f;
             mbuffer[x + (1920*y)] = p_color * color_mult;
         }
     }

@@ -8,5 +8,5 @@ class renderer final
     public:
     CONSTRUCTOR renderer();
 
-    void FrameUpdate(ffloat epoch_elapsed);
+    void frame_update(ffloat epoch_elapsed);
 };

@@ -42,7 +42,11 @@ class renderer_opengl final
     Atom wm_allowed_actions = 0;
 
     // GL X extensions
+    // Priamry Context
     GLXContext vglx_context = nullptr;
+    fint32 vglx_context_id = 0;
+
+    std::vector<GLXContext> vglx_context_list;
     GLXFBConfig* vglx_fbconfigurations = nullptr;
     GLXFBConfig vglx_fbselection = nullptr;
     const char* vglx_extensions_string = nullptr;

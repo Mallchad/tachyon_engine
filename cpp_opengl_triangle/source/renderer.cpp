@@ -6,11 +6,12 @@
 
 CONSTRUCTOR renderer::renderer()
 {
-    platform.create_context();
+    platform;
 }
 
 void
-FUNCTION renderer::FrameUpdate(ffloat epoch_elapsed)
+FUNCTION renderer::frame_update(ffloat epoch_elapsed)
 {
+    (void)(epoch_elapsed);
     platform.refresh();
 }
