@@ -5,7 +5,15 @@
 # Whitelist
 
 # Blacklist
+*.o
 *.out
 *.gch
+*.exe
+*.pdb
 *~
 ~*
+compile_commands*
+
+# Directory Blacklist
+.*
+build

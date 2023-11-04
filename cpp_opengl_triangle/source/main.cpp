@@ -15,10 +15,10 @@ int main()
     // Trick to allow jump to cleanup
     try
     {
-        renderer render = {};
+        renderer render();
         while ( global.kill_program == false )
         {
-            render.refresh();
+            // render.refresh();
             FrameMark( "Main Render Thread" );
 
             // DO NOT REMOVE, can lock computer if it runs too fast

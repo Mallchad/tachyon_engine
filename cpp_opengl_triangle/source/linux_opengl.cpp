@@ -1,5 +1,5 @@
-
-#include "renderer.h"
+#include "renderer_interface.hpp"
+#include "linux_opengl.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
@@ -32,9 +32,8 @@ sigterm_handler(int sig)
     std::cout << "caught a signal\n" << std::flush;
     std::signal(SIGINT, sigterm_handler);
 }
-
 CONSTRUCTOR
-renderer::renderer()
+renderer_opengl::renderer_opengl()
 {
     signal(SIGINT, sigterm_handler);
     global = global_database::get_primary();
@@ -46,7 +45,6 @@ renderer::renderer()
     }
 
     // -- GLX and X11 Initialization --
-
     glXCreateContextAttribsARB = reinterpret_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXCreateContextAttribsARB" )));
     _glXChooseFBConfig= reinterpret_cast<PFNGLXCHOOSEFBCONFIGPROC>(
@@ -117,51 +115,7 @@ renderer::renderer()
 
     std::cout << "Starting renderer\n" ;
 
-    // Get a matching FB config
-    static int vglx_visual_attributes[] =
-        {
-            GLX_X_RENDERABLE    , True,
-            GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
-            GLX_RENDER_TYPE     , GLX_RGBA_BIT,
-            GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
-            GLX_RED_SIZE        , 8,
-            GLX_GREEN_SIZE      , 8,
-            GLX_BLUE_SIZE       , 8,
-            GLX_ALPHA_SIZE      , 8,
-            GLX_DEPTH_SIZE      , 24,
-            GLX_STENCIL_SIZE    , 8,
-            GLX_DOUBLEBUFFER    , True,
-            //GLX_SAMPLE_BUFFERS  , 1,
-            //GLX_SAMPLES         , 4,
-            None
-        };
-
-    // Setup X11 Window and OpenGL Context
-    rx_display = XOpenDisplay(nullptr);
-    vx_connection_number = XConnectionNumber(rx_display);
-    vx_connection_string[0] = ':';
-    vx_connection_string[1] = '0' + static_cast<char>( vx_connection_number );
-
-    if (rx_display == nullptr)
-    {
-        std::cout << "Could not open X display" << std::endl;
-        throw(1);
-    }
-    vglx_fbconfigurations = _glXChooseFBConfig(rx_display, DefaultScreen(rx_display), vglx_visual_attributes, &vglx_fb_count);
-    vglx_fbselection = vglx_fbconfigurations[0];
-    vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
-
-    // Load GL core profile
-    int vglx_context_attribs[] =
-        {
-            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
-            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
-            //GLX_CONTEXT_FLAGS_ARB        , GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-            None
-        };
-    vglx_context =  glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
-
+    this->create_context();
     vx_window_attributes.colormap = XCreateColormap( rx_display,
                                                      RootWindow(rx_display,
                                                                 vx_buffer_config->screen),
@@ -211,8 +165,6 @@ renderer::renderer()
     XStoreName( rx_display, vx_window, "cpp triangle test" );
     XMapWindow( rx_display, vx_window );
 
-    glXMakeCurrent( rx_display, vx_window, vglx_context );
-
     // Start Handling X11 events
     XSelectInput( rx_display, vx_window, ClientMessage );
     // Instruct window manager to permit self-cleanup
@@ -227,27 +179,34 @@ renderer::renderer()
     }
 
     // -- Initialize OpenGL --
-    vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
-    // Setup shaders
-    shader_vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(shader_vertex, 1, &shader_vertex_source, nullptr);
-    glCompileShader(shader_vertex);
+    this->create_context();
+    glXMakeCurrent( rx_display, vx_window, vglx_context );
 
-    glGetShaderiv(shader_vertex, GL_COMPILE_STATUS, &shader_compiled);
+    vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
+
+    // Setup shaders
+    GLint shader_vertex_compiled = false;
+    GLint shader_fragment_compiled = false;
+    shader_vertex = glCreateShader(GL_VERTEX_SHADER);
+    shader_fragment = glCreateShader(GL_FRAGMENT_SHADER);
+
+    glShaderSource(shader_vertex, 1, &shader_vertex_source, nullptr);
+    glShaderSource(shader_fragment, 1, &shader_fragment_source, nullptr);
+
+    glCompileShader(shader_vertex);
+    glCompileShader(shader_fragment);
+
+    glGetShaderiv(shader_vertex, GL_COMPILE_STATUS, &shader_vertex_compiled);
+    glGetShaderiv(shader_fragment, GL_COMPILE_STATUS, &shader_fragment_compiled);
+
     glGetShaderInfoLog(shader_vertex, 512, nullptr, shader_info_log);
-    if (shader_compiled == false)
+    glGetShaderInfoLog(shader_fragment, 512, nullptr, shader_fragment_log);
+    if (shader_vertex_compiled == false)
     {
         std::cout << "Shader compilation failed, error message: " << shader_info_log << "\n";
         throw(1);
     }
-
-    shader_fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(shader_fragment, 1, &shader_fragment_source, nullptr);
-    glCompileShader(shader_fragment);
-
-    glGetShaderiv(shader_fragment, GL_COMPILE_STATUS, &shader_compiled);
-    glGetShaderInfoLog(shader_fragment, 512, nullptr, shader_fragment_log);
-    if (shader_compiled == false)
+    if (shader_fragment_compiled == false)
     {
         std::cout << "Shader compilation failed, error message: " << shader_info_log << "\n"
                   << shader_fragment_log << "\n";
@@ -307,12 +266,61 @@ renderer::renderer()
 
 }
 
-GLXContext renderer::get_gl_context() const
+FUNCTION fint32 renderer_opengl::create_context()
+{
+    // Get a matching FB config
+    static int vglx_visual_attributes[] =
+        {
+            GLX_X_RENDERABLE    , True,
+            GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
+            GLX_RENDER_TYPE     , GLX_RGBA_BIT,
+            GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
+            GLX_RED_SIZE        , 8,
+            GLX_GREEN_SIZE      , 8,
+            GLX_BLUE_SIZE       , 8,
+            GLX_ALPHA_SIZE      , 8,
+            GLX_DEPTH_SIZE      , 24,
+            GLX_STENCIL_SIZE    , 8,
+            GLX_DOUBLEBUFFER    , True,
+            //GLX_SAMPLE_BUFFERS  , 1,
+            //GLX_SAMPLES         , 4,
+            None
+        };
+
+    // Setup X11 Window and OpenGL Context
+    rx_display = XOpenDisplay(nullptr);
+    vx_connection_number = XConnectionNumber(rx_display);
+    vx_connection_string[0] = ':';
+    vx_connection_string[1] = '0' + static_cast<char>( vx_connection_number );
+
+    if (rx_display == nullptr)
+    {
+        std::cout << "Could not open X display" << std::endl;
+        throw(1);
+    }
+    vglx_fbconfigurations = _glXChooseFBConfig(rx_display, DefaultScreen(rx_display), vglx_visual_attributes, &vglx_fb_count);
+    vglx_fbselection = vglx_fbconfigurations[0];
+    vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
+
+    // Load GL core profile
+    int vglx_context_attribs[] =
+        {
+            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+            GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+            //GLX_CONTEXT_FLAGS_ARB        , GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+            None
+        };
+    vglx_context =  glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
+
+}
+
+GLXContext renderer_opengl::get_gl_context() const
 {
     return vglx_context;
 }
 
-bool renderer::draw_test_triangle(vfloat4 color)
+bool renderer_opengl::draw_test_triangle(vfloat4 color)
 {
     glUseProgram(shader_program);
     glBindVertexArray(vao[5]);
@@ -322,7 +330,7 @@ bool renderer::draw_test_triangle(vfloat4 color)
     return true;
 }
 
-bool renderer::draw_test_circle(vfloat4 p_color)
+bool renderer_opengl::draw_test_circle(vfloat4 p_color)
 {
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
@@ -356,7 +364,7 @@ bool renderer::draw_test_circle(vfloat4 p_color)
 
 }
 
-bool renderer::draw_test_rectangle(vfloat4 p_color)
+bool renderer_opengl::draw_test_rectangle(vfloat4 p_color)
 {
     GLfloat square_width = 200;
     GLfloat square_height = 200;
@@ -376,7 +384,7 @@ bool renderer::draw_test_rectangle(vfloat4 p_color)
     return true;
 }
 
-bool renderer::draw_test_signfield(vfloat4 p_color)
+bool renderer_opengl::draw_test_signfield(vfloat4 p_color)
 {
     // Performance optimization, can be disabled when it runs fast enough
     if (buffer_damage_size <= 0)
@@ -413,7 +421,7 @@ bool renderer::draw_test_signfield(vfloat4 p_color)
 
 }
 
-bool renderer::refresh()
+bool renderer_opengl::refresh()
 {
     ZoneScopedN("graphics refresh");
 
@@ -469,7 +477,7 @@ bool renderer::refresh()
     return true;
 }
 
-DESTRUCTOR renderer::~renderer()
+DESTRUCTOR renderer_opengl::~renderer_opengl()
 {
 // Cleanup
     std::cout << "Renderer Cleanup" << std::endl;

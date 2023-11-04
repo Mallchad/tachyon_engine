@@ -19,6 +19,8 @@ typedef uint64_t fuint64;
 typedef float ffloat;
 typedef double fdouble;
 
+// Gurantee vectors are packed tightly because of OpenGL functions
+#pragma pack(push, 1)
 template <typename t_calculable>
 class vector3 final
 {
@@ -143,6 +145,7 @@ public:
 
 private:
 };
+#pragma pack(pop)
 
 typedef vector3<ffloat> vfloat3;
 typedef vector3<fint32> vint3;

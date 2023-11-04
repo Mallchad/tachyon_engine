@@ -8,7 +8,7 @@ require( "arg" )
 gmodule_name = "Build Script"
 log_verbose = true
 
-local build_universal_arguments: string = "-std=c++20 -fuse-ld=mold -I../tracy -lX11 -lGL *.cpp -ldl -Iexternal/include -Wpedantic -Wall -Wno-unused-value "
+local build_universal_arguments: string = "-std=c++20 -fuse-ld=mold -I../tracy -lX11 -lGL source/*.cpp -ldl -Iexternal/include -Wpedantic -Wall -Wno-unused-value -Isource"
 
 local build_command: string = "clang++ -g -O0 " ..build_universal_arguments
 local build_command_shipping_test: string = "clang++ -g -O2 -march=x86-64 -Weverything -Wno-c++98-compat -Wno-implicit-int-float-conversion -Wno-sign-conversion " ..build_universal_arguments
