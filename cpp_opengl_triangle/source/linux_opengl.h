@@ -102,9 +102,6 @@ class renderer_opengl final INTERFACE_RENDERER
         { \n                                                            \
             vec4 fc = gl_FragCoord; \n                                  \
                                                                         \
-            float mult_x = 1/ 1920.f * fc.x; \n                         \
-            float mult_y = 1/ 1080.f * fc.y; \n                         \
-            frag_color = vec4( .8 * mult_x, .7 * mult_y, 1.f * mult_x * mult_y, 1.f ); \n \
             frag_color = vertex_color;                                  \
         }\0"s;
     fstring shader_vertex_source = "#version 410 core \n                \
@@ -131,12 +128,14 @@ class renderer_opengl final INTERFACE_RENDERER
     fid shader_fragment_test = 0;
     fid shader_vertex_test = 0;
 
+    ffloat dr = 1080.f/1920.f;  // 1080p clip space transformation
     unique_ptr<vfloat4[]> mbuffer = make_unique<vfloat4[]>( 1920*1080 );
+    // 0.433 pre-computed magic number for unit triangle
     float mtest_triangle[9] =
     {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f,  0.5f, 0.0f
+        -0.5f * dr, -0.4330127019f, 0.0f,
+        0.5f * dr, -0.4330127019f, 0.0f,
+        0.0f * dr,  0.4330127019f, 0.0f
     };
     float mtest_triangle_colors[12] =
     {

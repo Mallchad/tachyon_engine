@@ -698,6 +698,9 @@ bool def::refresh()
         glClearColor( 1.f, 0.5, 1.f, 1.f );
         glClear( GL_COLOR_BUFFER_BIT );
 
+        // Set the coordinate system for proper clip space conversion
+        glViewport(0, 0, 1920, 1080);
+
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         // glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
         // render.draw_test_rectangle(render.mrectangle_color);
