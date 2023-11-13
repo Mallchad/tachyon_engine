@@ -68,3 +68,6 @@ I have no idea why this is. it just is.
 
 * OpenGL uses standard bottom-left up coordinate systems
 Interesting anecdote different to how CRts work
+
+* TODO
+** Make i_renderer::shader_compile auto prefix name with shader_<type>

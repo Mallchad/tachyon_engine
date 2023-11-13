@@ -4,7 +4,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
-#include <GL/gl.h>
 #include <GL/glext.h>
 #include <GL/glx.h>
 #include <GL/glxext.h>
@@ -20,6 +19,9 @@
 #include "include_tracy.h"
 
 using namespace std::chrono_literals;
+using namespace std::string_literals;
+
+typedef renderer_opengl def;
 
 // Try to temrinate gracefully after attempt to kill X window
 static void
@@ -33,7 +35,13 @@ sigterm_handler(int sig)
     std::signal(SIGINT, sigterm_handler);
 }
 CONSTRUCTOR
-renderer_opengl::renderer_opengl()
+def::renderer_opengl()
+{
+    this->initialize();
+}
+
+fhowdit
+FUNCTION def::initialize()
 {
     signal(SIGINT, sigterm_handler);
     global = global_database::get_primary();
@@ -47,77 +55,175 @@ renderer_opengl::renderer_opengl()
     vglx_context_list.reserve(100);
 
     // -- GLX and X11 Initialization --
-    glXCreateContextAttribsARB = reinterpret_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
+    ldynamic::glXCreateContextAttribsARB = reinterpret_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXCreateContextAttribsARB" )));
-    _glXChooseFBConfig= reinterpret_cast<PFNGLXCHOOSEFBCONFIGPROC>(
+    ldynamic::glXChooseFBConfig= reinterpret_cast<PFNGLXCHOOSEFBCONFIGPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXChooseFBConfig" )));
-    glXSwapIntervalMESA = reinterpret_cast<PFNGLXSWAPINTERVALMESAPROC>(
+    ldynamic::glXSwapIntervalMESA = reinterpret_cast<PFNGLXSWAPINTERVALMESAPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXSwapIntervalMESA" )));
-    glXSwapIntervalEXT = reinterpret_cast<PFNGLXSWAPINTERVALEXTPROC>(
+    ldynamic::glXSwapIntervalEXT = reinterpret_cast<PFNGLXSWAPINTERVALEXTPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXSwapIntervalEXT" )));
 
-    glBindBuffer        = reinterpret_cast<PFNGLBINDBUFFERPROC>(
+    ldynamic::glBindBuffer        = reinterpret_cast<PFNGLBINDBUFFERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBuffer" )));
-    glGenBuffers        = reinterpret_cast<PFNGLGENBUFFERSPROC>(
+    ldynamic::glGenBuffers        = reinterpret_cast<PFNGLGENBUFFERSPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenBuffers" )));
-    glBufferData        = reinterpret_cast<PFNGLBUFFERDATAPROC>(
+    ldynamic::glBufferData        = reinterpret_cast<PFNGLBUFFERDATAPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBufferData" )));
-    glCreateShader      = reinterpret_cast<PFNGLCREATESHADERPROC>(
+    ldynamic::glCreateShader      = reinterpret_cast<PFNGLCREATESHADERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateShader" )));
-    glShaderSource      = reinterpret_cast<PFNGLSHADERSOURCEPROC>(
+    ldynamic::glShaderSource      = reinterpret_cast<PFNGLSHADERSOURCEPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glShaderSource" )));
-    glCompileShader     = reinterpret_cast<PFNGLCOMPILESHADERPROC>(
+    ldynamic::glCompileShader     = reinterpret_cast<PFNGLCOMPILESHADERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCompileShader" )));
 
-    glGetShaderiv       = reinterpret_cast<PFNGLGETSHADERIVPROC>(
+    ldynamic::glGetShaderiv       = reinterpret_cast<PFNGLGETSHADERIVPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetShaderiv" )));
-    glGetShaderInfoLog  = reinterpret_cast<PFNGLGETSHADERINFOLOGPROC>(
+    ldynamic::glGetShaderInfoLog  = reinterpret_cast<PFNGLGETSHADERINFOLOGPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetShaderInfoLog" )));
-    glCreateProgram     = reinterpret_cast<PFNGLCREATEPROGRAMPROC>(
+    ldynamic::glCreateProgram     = reinterpret_cast<PFNGLCREATEPROGRAMPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateProgram" )));
-    glAttachShader      = reinterpret_cast<PFNGLATTACHSHADERPROC>(
+    ldynamic::glAttachShader      = reinterpret_cast<PFNGLATTACHSHADERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glAttachShader" )));
-    glDeleteShader      = reinterpret_cast<PFNGLDELETESHADERPROC>(
+    ldynamic::glDetachShader      =  reinterpret_cast<PFNGLATTACHSHADERPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDetachShader" )));
+    ldynamic::glDeleteShader      = reinterpret_cast<PFNGLDELETESHADERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDeleteShader" )));
 
-    glLinkProgram       = reinterpret_cast<PFNGLLINKPROGRAMPROC>(
+    ldynamic::glLinkProgram       = reinterpret_cast<PFNGLLINKPROGRAMPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glLinkProgram" )));
-    glGetProgramiv      = reinterpret_cast<PFNGLGETPROGRAMIVPROC>(
+    ldynamic::glGetProgramiv      = reinterpret_cast<PFNGLGETPROGRAMIVPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetProgramiv" )));
-    glUseProgram = reinterpret_cast<PFNGLUSEPROGRAMPROC>(
+    ldynamic::glUseProgram = reinterpret_cast<PFNGLUSEPROGRAMPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glUseProgram" )));
-    glGetProgramInfoLog = reinterpret_cast<PFNGLGETPROGRAMINFOLOGPROC>(
+    ldynamic::glGetProgramInfoLog = reinterpret_cast<PFNGLGETPROGRAMINFOLOGPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetProgramInfoLog" )));
 
-    glVertexAttribPointer=reinterpret_cast<PFNGLVERTEXATTRIBPOINTERPROC>(
+    ldynamic::glVertexAttribPointer=reinterpret_cast<PFNGLVERTEXATTRIBPOINTERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glVertexAttribPointer" )));
-    glGenVertexArrays = reinterpret_cast<PFNGLGENVERTEXARRAYSPROC>(
+    ldynamic::glGenVertexArrays = reinterpret_cast<PFNGLGENVERTEXARRAYSPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenVertexArrays" ) ));
-    glEnableVertexAttribArray = reinterpret_cast<PFNGLENABLEVERTEXATTRIBARRAYPROC>(
+    ldynamic::glEnableVertexAttribArray = reinterpret_cast<PFNGLENABLEVERTEXATTRIBARRAYPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glEnableVertexAttribArray" )));
-    glEnableVertexArrayAttrib = reinterpret_cast<PFNGLENABLEVERTEXARRAYATTRIBPROC>(
+    ldynamic::glEnableVertexArrayAttrib = reinterpret_cast<PFNGLENABLEVERTEXARRAYATTRIBPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glEnableVertexArrayAttrib" )));
-    glBindVertexArray = reinterpret_cast<PFNGLBINDVERTEXARRAYPROC>(
+    ldynamic::glBindVertexArray = reinterpret_cast<PFNGLBINDVERTEXARRAYPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindVertexArray" )));
-    glMapBuffer  = reinterpret_cast<PFNGLMAPBUFFERPROC>(
+    ldynamic::glMapBuffer  = reinterpret_cast<PFNGLMAPBUFFERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glMapBuffer" )));
-    glUnmapBuffer  = reinterpret_cast<PFNGLUNMAPBUFFERPROC>(
+    ldynamic::glUnmapBuffer  = reinterpret_cast<PFNGLUNMAPBUFFERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glUnmapBuffer" )));
 
-    intern_glDrawArrays = reinterpret_cast<PFNGLDRAWARRAYSPROC>(
+    ldynamic::glDrawArrays = reinterpret_cast<PFNGLDRAWARRAYSPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArrays" )));
-    glDrawArraysEXT = reinterpret_cast<PFNGLDRAWARRAYSEXTPROC>(
+    ldynamic::glDrawArraysEXT = reinterpret_cast<PFNGLDRAWARRAYSEXTPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArraysEXT" )));
-    glDebugMessageCallback  = reinterpret_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
+    ldynamic::glDebugMessageCallback  = reinterpret_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDebugMessageCallback" )));
-
 
     // During init, enable debug output
     glEnable( GL_DEBUG_OUTPUT );
 
-    this->create_context();
+    // -- Initialize OpenGL --
+    display_context_create();
+    fid glx_initial = context_create();
+    vx_window_id = window_create();
+    vx_window = vx_window_list[ vx_window_id ];
 
     std::cout << "Starting renderer\n" ;
+
+    // Set primary thread local context
+    vglx_context = vglx_context_list[ vglx_context_id ];
+    context_set_current( glx_initial );
+
+    vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
+
+    // Setup shaders
+    shader_fragment_test = shader_create( "shader_fragment_test", shader_type::fragment );
+    shader_vertex_test = shader_create( "shader_vertex_test", shader_type::vertex );
+
+    shader_compile( shader_fragment_test, shader_fragment_source );
+    shader_compile( shader_vertex_test, shader_vertex_source );
+
+    shader_program_test = shader_program_create( "shader_primitive_test",
+                                                 { shader_fragment_test, shader_vertex_test } );
+    shader_program_compile( shader_program_test );
+
+    // Initialize vertex array
+    ldynamic::glGenVertexArrays(10, vao);
+
+    // Bind the vertex array
+    ldynamic::glBindVertexArray(vao[5]);
+
+    // Copy vertecies into vbo
+    ldynamic::glGenBuffers( 10, vbo_actives);
+    vbo = vbo_actives[5];
+    ldynamic::glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    ldynamic::glBufferData(GL_ARRAY_BUFFER, sizeof(mtest_triangle), &mtest_triangle, GL_STATIC_DRAW);
+
+    // Set vertex attributes
+    ldynamic::glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void*>(0));
+
+    // glUnmapBuffer(GL_ARRAY_BUFFER);
+    ldynamic::glEnableVertexAttribArray(0);
+
+    // Disabled VSync for performance
+    enum
+    {
+        vsync_adaptive        = -1,
+        vsync_no              = 0,
+        vsync_double_buffered = 1,
+        vsync_triple_buffered = 2
+    };
+    // GL_EXT_swap_control
+    ldynamic::glXSwapIntervalEXT(rx_display, vx_window, vsync_adaptive);
+
+    return true;
+}
+
+fhowdit
+FUNCTION def::deinitialize()
+{
+    for (Window x_xwindow : vx_window_list)
+    {
+        if (x_xwindow != 0)
+        {
+            XUnmapWindow( rx_display, x_xwindow );
+            XDestroyWindow( rx_display, x_xwindow );
+        }
+    }
+    for (GLXContext x_glx_context : vglx_context_list)
+    {
+        if (x_glx_context != nullptr)
+        {
+            glXDestroyContext( rx_display, x_glx_context );
+        }
+    }
+    return true;
+
+}
+
+fid
+FUNCTION def::display_context_create()
+{
+    // Setup X11 Window and OpenGL Context
+    rx_display = XOpenDisplay(nullptr);
+    vx_connection_number = XConnectionNumber(rx_display);
+    vx_connection_string[0] = ':';
+    vx_connection_string[1] = '0' + static_cast<char>( vx_connection_number );
+
+    if (rx_display == nullptr)
+    {
+        std::cout << "Could not open X display" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+fid
+FUNCTION def::window_create()
+{
+    fid window_id = 0;
 
     vx_window_attributes.colormap = XCreateColormap( rx_display,
                                                      RootWindow(rx_display,
@@ -128,7 +234,7 @@ renderer_opengl::renderer_opengl()
     vx_window_attributes.event_mask        = StructureNotifyMask;
     vx_window_attributes.override_redirect = true;
 
-    vx_window = XCreateWindow( rx_display,
+    Window x_window_tmp = XCreateWindow( rx_display,
                                RootWindow( rx_display, vx_buffer_config->screen ),
                                500, 500, 500, 500, 0,
                                vx_buffer_config->depth,
@@ -157,7 +263,7 @@ renderer_opengl::renderer_opengl()
     if (wm_state != 0 && wm_state_fullscreen != 0 && wm_state_maximized_horz!= 0 &&
         wm_state_maximized_vert != 0 && wm_state_above != 0)
     {
-        XChangeProperty(rx_display, vx_window,
+        XChangeProperty(rx_display, x_window_tmp,
                         wm_state, XA_ATOM, 32,
                         PropModeReplace,
                         reinterpret_cast<unsigned char*>( &wm_state_new ),
@@ -165,11 +271,11 @@ renderer_opengl::renderer_opengl()
     }
 
     // Set the window name
-    XStoreName( rx_display, vx_window, "cpp triangle test" );
-    XMapWindow( rx_display, vx_window );
+    XStoreName( rx_display, x_window_tmp, "cpp triangle test" );
+    XMapWindow( rx_display, x_window_tmp);
 
     // Start Handling X11 events
-    XSelectInput( rx_display, vx_window, ClientMessage );
+    XSelectInput( rx_display, x_window_tmp, ClientMessage );
     // Instruct window manager to permit self-cleanup
     Atom test_atom = 0;
     test_atom = XInternAtom( rx_display, "WM_DELETE_WINDOW", true );
@@ -178,107 +284,43 @@ renderer_opengl::renderer_opengl()
         vx_wm_delete_window = test_atom;
         vx_window_protocols.push_back(test_atom);
         std::cout << "WM_DELETE_WINDOW protocol loaded \n";
-        XSetWMProtocols( rx_display, vx_window, vx_window_protocols.data(), fuint32(vx_window_protocols.size()) );
+        XSetWMProtocols( rx_display, x_window_tmp, vx_window_protocols.data(), fuint32(vx_window_protocols.size()) );
     }
 
-    // -- Initialize OpenGL --
-    vglx_context = vglx_context_list[ vglx_context_id ];
-
-    glXMakeCurrent( rx_display, vx_window, vglx_context );
-
-    vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
-
-    // Setup shaders
-    GLint shader_vertex_compiled = false;
-    GLint shader_fragment_compiled = false;
-    shader_vertex = glCreateShader(GL_VERTEX_SHADER);
-    shader_fragment = glCreateShader(GL_FRAGMENT_SHADER);
-
-    glShaderSource(shader_vertex, 1, &shader_vertex_source, nullptr);
-    glShaderSource(shader_fragment, 1, &shader_fragment_source, nullptr);
-
-    glCompileShader(shader_vertex);
-    glCompileShader(shader_fragment);
-
-    glGetShaderiv(shader_vertex, GL_COMPILE_STATUS, &shader_vertex_compiled);
-    glGetShaderiv(shader_fragment, GL_COMPILE_STATUS, &shader_fragment_compiled);
-
-    glGetShaderInfoLog(shader_vertex, 512, nullptr, shader_info_log);
-    glGetShaderInfoLog(shader_fragment, 512, nullptr, shader_fragment_log);
-    if (shader_vertex_compiled == false)
-    {
-        std::cout << "Shader compilation failed, error message: " << shader_info_log << "\n";
-        throw(1);
-    }
-    if (shader_fragment_compiled == false)
-    {
-        std::cout << "Shader compilation failed, error message: " << shader_info_log << "\n"
-                  << shader_fragment_log << "\n";
-        throw(1);
-    }
-
-    shader_program = glCreateProgram();
-    glAttachShader( shader_program, shader_vertex);
-    glAttachShader( shader_program, shader_fragment);
-    glLinkProgram( shader_program);
-
-    // Done setting up shaders, cleanup
-    glDeleteShader( shader_vertex);
-    glDeleteShader( shader_fragment);
-
-    // Check shader setup went okay
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &shader_link_sucess);
-    if (shader_link_sucess == false)
-    {
-        glGetProgramInfoLog(shader_program, 512, nullptr, shader_info_log);
-        std::cout << "Shader linkage failed, error message: " << shader_info_log << "\n";
-        throw(1);
-    }
-    else
-    {
-        std::cout << "Shader linked to program \n";
-    }
-
-    // Initialize vertex array
-    glGenVertexArrays(10, vao);
-
-    // Bind the vertex array
-    glBindVertexArray(vao[5]);
-
-    // Copy vertecies into vbo
-    glGenBuffers( 10, vbo_actives);
-    vbo = vbo_actives[5];
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mtest_triangle), &mtest_triangle, GL_STATIC_DRAW);
-
-    // Set vertex attributes
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void*>(0));
-
-    // glUnmapBuffer(GL_ARRAY_BUFFER);
-    glEnableVertexAttribArray(0);
-
-    // Disabled VSync for performance
-    enum
-    {
-        vsync_adaptive        = -1,
-        vsync_no              = 0,
-        vsync_double_buffered = 1,
-        vsync_triple_buffered = 2
-    };
-    // GL_EXT_swap_control
-    glXSwapIntervalEXT(rx_display, vx_window, vsync_adaptive);
-
+    vx_window_list.push_back( x_window_tmp );
+    window_id = vx_window_list.size() - 1;
+    return window_id;
 }
 
-FUNCTION fint32 renderer_opengl::create_context()
+fhowdit def::window_destroy( fid target )
 {
+    Window target_window = vx_window_list[ target ];
+    XUnmapWindow( rx_display, target_window );
+    XDestroyWindow( rx_display, target_window );
+    return true;
+}
+
+fhowdit
+FUNCTION def::display_context_destroy( fid target )
+{
+    XUnmapWindow( rx_display, vx_window );
+    XDestroyWindow( rx_display, vx_window );
+    XFree( vx_buffer_config );
+    XCloseDisplay( rx_display );
+    return true;
+}
+
+fid
+FUNCTION def::context_create()
+{
+    using namespace ldynamic;
     GLXContext context_tmp = nullptr;
     fint32 context_id = 0;
 
     // Load GL core profile
     int vglx_context_attribs[] =
         {
-            GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+            GLX_CONTEXT_MAJOR_VERSION_ARB, 1,
             GLX_CONTEXT_MINOR_VERSION_ARB, 0,
             GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
             //GLX_CONTEXT_FLAGS_ARB        , GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
@@ -304,18 +346,10 @@ FUNCTION fint32 renderer_opengl::create_context()
             None
         };
 
-    // Setup X11 Window and OpenGL Context
-    rx_display = XOpenDisplay(nullptr);
-    vx_connection_number = XConnectionNumber(rx_display);
-    vx_connection_string[0] = ':';
-    vx_connection_string[1] = '0' + static_cast<char>( vx_connection_number );
 
-    if (rx_display == nullptr)
-    {
-        std::cout << "Could not open X display" << std::endl;
-        throw(1);
-    }
-    vglx_fbconfigurations = _glXChooseFBConfig(rx_display, DefaultScreen(rx_display), vglx_visual_attributes, &vglx_fb_count);
+    vglx_fbconfigurations = ldynamic::
+    glXChooseFBConfig( rx_display, DefaultScreen(rx_display),
+                      vglx_visual_attributes, &vglx_fb_count );
     vglx_fbselection = vglx_fbconfigurations[0];
     vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
 
@@ -326,22 +360,198 @@ FUNCTION fint32 renderer_opengl::create_context()
     return context_id;
 }
 
-GLXContext renderer_opengl::get_gl_context() const
+fhowdit
+FUNCTION def::context_destroy(fid target)
 {
-    return vglx_context;
+    GLXContext target_context = vglx_context_list[ target ];
+    glXDestroyContext( rx_display, target_context );
+    return true;
 }
 
-bool renderer_opengl::draw_test_triangle(vfloat4 color)
+fhowdit
+FUNCTION def::context_set_current(fid target)
 {
-    glUseProgram(shader_program);
-    glBindVertexArray(vao[5]);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    intern_glDrawArrays(GL_TRIANGLES, 0, 3);
+    GLXContext target_context = vglx_context_list[ target ];
+    glXMakeCurrent( rx_display, vx_window, target_context );
+    return true;
+}
+
+fid
+FUNCTION def::shader_create( fstring_view name, shader_type request_type )
+{
+    using namespace ldynamic;
+    fid out_id = -1;
+    GLint shader_target = 0;
+    char shader_log[512] = {};
+    switch (request_type)
+    {
+        case shader_type::vertex :
+            shader_target = glCreateShader( GL_VERTEX_SHADER ); break;
+        case shader_type::fragment :
+            shader_target = glCreateShader( GL_FRAGMENT_SHADER ); break;
+        case shader_type::geometry :
+            shader_target = glCreateShader( GL_VERTEX_SHADER ); break;
+        default:
+            std::cout << "Shader type not implimented \n";
+            return -1;
+            break;
+    }
+
+    out_id = shader_count;
+    shader_list[ shader_count ] = shader_target;
+    ++shader_count;
+    name.copy( static_cast<char*>( shader_names[ out_id ] ),
+               name.length() );
+
+    return out_id;
+}
+
+fhowdit
+FUNCTION def::shader_load( fid target, fpath shader_file, bool binary )
+{
+    std::cout << "Unimplimnted \n";
+    return false;
+}
+
+fhowdit
+FUNCTION def::shader_compile( fid target, fstring code )
+{
+    using namespace ldynamic;
+    GLuint compile_target = shader_list[ target ];
+    GLint compile_success = false;
+    char compile_log[512] = {};
+    const char*  compile_source_pointer =  code.c_str();
+    GLint compile_source_length = static_cast<GLint>( code.length() );
+
+    glShaderSource( compile_target, 1, &compile_source_pointer, &compile_source_length );
+    glCompileShader( compile_target );
+
+    glGetShaderiv( compile_target , GL_COMPILE_STATUS, &compile_success);
+
+    glGetShaderInfoLog( compile_target, 512, nullptr, compile_log );
+    if (compile_success == false)
+    {
+        std::cout << "Shader compilation failed, error message: " << compile_log << "\n";
+        return false;
+    }
+    return true;
+}
+
+fid
+FUNCTION def::shader_program_create( fstring_view name, std::vector<fid> shaders_attach )
+{
+    using namespace ldynamic;
+    GLuint shader_program = glCreateProgram();
+    fid out_id = shader_program_count;
+    shader_program_list[ out_id ] = shader_program;
+    shader_program_names[ out_id ] = name;
+    ++shader_program_count;
+
+    for (fid x_shader : shaders_attach)
+    {
+        glAttachShader( shader_program, x_shader );
+    }
+    // Not deleting shaders, OpenGL will ignore it until it's detatch anyway
+
+    return out_id;
+}
+
+fhowdit
+FUNCTION def::shader_program_compile( fid target )
+{
+    using namespace ldynamic;
+    GLint shader_program_target = shader_program_list[ target ];
+    GLint out_link_success = false;
+    char shader_info_log[512] = {};
+    glLinkProgram( shader_program_target );
+
+    // Check shader setup went okay
+    glGetProgramiv( shader_program_target, GL_LINK_STATUS, &out_link_success);
+    if (out_link_success == false)
+    {
+        glGetProgramInfoLog( shader_program_target, 512, nullptr, shader_info_log );
+        std::cout << "Shader linkage failed, error message: " << shader_info_log << "\n";
+        return false;
+    }
+    else
+    {
+        std::cout << "Shader linked to program \n";
+    }
+
+    return out_link_success;
+}
+
+fhowdit
+FUNCTION def::shader_program_attach( fid target, fid shader_attached )
+{
+    using namespace ldynamic;
+    GLint shader_program_target = shader_program_list[ target ];
+    GLint shader_attached_target = shader_list[ shader_attached ];
+
+    glAttachShader( shader_program_target, shader_attached_target);
 
     return true;
 }
 
-bool renderer_opengl::draw_test_circle(vfloat4 p_color)
+fhowdit
+FUNCTION def::shader_program_detach( fid target, fid shader_detatch )
+{
+    using namespace ldynamic;
+    GLint shader_program_target = shader_program_list[ target ];
+    GLint shader_detached_target = shader_list[ shader_detatch ];
+
+    glDetachShader( shader_program_target, shader_detached_target);
+    return true;
+}
+
+fhowdit
+FUNCTION def::vertex_buffer_register( fid target,
+                                        unique_ptr<ffloat3> backing_buffer,
+                                        fuint32 buffer_size )
+{
+    using namespace ldynamic;
+    GLuint vertex_buffer_target = mvertex_buffer_names[ target ];
+    vertex_buffer tmp
+    {
+        .data = backing_buffer.get(),
+        .size = buffer_size,
+        .usage_pattern = GL_STATIC_DRAW
+    };
+    mvertex_buffer_list[ vertex_buffer_target ] = tmp;
+
+
+    // Bind the default vertex array
+    glBindVertexArray( mvertex_array_names[0] );
+
+    glBindBuffer( GL_ARRAY_BUFFER, vertex_buffer_target );
+    glBufferData( GL_ARRAY_BUFFER, buffer_size, backing_buffer.get(), GL_STATIC_DRAW );
+
+    // Set vertex attributes
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void*>(0));
+    glEnableVertexAttribArray(0);
+    // Reset buffer to avoid clobbering other buffers
+
+    glBindBuffer( GL_ARRAY_BUFFER, 0);
+    return true;
+}
+
+GLXContext def::get_gl_context() const
+{
+    return vglx_context;
+}
+
+bool def::draw_test_triangle(vfloat4 color)
+{
+    using namespace ldynamic;
+    glUseProgram( shader_program_list[ shader_program_test ] );
+    glBindVertexArray(vao[5]);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    ldynamic::glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    return true;
+}
+
+bool def::draw_test_circle(vfloat4 p_color)
 {
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
@@ -375,7 +585,7 @@ bool renderer_opengl::draw_test_circle(vfloat4 p_color)
 
 }
 
-bool renderer_opengl::draw_test_rectangle(vfloat4 p_color)
+bool def::draw_test_rectangle(vfloat4 p_color)
 {
     GLfloat square_width = 200;
     GLfloat square_height = 200;
@@ -395,12 +605,12 @@ bool renderer_opengl::draw_test_rectangle(vfloat4 p_color)
     return true;
 }
 
-bool renderer_opengl::draw_test_signfield(vfloat4 p_color)
+bool def::draw_test_signfield(vfloat4 p_color)
 {
     // Performance optimization, can be disabled when it runs fast enough
     if (buffer_damage_size <= 0)
     {
-        // return false;
+        return false;
     }
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
@@ -428,11 +638,19 @@ bool renderer_opengl::draw_test_signfield(vfloat4 p_color)
     }
     buffer_damage_size = 1920*1080;
 
+    // Interferes with fragment shader
+    if (progress_x < 1920) progress_x += 5;
+    else progress_x = 1920;
+    if (progress_y < 1080) ++progress_y += 5;
+    else progress_y = 1080;
+
+    glDrawPixels(1920, progress_y, GL_RGBA, GL_FLOAT, mbuffer.get());
+
     return true;
 
 }
 
-bool renderer_opengl::refresh()
+bool def::refresh()
 {
     ZoneScopedN("graphics refresh");
 
@@ -468,18 +686,14 @@ bool renderer_opengl::refresh()
         glClearColor( 1.f, 0.5, 1.f, 1.f );
         glClear( GL_COLOR_BUFFER_BIT );
 
+        /* glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); */
+        /* glPolygonMode(GL_FRONT_AND_BACK, GL_POINT); */
         // render.draw_test_rectangle(render.mrectangle_color);
         // render.draw_test_circle(render.mcircle_color);
-        draw_test_signfield(msignfield_color);
-        // draw_test_triangle(mtriangle_color);
+        draw_test_triangle(mtriangle_color);
+        /* glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); */
+        // draw_test_signfield(msignfield_color);
 
-        // Interferes with fragment shader
-        if (progress_x < 1920) progress_x += 5;
-        else progress_x = 1920;
-        if (progress_y < 1080) ++progress_y += 5;
-        else progress_y = 1080;
-
-        glDrawPixels(1920, progress_y, GL_RGBA, GL_FLOAT, mbuffer.get());
         glXSwapBuffers ( rx_display, vx_window );
 
         buffer_damage_size = 0;
@@ -488,14 +702,9 @@ bool renderer_opengl::refresh()
     return true;
 }
 
-DESTRUCTOR renderer_opengl::~renderer_opengl()
+DESTRUCTOR def::~renderer_opengl()
 {
-// Cleanup
+    // Cleanup
     std::cout << "Renderer Cleanup" << std::endl;
-
-    XUnmapWindow( rx_display, vx_window );
-    XDestroyWindow( rx_display, vx_window );
-    XFree( vx_buffer_config );
-    glXDestroyContext( rx_display, vglx_context );
-    XCloseDisplay( rx_display );
+    this->deinitialize();
 }

@@ -5,20 +5,6 @@
 
 #include <cstdint>
 
-typedef int8_t   fint8;
-typedef int16_t fint16;
-typedef int32_t fint32;
-typedef int64_t fint64;
-
-typedef uint8_t   fuint8;
-typedef uint16_t fuint16;
-typedef uint32_t fuint32;
-typedef uint64_t fuint64;
-
-// Fixed width floats only supported
-typedef float ffloat;
-typedef double fdouble;
-
 // Gurantee vectors are packed tightly because of OpenGL functions
 #pragma pack(push, 1)
 template <typename t_calculable>
@@ -146,7 +132,7 @@ public:
 private:
 };
 #pragma pack(pop)
-
+// TO BE DELETED
 typedef vector3<ffloat> vfloat3;
 typedef vector3<fint32> vint3;
 typedef vector3<fint64> vlong3;
@@ -154,3 +140,11 @@ typedef vector3<fint64> vlong3;
 typedef vector4<ffloat> vfloat4;
 typedef vector4<fint32> vint4;
 typedef vector4<fint64> vlong4;
+//
+typedef vector3<ffloat> ffloat3;
+typedef vector3<fint32> fint3;
+typedef vector3<fint64> flong3;
+
+typedef vector4<ffloat> ffloat4;
+typedef vector4<fint32> fint4;
+typedef vector4<fint64> flong4;

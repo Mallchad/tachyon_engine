@@ -8,26 +8,35 @@ require( "arg" )
 gmodule_name = "Build Script"
 log_verbose = true
 
---[[ -Werror-no-return-type
+--[[
+   -Werror-no-return-type
    If there is no return value it can crash on some platforms, it should be an error
+   -Werror=inconsistent-missing-override
+   This is a a program-crippling bug if you call the wrong virtual/overriden function, never let it go unnoticed
+   -fmodules-ts
+   Enable C++20 moduels
 ]]--
-local build_universal_warnings: string = "-Wpedantic -Wall -Wno-unused-value -Wno-padded -Werror=return-type "
-local build_universal_arguments: string = build_universal_warnings.."-std=c++20 -fuse-ld=mold -I../tracy -lX11 -lGL source/*.cpp -ldl -Iexternal/include -Isource "
+local build_universal_warnings: string = "-Wpedantic -Wall -Wno-unused-value -Wno-padded -Werror=return-type -Werror=inconsistent-missing-override -Wno-c++98-compat -Wno-c++98-compat-pedantic "
+local build_universal_arguments: string = build_universal_warnings.."-std=c++20 -fuse-ld=mold -I../tracy -lX11 -lGL source/*.cpp -ldl -Iexternal/include -Isource -fmodules-ts "
 
-local build_command: string = "clang++ -g -O0 " ..build_universal_arguments
-local build_command_shipping_test: string = "clang++ -g -O2 -march=x86-64 -Weverything -Wno-c++98-compat -Wno-implicit-int-float-conversion -Wno-sign-conversion " ..build_universal_arguments
+local build_command: string = "clang++ -g " ..build_universal_arguments
+local build_command_shipping_test: string = "clang++ -g -O2 -march=x86-64 -Weverything -Wno-implicit-int-float-conversion -Wno-sign-conversion " ..build_universal_arguments
 local tracy_arguments: string = "build/TracyClient.o -DTRACY_ENABLE -lpthread -ldl "  -- Tracy
 
-local build_debug_extras: string = ""
+--[[
+   -Wno-unused-variable/-Wno-unused-private-field
+   Whilst this is a very useful warning it doesn't actually effect the program behaviour much,
+   and would be best kept to actual testing and refactoring times, particularly before shipping
+   -Wno-abstract-final-class
+   Noisy, uneeded
+]]--
+local build_debug_extras: string = "-O0 -g -DDEBUG_INTERFACE -Wno-unused-variable -Wno-unused-private-field -Wno-abstract-final-class "
 
 local build_extras: string = ""
 if arg[1] == "tracy" or arg[2] == "tracy" then
    log( "Enabled tracy profiler, linking client to build" )
    build_extras = tracy_arguments .. build_extras
 end
-
--- random things may need in future
--- -lGL -lGLX -lGLX_nvidia -lGLEW -lglfw
 
    local success: boolean;
    local err: string;
@@ -58,6 +67,6 @@ end
 
 log( "Running command: \n ".. build_command_string )
 log("-------------------------------------------------------------------------------------\n")
-success, err, code = safe_execute( build_command_shipping_test .. build_extras )
+success, err, code = safe_execute( build_command_string )
 
 os.exit(code)

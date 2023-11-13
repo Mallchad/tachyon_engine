@@ -1,6 +1,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <string>
+
 /**
    These are a collection of macros that provide code search hints, build system
    hints, and stub helper macros like stubs.
@@ -25,7 +28,7 @@
 #define FORWARD_CLASS class
 #define FORWARD_STRUCT struct
 // States a function should be pure
-#define PURE
+#define PURE  = 0
 #define PURE_FUNCTION
 // States a class is intended to be inheritable
 #define BASE
@@ -84,3 +87,27 @@
 // Empty macros, can pad declarations for tools
 #define NODECLARE
 #define NODEC
+
+// -- Redirectable typedefs --
+typedef int8_t   fint8;
+typedef int16_t fint16;
+typedef int32_t fint32;
+typedef int64_t fint64;
+
+typedef uint8_t   fuint8;
+typedef uint16_t fuint16;
+typedef uint32_t fuint32;
+typedef uint64_t fuint64;
+
+// Fixed width floats only supported
+typedef float ffloat;
+typedef double fdouble;
+
+// String types
+typedef std::string fstring;
+typedef std::string_view fstring_view;
+typedef const char* cstring;
+typedef const char* fpath;
+
+/// Object for handling locating ID's to references of objects
+typedef fint32 fid;
