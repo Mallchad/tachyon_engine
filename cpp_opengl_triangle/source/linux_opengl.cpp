@@ -25,7 +25,7 @@ typedef renderer_opengl def;
 
 // Try to temrinate gracefully after attempt to kill X window
 static void
-sigterm_handler(int sig)
+FUNCTION sigterm_handler(int sig)
 {
     (void)(sig);
     global_database* tmp = {};
@@ -34,8 +34,7 @@ sigterm_handler(int sig)
     std::cout << "caught a signal\n" << std::flush;
     std::signal(SIGINT, sigterm_handler);
 }
-CONSTRUCTOR
-def::renderer_opengl()
+CONSTRUCTOR def::renderer_opengl()
 {
     this->initialize();
 }
@@ -553,17 +552,20 @@ GLXContext def::get_gl_context() const
     return vglx_context;
 }
 
-bool def::draw_test_triangle(vfloat4 color)
+bool
+FUNCTION def::draw_test_triangle(vfloat4 color)
 {
     using namespace ldynamic;
     glUseProgram( shader_program_list[ shader_program_test ] );
     glBindVertexArray(vao[5]);
     ldynamic::glDrawArrays(GL_TRIANGLES, 0, 3);
 
+    glBindVertexArray(0);
     return true;
 }
 
-bool def::draw_test_circle(vfloat4 p_color)
+bool
+FUNCTION def::draw_test_circle(vfloat4 p_color)
 {
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
@@ -597,7 +599,8 @@ bool def::draw_test_circle(vfloat4 p_color)
 
 }
 
-bool def::draw_test_rectangle(vfloat4 p_color)
+bool
+FUNCTION def::draw_test_rectangle(vfloat4 p_color)
 {
     GLfloat square_width = 200;
     GLfloat square_height = 200;
@@ -617,7 +620,8 @@ bool def::draw_test_rectangle(vfloat4 p_color)
     return true;
 }
 
-bool def::draw_test_signfield(vfloat4 p_color)
+bool
+FUNCTION def::draw_test_signfield(vfloat4 p_color)
 {
     // Performance optimization, can be disabled when it runs fast enough
     if (buffer_damage_size <= 0)
@@ -662,7 +666,8 @@ bool def::draw_test_signfield(vfloat4 p_color)
 
 }
 
-bool def::refresh()
+bool
+FUNCTION def::refresh()
 {
     ZoneScopedN("graphics refresh");
 
