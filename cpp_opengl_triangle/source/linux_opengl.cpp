@@ -145,8 +145,9 @@ FUNCTION def::initialize()
     shader_compile( shader_fragment_test, shader_fragment_source );
     shader_compile( shader_vertex_test, shader_vertex_source );
 
-    shader_program_test = shader_program_create( "shader_primitive_test",
-                                                 { shader_fragment_test, shader_vertex_test } );
+    shader_program_test = shader_program_create( "shader_primitive_test" );
+    shader_program_attach( shader_program_test, shader_vertex_test );
+    shader_program_attach( shader_program_test, shader_fragment_test );
     shader_program_compile( shader_program_test );
 
     // Initialize vertex array
@@ -158,14 +159,27 @@ FUNCTION def::initialize()
     // Copy vertecies into vbo
     ldynamic::glGenBuffers( 10, vbo_actives);
     vbo = vbo_actives[5];
-    ldynamic::glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    ldynamic::glBufferData(GL_ARRAY_BUFFER, sizeof(mtest_triangle), &mtest_triangle, GL_STATIC_DRAW);
+    GLint test_color = vbo_actives[6];
 
     // Set vertex attributes
-    ldynamic::glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void*>(0));
+    // Setup vertex coordiantes
+    ldynamic::glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    ldynamic::glBufferData(GL_ARRAY_BUFFER, sizeof(mtest_triangle),
+                           &mtest_triangle, GL_STATIC_DRAW);
 
-    // glUnmapBuffer(GL_ARRAY_BUFFER);
+
+    ldynamic::glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+                                    3 * sizeof(float), reinterpret_cast<void*>(0));
+
+    // Setup vertex colors
+    ldynamic::glBindBuffer( GL_ARRAY_BUFFER, test_color );
+    ldynamic::glBufferData( GL_ARRAY_BUFFER, sizeof(mtest_triangle_colors),
+                           &mtest_triangle_colors, GL_STATIC_DRAW );
+    ldynamic::glVertexAttribPointer( 1, 4, GL_FLOAT, GL_FALSE,
+                                    4 * sizeof(float), reinterpret_cast<void*>(0) );
+
     ldynamic::glEnableVertexAttribArray(0);
+    ldynamic::glEnableVertexAttribArray(1);
 
     // Disabled VSync for performance
     enum
@@ -253,12 +267,11 @@ FUNCTION def::window_create()
     wm_state_above = XInternAtom( rx_display, "_NET_WM_STATE_ABOVE", true );
     wm_allowed_actions = XInternAtom( rx_display, "_NET_WM_ALLOWED_ACTIONS", true );
 
-    Atom wm_state_new[4] =
+    Atom wm_state_new[3] =
     {
         wm_state_fullscreen,
         wm_state_maximized_horz,
         wm_state_maximized_vert,
-        wm_state_above
     };
     if (wm_state != 0 && wm_state_fullscreen != 0 && wm_state_maximized_horz!= 0 &&
         wm_state_maximized_vert != 0 && wm_state_above != 0)
@@ -267,7 +280,7 @@ FUNCTION def::window_create()
                         wm_state, XA_ATOM, 32,
                         PropModeReplace,
                         reinterpret_cast<unsigned char*>( &wm_state_new ),
-                        4);
+                        3);
     }
 
     // Set the window name
@@ -424,7 +437,7 @@ FUNCTION def::shader_compile( fid target, fstring code )
     GLint compile_source_length = static_cast<GLint>( code.length() );
 
     glShaderSource( compile_target, 1, &compile_source_pointer, &compile_source_length );
-    glCompileShader( compile_target );
+    ldynamic::glCompileShader( compile_target );
 
     glGetShaderiv( compile_target , GL_COMPILE_STATUS, &compile_success);
 
@@ -545,7 +558,6 @@ bool def::draw_test_triangle(vfloat4 color)
     using namespace ldynamic;
     glUseProgram( shader_program_list[ shader_program_test ] );
     glBindVertexArray(vao[5]);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
     ldynamic::glDrawArrays(GL_TRIANGLES, 0, 3);
 
     return true;
@@ -686,12 +698,12 @@ bool def::refresh()
         glClearColor( 1.f, 0.5, 1.f, 1.f );
         glClear( GL_COLOR_BUFFER_BIT );
 
-        /* glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); */
-        /* glPolygonMode(GL_FRONT_AND_BACK, GL_POINT); */
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
         // render.draw_test_rectangle(render.mrectangle_color);
         // render.draw_test_circle(render.mcircle_color);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         draw_test_triangle(mtriangle_color);
-        /* glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); */
         // draw_test_signfield(msignfield_color);
 
         glXSwapBuffers ( rx_display, vx_window );

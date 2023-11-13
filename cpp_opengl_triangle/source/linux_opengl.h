@@ -95,22 +95,27 @@ class renderer_opengl final INTERFACE_RENDERER
     array<vertex_buffer, 1000>  mvertex_buffer_list;
 
     // Shaders
-    fstring shader_fragment_source = "#version 330 core \n              \
+    fstring shader_fragment_source = "#version 410 core \n              \
+        smooth in vec4 vertex_color;                                    \
         out vec4 frag_color; \n                                         \
         void main() \n                                                  \
         { \n                                                            \
-            vec4 fc = gl_FragCoord; \n                               \
-            \
-            float mult_x = 1/ 1920.f * fc.x; \n                      \
-            float mult_y = 1/ 1080.f * fc.y; \n                      \
+            vec4 fc = gl_FragCoord; \n                                  \
+                                                                        \
+            float mult_x = 1/ 1920.f * fc.x; \n                         \
+            float mult_y = 1/ 1080.f * fc.y; \n                         \
             frag_color = vec4( .8 * mult_x, .7 * mult_y, 1.f * mult_x * mult_y, 1.f ); \n \
+            frag_color = vertex_color;                                  \
         }\0"s;
-    fstring shader_vertex_source = "#version 330 core \n"
-        "layout (location = 0) in vec3 pix; \n"
-        "void main() \n"
-        "{ \n"
-        "    gl_Position = vec4(pix.x, pix.y, pix.z, 1.f); \n"
-        "}\0"s;
+    fstring shader_vertex_source = "#version 410 core \n                \
+     layout (location = 0) in vec3 vert; \n                             \
+    layout (location = 1) in vec4 col; \n                               \
+    out vec4 vertex_color;                                              \
+    void main() \n                                                      \
+    { \n                                                                \
+        gl_Position = vec4(vert.x, vert.y, vert.z, 1.f); \n             \
+                                                         vertex_color = col; \
+    }\0"s;                                                              \
 
     static constexpr fint32 shader_limit = 1000;
     array<GLuint, shader_limit> shader_list;
@@ -132,6 +137,12 @@ class renderer_opengl final INTERFACE_RENDERER
         -0.5f, -0.5f, 0.0f,
         0.5f, -0.5f, 0.0f,
         0.0f,  0.5f, 0.0f
+    };
+    float mtest_triangle_colors[12] =
+    {
+        1.f, .0f, .0f, 0.f,
+        .0f, 1.f, .0f, 0.f,
+        .0f, .0f, 1.f, 0.f
     };
 
     int progress_x = 0;
@@ -187,7 +198,7 @@ public:
     FUNCTION shader_compile( fid target, fstring code ) INTERFACE;
 
     fid
-    FUNCTION shader_program_create( fstring_view name, std::vector<fid> shaders_attach ) INTERFACE;
+    FUNCTION shader_program_create( fstring_view name, std::vector<fid> shaders_attach = {} ) INTERFACE;
 
     fhowdit
     FUNCTION shader_program_compile( fid target ) INTERFACE;
