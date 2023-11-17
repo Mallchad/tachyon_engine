@@ -2,7 +2,12 @@
 #pragma once
 
 #include <cstdint>
+#include <cstddef>
+// Non-Trivial Containers
 #include <string>
+#include <string_view>
+#include <vector>
+
 
 /**
    These are a collection of macros that provide code search hints, build system
@@ -88,6 +93,11 @@
 #define NODECLARE
 #define NODEC
 
+// Confusing Static Usage
+#define INTERNAL static
+#define GLOBAL static
+
+
 // -- Redirectable typedefs --
 typedef int8_t   fint8;
 typedef int16_t fint16;
@@ -111,3 +121,6 @@ typedef const char* fpath;
 
 /// Object for handling locating ID's to references of objects
 typedef fint32 fid;
+
+typedef std::byte fbyte;
+typedef std::vector<fbyte> byte_buffer;

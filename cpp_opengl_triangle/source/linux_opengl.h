@@ -20,7 +20,12 @@ using std::make_unique;
 using std::array;
 using namespace std::string_literals;
 
+typedef vector3<GLfloat> coord3;
+typedef vector4<GLfloat> srgba;
+typedef vector4<GLfloat> rgba;
+
 typedef void (APIENTRYP PFNGLDRAWARRAYSPROC)(GLenum mode, GLint first, GLsizei count);
+
 
 /** This is the Linux GL X version of the renderer
   *
@@ -33,6 +38,34 @@ typedef void (APIENTRYP PFNGLDRAWARRAYSPROC)(GLenum mode, GLint first, GLsizei c
 class renderer_opengl final INTERFACE_RENDERER
 {
     // Forward Declarations
+    struct mesh_metadata
+    {
+        /// Identifying label for the mesh
+        fstring_view name = "UNLABELLED_mesh";
+
+        /// Backend handle for managing this object
+        fid reference_id = -1;
+
+        /// Backhend handle for managing a vertex array that stores attributes
+        // describing how buffers associated with vertecies but not necessarily
+        // actual vertex data is laid out
+        fid vertex_attribute_id = -1;
+
+        /// Backend handle for managing a vertex list and GL arary object
+        fid vertex_buffer_id = -1;
+
+        /// Backend handle for managing a index list and GL array object
+        fid vertex_index_buffer_id = -1;
+
+        /// Backend handle for managing a vertex color list and GL array object
+        fid vertex_color_buffer_id = -1;
+
+        /// OpenGL specific access and write pattern, use GL_STATIC_DRAW if unsure
+        GLenum usage_pattern = GL_STATIC_DRAW;
+
+    };
+    typedef mesh_metadata fmesh_metadata;
+
     /// Helper class to store the properties of individual vertex_buffers
     struct vertex_buffer
     {
@@ -81,21 +114,27 @@ class renderer_opengl final INTERFACE_RENDERER
     GLXFBConfig vglx_fbselection = nullptr;
     const char* vglx_extensions_string = nullptr;
     int vglx_fb_count = -1;
-    int vglx_major = -1;
-    int bglx_minor = -1;
 
-    // OpenGL Only
-    unsigned int vbo_actives[10] = {};
-    unsigned int vbo = 0;
-    unsigned int vao[10] = {};
+    // Minimum version required for function
+    int vglx_major = 3;
+    int vglx_minor = 0;
 
-    array<GLuint, 1000> mvertex_array_names;
-    array<GLuint, 1000> mvertex_buffer_names;
+    static constexpr fuint32 mbuffer_limit = 1000;
+    static constexpr fuint32 mattribute_limit = 1000;
+    static constexpr fuint32 mmesh_limit = 1000;
 
-    array<vertex_buffer, 1000>  mvertex_buffer_list;
+    array<GLuint, mattribute_limit>      mattribute_names;
+    array<GLuint, mbuffer_limit>                mbuffer_names;
+    array<vertex_buffer, mbuffer_limit>         mbuffer_list;
+    array<fmesh, mmesh_limit>                   mmesh_list;
+    array<fmesh_metadata, mmesh_limit>          mmesh_metadata_list;
+
+    fint32 mattribute_count = 0;
+    fint32 mbuffer_count = 0;
+    fint32 mmesh_count = 0;
 
     // Shaders
-    fstring shader_fragment_source = "#version 410 core \n              \
+    fstring shader_fragment_source = "#version 330 core \n              \
         smooth in vec4 vertex_color;                                    \
         out vec4 frag_color; \n                                         \
         void main() \n                                                  \
@@ -104,9 +143,9 @@ class renderer_opengl final INTERFACE_RENDERER
                                                                         \
             frag_color = vertex_color;                                  \
         }\0"s;
-    fstring shader_vertex_source = "#version 410 core \n                \
+    fstring shader_vertex_source = "#version 330 core \n                \
      layout (location = 0) in vec3 vert; \n                             \
-    layout (location = 1) in vec4 col; \n                               \
+    layout (location = 2) in vec4 col; \n                               \
     out vec4 vertex_color;                                              \
     void main() \n                                                      \
     { \n                                                                \
@@ -129,7 +168,9 @@ class renderer_opengl final INTERFACE_RENDERER
     fid shader_vertex_test = 0;
 
     ffloat dr = 1080.f/1920.f;  // 1080p clip space transformation
-    unique_ptr<vfloat4[]> mbuffer = make_unique<vfloat4[]>( 1920*1080 );
+    unique_ptr<rgba[]> mbuffer = make_unique<rgba[]>( 1920*1080 );
+
+    fid mtest_triangle_mesh = -1;
     // 0.433 pre-computed magic number for unit triangle
     float mtest_triangle[9] =
     {
@@ -167,7 +208,7 @@ public:
     FUNCTION deinitialize() INTERFACE;
 
     fid
-    FUNCTION display_context_create( ) INTERFACE;
+    FUNCTION display_context_create() INTERFACE;
 
     fhowdit
     FUNCTION display_context_destroy( fid target ) INTERFACE;
@@ -188,7 +229,8 @@ public:
     FUNCTION context_set_current( fid target ) INTERFACE;
 
     /// \type_request The OpenGL shader type to create
-    fid FUNCTION shader_create( fstring_view name, shader_type type_request ) INTERFACE;
+    fid
+    FUNCTION shader_create( fstring_view name, shader_type type_request ) INTERFACE;
 
     fhowdit
     FUNCTION shader_load( fid target, fpath shader_file, bool binary = false ) INTERFACE;
@@ -197,7 +239,8 @@ public:
     FUNCTION shader_compile( fid target, fstring code ) INTERFACE;
 
     fid
-    FUNCTION shader_program_create( fstring_view name, std::vector<fid> shaders_attach = {} ) INTERFACE;
+    FUNCTION shader_program_create( fstring_view name,
+                                    std::vector<fid> shaders_attach = {}) INTERFACE;
 
     fhowdit
     FUNCTION shader_program_compile( fid target ) INTERFACE;
@@ -209,10 +252,15 @@ public:
     FUNCTION shader_program_detach( fid target, fid shader_detached ) INTERFACE;
 
     fhowdit
-    FUNCTION vertex_buffer_register( fid target,
-                                     unique_ptr<ffloat3> backing_buffer,
-                                     fuint32 buffer_size ) INTERFACE;
-    
+    FUNCTION shader_program_run( fid target ) INTERFACE;
+
+    /// Register a mesh object with the backend and copy buffer data
+    fid
+    FUNCTION mesh_create( fmesh target ) INTERFACE;
+
+    fhowdit
+    FUNCTION draw_mesh( fid target, ftransform target_transform, fid target_shader ) INTERFACE;
+
     fhowdit
     FUNCTION draw_test_triangle(vfloat4 p_color) INTERFACE;
 
@@ -232,46 +280,5 @@ public:
 
 private:
 };
-
-/// Linkage Dynamic functions with less compatability than simple functions
-namespace ldynamic
-{
-    static PFNGLXCHOOSEFBCONFIGPROC glXChooseFBConfig;
-    static PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
-    static PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
-    static PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA;
-
-    static PFNGLBINDBUFFERPROC glBindBuffer;
-    static PFNGLGENBUFFERSPROC glGenBuffers;
-    static PFNGLBUFFERDATAPROC glBufferData;
-
-    static PFNGLCREATESHADERPROC glCreateShader;
-/// void glShaderSource( GLuint shader, GLsizei count, const GLchar **string, const GLint *length )
-    static PFNGLSHADERSOURCEPROC glShaderSource;
-    static PFNGLCOMPILESHADERPROC glCompileShader;
-    static PFNGLGETSHADERIVPROC glGetShaderiv;
-    static PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
-    static PFNGLCREATEPROGRAMPROC glCreateProgram;
-    static PFNGLATTACHSHADERPROC glAttachShader;
-    static PFNGLATTACHSHADERPROC glDetachShader;
-    static PFNGLLINKPROGRAMPROC glLinkProgram;
-    static PFNGLGETPROGRAMIVPROC glGetProgramiv;
-    static PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
-    static PFNGLDELETESHADERPROC glDeleteShader;
-
-    static PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
-    static PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
-    static PFNGLENABLEVERTEXARRAYATTRIBPROC glEnableVertexArrayAttrib;
-    static PFNGLUSEPROGRAMPROC glUseProgram;
-    static PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
-    static PFNGLDRAWARRAYSEXTPROC glDrawArraysEXT;
-    static PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
-    static PFNGLMAPBUFFERPROC glMapBuffer;
-    static PFNGLUNMAPBUFFERPROC glUnmapBuffer;
-    static PFNGLDRAWARRAYSPROC glDrawArrays;
-
-    static PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback;
-}
-
 
 INTERFACE_IMPLEMENT_RENDERER(renderer_opengl)

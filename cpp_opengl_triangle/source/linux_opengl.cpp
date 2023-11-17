@@ -14,6 +14,7 @@
 #include <iostream>
 #include <csignal>
 
+#include "code_helpers.h"
 #include "global.h"
 
 #include "include_tracy.h"
@@ -22,6 +23,47 @@ using namespace std::chrono_literals;
 using namespace std::string_literals;
 
 typedef renderer_opengl def;
+
+/// Linkage Dynamic functions with less compatability than simple functions
+namespace ldynamic
+{
+    INTERNAL PFNGLXCHOOSEFBCONFIGPROC glXChooseFBConfig;
+    INTERNAL PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
+    INTERNAL PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
+    INTERNAL PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA;
+
+    INTERNAL PFNGLBINDBUFFERPROC glBindBuffer;
+    INTERNAL PFNGLGENBUFFERSPROC glGenBuffers;
+    INTERNAL PFNGLBUFFERDATAPROC glBufferData;
+
+    INTERNAL PFNGLCREATESHADERPROC glCreateShader;
+/// void glShaderSource( GLuint shader, GLsizei count, const GLchar **string, const GLint *length )
+    INTERNAL PFNGLSHADERSOURCEPROC glShaderSource;
+    INTERNAL PFNGLCOMPILESHADERPROC glCompileShader;
+    INTERNAL PFNGLGETSHADERIVPROC glGetShaderiv;
+    INTERNAL PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+    INTERNAL PFNGLCREATEPROGRAMPROC glCreateProgram;
+    INTERNAL PFNGLATTACHSHADERPROC glAttachShader;
+    INTERNAL PFNGLATTACHSHADERPROC glDetachShader;
+    INTERNAL PFNGLLINKPROGRAMPROC glLinkProgram;
+    INTERNAL PFNGLGETPROGRAMIVPROC glGetProgramiv;
+    INTERNAL PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
+    INTERNAL PFNGLDELETESHADERPROC glDeleteShader;
+    INTERNAL PFNGLISSHADERPROC glIsShader;
+
+    INTERNAL PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
+    INTERNAL PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
+    INTERNAL PFNGLENABLEVERTEXARRAYATTRIBPROC glEnableVertexArrayAttrib;
+    INTERNAL PFNGLUSEPROGRAMPROC glUseProgram;
+    INTERNAL PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
+    INTERNAL PFNGLDRAWARRAYSEXTPROC glDrawArraysEXT;
+    INTERNAL PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
+    INTERNAL PFNGLMAPBUFFERPROC glMapBuffer;
+    INTERNAL PFNGLUNMAPBUFFERPROC glUnmapBuffer;
+    INTERNAL PFNGLDRAWARRAYSPROC glDrawArrays;
+
+    INTERNAL PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback;
+}
 
 // Try to temrinate gracefully after attempt to kill X window
 static void
@@ -88,6 +130,8 @@ FUNCTION def::initialize()
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDetachShader" )));
     ldynamic::glDeleteShader      = reinterpret_cast<PFNGLDELETESHADERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDeleteShader" )));
+    ldynamic::glIsShader          = reinterpret_cast<PFNGLISSHADERPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glIsShader" )));
 
     ldynamic::glLinkProgram       = reinterpret_cast<PFNGLLINKPROGRAMPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glLinkProgram" )));
@@ -123,8 +167,10 @@ FUNCTION def::initialize()
     // During init, enable debug output
     glEnable( GL_DEBUG_OUTPUT );
 
+
     // -- Initialize OpenGL --
     display_context_create();
+    vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
     fid glx_initial = context_create();
     vx_window_id = window_create();
     vx_window = vx_window_list[ vx_window_id ];
@@ -135,9 +181,11 @@ FUNCTION def::initialize()
     vglx_context = vglx_context_list[ vglx_context_id ];
     context_set_current( glx_initial );
 
-    vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
+    // Setup OpenGL Objects
+    ldynamic::glGenVertexArrays( mattribute_limit, mattribute_names.data() );
+    ldynamic::glGenBuffers( mbuffer_limit, mbuffer_names.data() );
 
-    // Setup shaders
+    // Setup test articles
     shader_fragment_test = shader_create( "shader_fragment_test", shader_type::fragment );
     shader_vertex_test = shader_create( "shader_vertex_test", shader_type::vertex );
 
@@ -149,36 +197,16 @@ FUNCTION def::initialize()
     shader_program_attach( shader_program_test, shader_fragment_test );
     shader_program_compile( shader_program_test );
 
-    // Initialize vertex array
-    ldynamic::glGenVertexArrays(10, vao);
-
-    // Bind the vertex array
-    ldynamic::glBindVertexArray(vao[5]);
-
-    // Copy vertecies into vbo
-    ldynamic::glGenBuffers( 10, vbo_actives);
-    vbo = vbo_actives[5];
-    GLint test_color = vbo_actives[6];
-
-    // Set vertex attributes
-    // Setup vertex coordiantes
-    ldynamic::glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    ldynamic::glBufferData(GL_ARRAY_BUFFER, sizeof(mtest_triangle),
-                           &mtest_triangle, GL_STATIC_DRAW);
-
-
-    ldynamic::glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                                    3 * sizeof(float), reinterpret_cast<void*>(0));
-
-    // Setup vertex colors
-    ldynamic::glBindBuffer( GL_ARRAY_BUFFER, test_color );
-    ldynamic::glBufferData( GL_ARRAY_BUFFER, sizeof(mtest_triangle_colors),
-                           &mtest_triangle_colors, GL_STATIC_DRAW );
-    ldynamic::glVertexAttribPointer( 1, 4, GL_FLOAT, GL_FALSE,
-                                    4 * sizeof(float), reinterpret_cast<void*>(0) );
-
-    ldynamic::glEnableVertexAttribArray(0);
-    ldynamic::glEnableVertexAttribArray(1);
+    fmesh test_triangle =
+    {
+        .name = "test_triangle_mesh",
+        .vertex_buffer = reinterpret_cast<ffloat3*>( mtest_triangle ),
+        .vertex_color_buffer = reinterpret_cast<ffloat4*>( mtest_triangle_colors ),
+        .vertex_count = 3,
+        .color_count = 3,
+        .shader_program_id = shader_program_test
+    };
+    mtest_triangle_mesh = mesh_create( test_triangle );
 
     // Disabled VSync for performance
     enum
@@ -197,6 +225,8 @@ FUNCTION def::initialize()
 fhowdit
 FUNCTION def::deinitialize()
 {
+    XFree( vx_buffer_config );
+    XFree( vglx_fbconfigurations );
     for (Window x_xwindow : vx_window_list)
     {
         if (x_xwindow != 0)
@@ -212,6 +242,8 @@ FUNCTION def::deinitialize()
             glXDestroyContext( rx_display, x_glx_context );
         }
     }
+    XCloseDisplay( rx_display );
+
     return true;
 
 }
@@ -300,7 +332,7 @@ FUNCTION def::window_create()
     }
 
     vx_window_list.push_back( x_window_tmp );
-    window_id = vx_window_list.size() - 1;
+    window_id = static_cast<fid>( vx_window_list.size() ) - 1;
     return window_id;
 }
 
@@ -315,6 +347,7 @@ fhowdit def::window_destroy( fid target )
 fhowdit
 FUNCTION def::display_context_destroy( fid target )
 {
+    (void)(target);
     XUnmapWindow( rx_display, vx_window );
     XDestroyWindow( rx_display, vx_window );
     XFree( vx_buffer_config );
@@ -332,8 +365,8 @@ FUNCTION def::context_create()
     // Load GL core profile
     int vglx_context_attribs[] =
         {
-            GLX_CONTEXT_MAJOR_VERSION_ARB, 1,
-            GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+            GLX_CONTEXT_MAJOR_VERSION_ARB, vglx_major,
+            GLX_CONTEXT_MINOR_VERSION_ARB, vglx_minor,
             GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
             //GLX_CONTEXT_FLAGS_ARB        , GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
             None
@@ -359,13 +392,14 @@ FUNCTION def::context_create()
         };
 
 
-    vglx_fbconfigurations = ldynamic::
-    glXChooseFBConfig( rx_display, DefaultScreen(rx_display),
-                      vglx_visual_attributes, &vglx_fb_count );
+    vglx_fbconfigurations =
+        ldynamic::glXChooseFBConfig( rx_display, DefaultScreen(rx_display),
+                                     vglx_visual_attributes, &vglx_fb_count );
     vglx_fbselection = vglx_fbconfigurations[0];
     vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
 
-    context_tmp =  glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
+    // context_tmp = glXCreateContextAttribs(rx_display, vglx_fbselection, GLA_RGBA_TYPE, 0, true);
+    context_tmp = glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
     vglx_context_list.push_back(context_tmp);
 
     context_id = fint32( vglx_context_list.size() - 1 );
@@ -395,6 +429,9 @@ FUNCTION def::shader_create( fstring_view name, shader_type request_type )
     fid out_id = -1;
     GLint shader_target = 0;
     char shader_log[512] = {};
+    fint32 shader_log_size = 0;
+
+    std::cout << "Compiling Shader: " << name << "\n";
     switch (request_type)
     {
         case shader_type::vertex :
@@ -407,6 +444,17 @@ FUNCTION def::shader_create( fstring_view name, shader_type request_type )
             std::cout << "Shader type not implimented \n";
             return -1;
             break;
+    }
+    glGetShaderInfoLog( shader_target, 512, &shader_log_size, shader_log );
+    if (shader_log_size > 0)
+    {
+        std::cout << "Shader Log: " << shader_log << "\n";
+    }
+    
+    if ( ldynamic::glIsShader( shader_target ) == false )
+    {
+        std::cout << "Something went wrong in creating the shader \n";
+        return -1;
     }
 
     out_id = shader_count;
@@ -517,33 +565,100 @@ FUNCTION def::shader_program_detach( fid target, fid shader_detatch )
 }
 
 fhowdit
-FUNCTION def::vertex_buffer_register( fid target,
-                                        unique_ptr<ffloat3> backing_buffer,
-                                        fuint32 buffer_size )
+FUNCTION def::shader_program_run( fid target )
 {
     using namespace ldynamic;
-    GLuint vertex_buffer_target = mvertex_buffer_names[ target ];
-    vertex_buffer tmp
-    {
-        .data = backing_buffer.get(),
-        .size = buffer_size,
-        .usage_pattern = GL_STATIC_DRAW
-    };
-    mvertex_buffer_list[ vertex_buffer_target ] = tmp;
+    GLint program_target = shader_program_list[ target ];
+    glUseProgram( program_target );
 
+    return true;
+}
 
-    // Bind the default vertex array
-    glBindVertexArray( mvertex_array_names[0] );
+fid
+FUNCTION def::mesh_create( fmesh target )
+{
+    using namespace ldynamic;
 
-    glBindBuffer( GL_ARRAY_BUFFER, vertex_buffer_target );
-    glBufferData( GL_ARRAY_BUFFER, buffer_size, backing_buffer.get(), GL_STATIC_DRAW );
+    fmesh_metadata metadata;
+    GLint vertex_buffer;
+    GLint index_buffer;
+    GLint color_buffer;
 
-    // Set vertex attributes
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void*>(0));
+    metadata =
+        {
+            .name                   = target.name,
+            .reference_id           = mmesh_count,
+            .vertex_attribute_id    = mattribute_count,
+            .vertex_buffer_id       = 0+ mbuffer_count,
+            .vertex_index_buffer_id = 1+ mbuffer_count,
+            .vertex_color_buffer_id = 2+ mbuffer_count,
+            .usage_pattern          = GL_STATIC_DRAW
+        };
+    ++mattribute_count;
+    mbuffer_count += 3;
+    ++mmesh_count;
+
+    vertex_buffer = mbuffer_names[ metadata.vertex_buffer_id ];
+    index_buffer = mbuffer_names[ metadata.vertex_index_buffer_id ];
+    color_buffer = mbuffer_names[ metadata.vertex_color_buffer_id ];
+
+    // Register OpenGL buffer and upload the data
+    glBindVertexArray( mattribute_names[ metadata.vertex_attribute_id ] );
+    // Vertecies
+    glBindBuffer( GL_ARRAY_BUFFER, vertex_buffer);
+    glBufferData( GL_ARRAY_BUFFER, target.vertex_count * sizeof(ffloat3),
+                  target.vertex_buffer, GL_STATIC_DRAW );
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+                          sizeof(ffloat3), reinterpret_cast<void*>(0));
     glEnableVertexAttribArray(0);
-    // Reset buffer to avoid clobbering other buffers
+    if (target.index_count > 0)
+    {
+        // Vertex indices
+        glBindBuffer( GL_ARRAY_BUFFER, index_buffer);
+        glBufferData( GL_ARRAY_BUFFER, target.index_count * sizeof(fint32),
+                      target.vertex_index_buffer, GL_STATIC_DRAW );
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE,
+                              sizeof(fuint32), reinterpret_cast<void*>(0));
+        glEnableVertexAttribArray(1);
+    }
+    if (target.color_count > 0)
+    {
+        // Vertex colors
+        glBindBuffer( GL_ARRAY_BUFFER, color_buffer );
+        glBufferData( GL_ARRAY_BUFFER, target.color_count * sizeof(rgba),
+                      target.vertex_color_buffer, GL_STATIC_DRAW );
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
+                              sizeof(rgba), reinterpret_cast<void*>(0));
+        glEnableVertexAttribArray(2);
+    }
 
     glBindBuffer( GL_ARRAY_BUFFER, 0);
+    mmesh_list[ metadata.reference_id ] = target;
+    mmesh_metadata_list[ metadata.reference_id ] = metadata;
+    // Reset buffer to avoid clobbering other buffers
+    glBindVertexArray( 0 );
+
+    return metadata.reference_id;
+}
+
+fhowdit
+FUNCTION def::draw_mesh( fid target, ftransform target_transform, fid target_shader )
+{
+    using namespace ldynamic;
+    fmesh target_mesh = mmesh_list [ target ];
+    fmesh_metadata target_meta = mmesh_metadata_list[ target ];
+    fid shader = target_shader >=  0 ? target_shader : target_mesh.shader_program_id ;
+
+    
+    GLint attributes = mattribute_names[ target_meta.vertex_attribute_id ];
+
+    shader_program_run( shader );
+    glBindVertexArray( attributes );
+    ldynamic::glDrawArrays( GL_TRIANGLES, 0, target_mesh.vertex_count );
+
+    // Unbind to avoid clobbering other procedures
+    glBindVertexArray( 0 );
+
     return true;
 }
 
@@ -555,12 +670,9 @@ GLXContext def::get_gl_context() const
 bool
 FUNCTION def::draw_test_triangle(vfloat4 color)
 {
-    using namespace ldynamic;
-    glUseProgram( shader_program_list[ shader_program_test ] );
-    glBindVertexArray(vao[5]);
-    ldynamic::glDrawArrays(GL_TRIANGLES, 0, 3);
+    ftransform stub_transform = {};
+    draw_mesh( mtest_triangle_mesh, stub_transform, shader_program_test );
 
-    glBindVertexArray(0);
     return true;
 }
 
@@ -686,6 +798,10 @@ FUNCTION def::refresh()
                 case ClientMessage:
                     // Window Manager requested application exit
                     // This is an oppurtunity to ignore it and just close the window if needed
+                    // The user may be provided with a conformation disalogue and choose
+                    // to not exit the applicaiton, ths should be respected.
+                    // If we choose not to honour the deletion, we have to restart
+                    // NET_WM_DELETE protocol
                     std::cout << "[XServer] Requested application exit \n";
                     if (static_cast<Atom>( event.xclient.data.l[0] ) == vx_wm_delete_window)
                     {

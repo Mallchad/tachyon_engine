@@ -11,8 +11,6 @@
 #include "error.hpp"
 #include "math.hpp"
 
-using std::unique_ptr;
-
 /** To check for implimented functions place the INTERFACE_DEFINE_FUNCTION macro
  * at the bottom of the .h file. It will not work properly if it is put in a
  * .cpp file, although it will work it will just throw undefined references and
@@ -66,12 +64,28 @@ enum class shader_type
     tesselation_eval
 };
 
+struct mesh
+{
+    fstring_view name;
+    ffloat3* vertex_buffer = nullptr;
+    fuint32* vertex_index_buffer = nullptr;
+    ffloat4* vertex_color_buffer = nullptr;
+    fuint32 vertex_count = 0;
+    fuint32 index_count = 0;
+    fuint32 color_count = 0;
+    fid shader_program_id;
+};
+
+typedef shader_type fshader_type;
+typedef mesh fmesh;
+
+#ifdef DEBUG_INTERFACE
 /// Interface for Platform Specific Renderer Layer
 class i_renderer
 {
-public:
-    CONSTRUCTOR i_renderer() {}
+protected:
 
+public:
     virtual fhowdit
     FUNCTION initialize() PURE;
 
@@ -133,12 +147,14 @@ public:
     virtual fhowdit
     FUNCTION shader_program_detach( fid target, fid shader_detached ) PURE;
 
-
-    /** Attempt to register an existing writable 3 wide float vertex */
     virtual fhowdit
-    FUNCTION vertex_buffer_register( fid target,
-                                     unique_ptr<ffloat3> backing_buffer,
-                                     fuint32 buffer_size ) PURE;
+    FUNCTION shader_program_run( fid target ) PURE;
+
+    virtual fid
+    FUNCTION mesh_create( fmesh mesh ) PURE;
+
+    virtual fhowdit
+    FUNCTION draw_mesh( fid target, ftransform target_transform, fid target_shader ) PURE;
 
     virtual fhowdit
     FUNCTION draw_test_triangle( ffloat4 p_color ) PURE;
@@ -157,8 +173,7 @@ public:
     virtual fhowdit
     FUNCTION refresh() PURE;
 
-
     virtual
     DESTRUCTOR ~i_renderer() {}
 };
-
+#endif
