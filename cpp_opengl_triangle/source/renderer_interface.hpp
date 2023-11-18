@@ -66,7 +66,7 @@ enum class shader_type
 
 struct mesh
 {
-    fstring_view name;
+    fstring name;
     ffloat3* vertex_buffer = nullptr;
     fuint32* vertex_index_buffer = nullptr;
     ffloat4* vertex_color_buffer = nullptr;

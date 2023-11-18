@@ -14,7 +14,7 @@ public:
     t_calculable mx, my, mz = 0;
 
 // Public Interface
-    CONSTRUCTOR vector3() = delete;
+    CONSTRUCTOR vector3() = default;
     CONSTRUCTOR vector3(t_calculable all) :
         mx(all), my(all), mz(all) {}
     CONSTRUCTOR vector3(t_calculable x, t_calculable y, t_calculable z) :

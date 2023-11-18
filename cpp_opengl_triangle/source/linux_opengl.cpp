@@ -17,8 +17,6 @@
 #include "code_helpers.h"
 #include "global.h"
 
-#include "include_tracy.h"
-
 using namespace std::chrono_literals;
 using namespace std::string_literals;
 
@@ -61,6 +59,7 @@ namespace ldynamic
     INTERNAL PFNGLMAPBUFFERPROC glMapBuffer;
     INTERNAL PFNGLUNMAPBUFFERPROC glUnmapBuffer;
     INTERNAL PFNGLDRAWARRAYSPROC glDrawArrays;
+    INTERNAL PFNGLOBJECTLABELPROC glObjectLabel;
 
     INTERNAL PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback;
 }
@@ -161,6 +160,8 @@ FUNCTION def::initialize()
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArrays" )));
     ldynamic::glDrawArraysEXT = reinterpret_cast<PFNGLDRAWARRAYSEXTPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArraysEXT" )));
+    ldynamic::glObjectLabel  = reinterpret_cast<PFNGLOBJECTLABELPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glObjectLabel" )));
     ldynamic::glDebugMessageCallback  = reinterpret_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDebugMessageCallback" )));
 
@@ -199,7 +200,7 @@ FUNCTION def::initialize()
 
     fmesh test_triangle =
     {
-        .name = "test_triangle_mesh",
+        .name = "test_triangle",
         .vertex_buffer = reinterpret_cast<ffloat3*>( mtest_triangle ),
         .vertex_color_buffer = reinterpret_cast<ffloat4*>( mtest_triangle_colors ),
         .vertex_count = 3,
@@ -580,6 +581,7 @@ FUNCTION def::mesh_create( fmesh target )
     using namespace ldynamic;
 
     fmesh_metadata metadata;
+    GLint attributes;
     GLint vertex_buffer;
     GLint index_buffer;
     GLint color_buffer;
@@ -598,12 +600,23 @@ FUNCTION def::mesh_create( fmesh target )
     mbuffer_count += 3;
     ++mmesh_count;
 
+    attributes = mattribute_names[ metadata.vertex_attribute_id ];
     vertex_buffer = mbuffer_names[ metadata.vertex_buffer_id ];
     index_buffer = mbuffer_names[ metadata.vertex_index_buffer_id ];
     color_buffer = mbuffer_names[ metadata.vertex_color_buffer_id ];
 
+    // Set Debug Labels
+    fstring attribute_name = "attributes_" + target.name;
+    fstring vertex_name = "buffer_vertex_"s + target.name;
+    fstring index_name = "buffer_vertex_index_"s + target.name;
+    fstring color_name = "buffer_vertex_color_"s + target.name;
+    glObjectLabel( GL_VERTEX_ARRAY, attributes, attribute_name.size(), attribute_name.c_str() );
+    glObjectLabel( GL_BUFFER, vertex_buffer, vertex_name.size(), vertex_name.c_str() );
+    glObjectLabel( GL_BUFFER, index_buffer, index_name.size(), index_name.c_str() );
+    glObjectLabel( GL_BUFFER, color_buffer, color_name.size(), color_name.c_str() );
+
     // Register OpenGL buffer and upload the data
-    glBindVertexArray( mattribute_names[ metadata.vertex_attribute_id ] );
+    glBindVertexArray( attributes );
     // Vertecies
     glBindBuffer( GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData( GL_ARRAY_BUFFER, target.vertex_count * sizeof(ffloat3),
@@ -632,10 +645,10 @@ FUNCTION def::mesh_create( fmesh target )
         glEnableVertexAttribArray(2);
     }
 
-    glBindBuffer( GL_ARRAY_BUFFER, 0);
     mmesh_list[ metadata.reference_id ] = target;
     mmesh_metadata_list[ metadata.reference_id ] = metadata;
-    // Reset buffer to avoid clobbering other buffers
+    // Reset to avoid clobbering other buffers
+    glBindBuffer( GL_ARRAY_BUFFER, 0);
     glBindVertexArray( 0 );
 
     return metadata.reference_id;
@@ -645,11 +658,14 @@ fhowdit
 FUNCTION def::draw_mesh( fid target, ftransform target_transform, fid target_shader )
 {
     using namespace ldynamic;
+    if (target < 0)
+    {
+        std::cout << "Something went went, draw_mesh was passed an invalid target";
+    }
     fmesh target_mesh = mmesh_list [ target ];
     fmesh_metadata target_meta = mmesh_metadata_list[ target ];
     fid shader = target_shader >=  0 ? target_shader : target_mesh.shader_program_id ;
 
-    
     GLint attributes = mattribute_names[ target_meta.vertex_attribute_id ];
 
     shader_program_run( shader );
@@ -778,63 +794,65 @@ FUNCTION def::draw_test_signfield(vfloat4 p_color)
 
 }
 
+freport
+FUNCTION def::frame_start()
+{
+    // XEvent processing
+    unsigned int vx_pending_events = 0;
+    vx_pending_events = XPending(rx_display);
+    for (unsigned int i_events = 0; i_events < vx_pending_events; ++i_events)
+    {
+        // Get the next event.
+        XEvent event;
+        XNextEvent(rx_display, &event);
+        switch (event.type)
+        {
+            case ClientMessage:
+                // Window Manager requested application exit
+                // This is an oppurtunity to ignore it and just close the window if needed
+                // The user may be provided with a conformation disalogue and choose
+                // to not exit the applicaiton, ths should be respected.
+                // If we choose not to honour the deletion, we have to restart
+                // NET_WM_DELETE protocol
+                std::cout << "[XServer] Requested application exit \n";
+                if (static_cast<Atom>( event.xclient.data.l[0] ) == vx_wm_delete_window)
+                {
+                    global->kill_program = true;
+                    return false;
+                }
+                break;
+            case DestroyNotify:
+                // throw(1);
+                break;
+        }
+    }
+
+    // Rendering
+    glClearColor( 1.f, 0.5, 1.f, 1.f );
+    glClear( GL_COLOR_BUFFER_BIT );
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    return true;
+}
+
 bool
 FUNCTION def::refresh()
 {
-    ZoneScopedN("graphics refresh");
 
-    try
-    {
-        // XEvent processing
-        unsigned int vx_pending_events = 0;
-        vx_pending_events = XPending(rx_display);
-        for (unsigned int i_events = 0; i_events < vx_pending_events; ++i_events)
-        {
-            // Get the next event.
-            XEvent event;
-            XNextEvent(rx_display, &event);
-            switch (event.type)
-            {
-                case ClientMessage:
-                    // Window Manager requested application exit
-                    // This is an oppurtunity to ignore it and just close the window if needed
-                    // The user may be provided with a conformation disalogue and choose
-                    // to not exit the applicaiton, ths should be respected.
-                    // If we choose not to honour the deletion, we have to restart
-                    // NET_WM_DELETE protocol
-                    std::cout << "[XServer] Requested application exit \n";
-                    if (static_cast<Atom>( event.xclient.data.l[0] ) == vx_wm_delete_window)
-                    {
-                        global->kill_program = true;
-                        return false;
-                    }
-                    break;
-                case DestroyNotify:
-                    // throw(1);
-                    break;
-            }
-        }
+    // Set the coordinate system for proper clip space conversion
+    glViewport(0, 0, 1920, 1080);
 
-        // Rendering
-        glClearColor( 1.f, 0.5, 1.f, 1.f );
-        glClear( GL_COLOR_BUFFER_BIT );
 
-        // Set the coordinate system for proper clip space conversion
-        glViewport(0, 0, 1920, 1080);
+    // render.draw_test_rectangle(render.mrectangle_color);
+    // render.draw_test_circle(render.mcircle_color);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    draw_test_triangle(mtriangle_color);
+    // draw_test_signfield(msignfield_color);
 
-        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        // glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-        // render.draw_test_rectangle(render.mrectangle_color);
-        // render.draw_test_circle(render.mcircle_color);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        draw_test_triangle(mtriangle_color);
-        // draw_test_signfield(msignfield_color);
+    glXSwapBuffers ( rx_display, vx_window );
 
-        glXSwapBuffers ( rx_display, vx_window );
+    buffer_damage_size = 0;
 
-        buffer_damage_size = 0;
-    }
-    catch (...) { throw(1); }
     return true;
 }
 

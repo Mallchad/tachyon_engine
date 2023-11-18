@@ -117,7 +117,7 @@ class renderer_opengl final INTERFACE_RENDERER
 
     // Minimum version required for function
     int vglx_major = 3;
-    int vglx_minor = 0;
+    int vglx_minor = 3;
 
     static constexpr fuint32 mbuffer_limit = 1000;
     static constexpr fuint32 mattribute_limit = 1000;
@@ -272,6 +272,9 @@ public:
 
     fhowdit
     FUNCTION draw_test_signfield(vfloat4 p_color) INTERFACE;
+
+    freport
+    FUNCTION frame_start();
 
     fhowdit
     FUNCTION refresh() INTERFACE;
