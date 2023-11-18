@@ -148,18 +148,6 @@ struct stl_facet
     fuint16 attribute_width = 0; // Never use, not common STL format
 };
 
-/** STL Format
-    Presumed little endian
-    80 Bytes  - Header
-    4 Bytes   - Number of triangles
-    84th Byte - First triangle
-    12 Bytes  - float3 Triangle Normal
-    12 Bytes  - float3 Vertex 1
-    12 Bytes  - float3 Vertex 2
-    12 Bytes  - float3 Vertex 3
-    2 Bytes   - Unused attribute width
-*/
-
 struct stl_triangle
 {
     float normal_x;
