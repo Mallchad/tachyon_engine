@@ -3,16 +3,24 @@
 #include <cstdio>
 #include <iostream>
 #include <utility>
+#include <filesystem>
 
 #include "math.hpp"
 
 byte_buffer
 FUNCTION intern_file( fpath target )
 {
+    using namespace std::filesystem;
     byte_buffer out;
     FILE* tmp = nullptr;
     fuint32 tmp_filesize = 0;
-    tmp = fopen( target, "r" );
+
+    // Linux only call
+    // Always use the executable parent directory as search reference point
+    path self_directory = canonical( "/proc/self/exe" );
+    self_directory = self_directory.parent_path();
+    self_directory.append( target );
+    tmp = fopen( self_directory.c_str(), "r" );
     if (tmp == nullptr)
     {
         std::cout << "Failed to open file: " << target << "\n";
