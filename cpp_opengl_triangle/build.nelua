@@ -50,7 +50,7 @@ end
    local err: string;
    local code: integer;
    success, err, code = false, "", -1
-local build_command_string = build_command .. build_extras
+local build_command_string = "ccache " .. build_command .. build_extras
 
 local tracy_obj_exists = file_exists("build/TracyClient.o")
 if (tracy_obj_exists ~= true) then

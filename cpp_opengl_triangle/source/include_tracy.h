@@ -1,3 +1,4 @@
+#pragma once
 
 // Don't want to debug other programs unless something is broken, disable warnings
 #pragma clang diagnostic push

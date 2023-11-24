@@ -8,5 +8,6 @@
 // Project Local
 #include "global.h"
 #include "renderer.h"
+#include "input.h"
 
 #include "include_tracy.h"

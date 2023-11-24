@@ -1,5 +1,6 @@
 
 #include "main_include.h"
+#include <iterator>
 
 int main()
 {
@@ -15,10 +16,13 @@ int main()
     // Trick to allow jump to cleanup
     try
     {
-        renderer render;
+        renderer main_renderer;
+        input main_input( main_renderer.platform );
         while ( global.kill_program == false )
         {
-            render.frame_update(0.1f);
+            main_renderer.frame_update( 0.f );
+            main_input.frame_update( 0.f);
+
             FrameMark( "Main Render Thread" );
 
             // DO NOT REMOVE, can lock computer if it runs too fast

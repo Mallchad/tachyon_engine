@@ -4,10 +4,8 @@
 #include <cstdint>
 #include <cstddef>
 // Non-Trivial Containers
-#include <string>
 #include <string_view>
 #include <vector>
-
 
 /**
    These are a collection of macros that provide code search hints, build system
@@ -39,16 +37,12 @@
 #define BASE
 #define BASE_FUNCTION
 // States a constructor declaration or definition
-#define CTOR
 #define CONSTRUCTOR
 // States a destructor declaration or definition
-#define DTOR
 #define DESTRUCTOR
 // States a move constructor declaration or definition
-#define MOVE
 #define MOVE_CONSTRUCTOR
 // States a move constructor declaration or definition
-#define COPY
 #define COPY_CONSTRUCTOR
 
 // States a class or structis being inherited
@@ -97,6 +91,8 @@
 #define INTERNAL static
 #define GLOBAL static
 
+// Forward Declarations
+FORWARD template<typename _CharT, typename _Traits, typename _Alloc> class basic_string;
 
 // -- Redirectable typedefs --
 typedef int8_t   fint8;
@@ -118,9 +114,3 @@ typedef std::string fstring;
 typedef std::string_view fstring_view;
 typedef const char* cstring;
 typedef const char* fpath;
-
-/// Object for handling locating ID's to references of objects
-typedef fint32 fid;
-
-typedef std::byte fbyte;
-typedef std::vector<fbyte> byte_buffer;

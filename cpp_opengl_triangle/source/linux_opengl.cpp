@@ -1,24 +1,30 @@
 #include "renderer_interface.hpp"
 #include "linux_opengl.h"
 
+#include <GL/gl.h>
+#include <GL/glx.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
+// GL Function Prototypes
+#include <GL/glcorearb.h>
 #include <GL/glext.h>
-#include <GL/glx.h>
 #include <GL/glxext.h>
 
 #include <bits/this_thread_sleep.h>
 #include <chrono>
 #include <cmath>
+#include <compare>
 #include <iostream>
 #include <csignal>
+#include <initializer_list>
+#include <vector>
 
-#include "code_helpers.h"
-#include "global.h"
+#include "core.h"
 
 using namespace std::chrono_literals;
 using namespace std::string_literals;
+using std::initializer_list;
 
 typedef renderer_opengl def;
 
@@ -41,6 +47,7 @@ namespace ldynamic
     INTERNAL PFNGLGETSHADERIVPROC glGetShaderiv;
     INTERNAL PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
     INTERNAL PFNGLCREATEPROGRAMPROC glCreateProgram;
+    INTERNAL PFNGLDELETEPROGRAMPROC glDeleteProgram;
     INTERNAL PFNGLATTACHSHADERPROC glAttachShader;
     INTERNAL PFNGLATTACHSHADERPROC glDetachShader;
     INTERNAL PFNGLLINKPROGRAMPROC glLinkProgram;
@@ -59,8 +66,10 @@ namespace ldynamic
     INTERNAL PFNGLMAPBUFFERPROC glMapBuffer;
     INTERNAL PFNGLUNMAPBUFFERPROC glUnmapBuffer;
     INTERNAL PFNGLDRAWARRAYSPROC glDrawArrays;
-    INTERNAL PFNGLOBJECTLABELPROC glObjectLabel;
 
+    INTERNAL PFNGLOBJECTLABELPROC glObjectLabel;
+    INTERNAL PFNGLGETSTRINGPROC glGetString;                                // GL 3.0
+    INTERNAL PFNGLGETSTRINGIPROC glGetStringi;                              // GL 3.0
     INTERNAL PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback;
 }
 
@@ -75,6 +84,20 @@ FUNCTION sigterm_handler(int sig)
     std::cout << "caught a signal\n" << std::flush;
     std::signal(SIGINT, sigterm_handler);
 }
+
+void
+FUNCTION gl_debug_callback( GLenum source,
+                            GLenum type,
+                            GLuint id,
+                            GLenum severity,
+                            GLsizei length,
+                            const GLchar* message,
+                            const void* user_param )
+{
+    std::cout << "[OpenGL Debug] " << std::left << 
+        message << "  Type: " << type << "\n";
+}
+
 CONSTRUCTOR def::renderer_opengl()
 {
     this->initialize();
@@ -123,6 +146,8 @@ FUNCTION def::initialize()
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetShaderInfoLog" )));
     ldynamic::glCreateProgram     = reinterpret_cast<PFNGLCREATEPROGRAMPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateProgram" )));
+    ldynamic::glDeleteProgram     = reinterpret_cast<PFNGLDELETEPROGRAMPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDeleteProgram" )));
     ldynamic::glAttachShader      = reinterpret_cast<PFNGLATTACHSHADERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glAttachShader" )));
     ldynamic::glDetachShader      =  reinterpret_cast<PFNGLATTACHSHADERPROC>(
@@ -160,8 +185,13 @@ FUNCTION def::initialize()
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArrays" )));
     ldynamic::glDrawArraysEXT = reinterpret_cast<PFNGLDRAWARRAYSEXTPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArraysEXT" )));
+
     ldynamic::glObjectLabel  = reinterpret_cast<PFNGLOBJECTLABELPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glObjectLabel" )));
+    ldynamic::glGetString  = reinterpret_cast<PFNGLGETSTRINGPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetString" )));
+    ldynamic::glGetStringi  = reinterpret_cast<PFNGLGETSTRINGIPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetStringi" )));
     ldynamic::glDebugMessageCallback  = reinterpret_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDebugMessageCallback" )));
 
@@ -172,7 +202,7 @@ FUNCTION def::initialize()
     // -- Initialize OpenGL --
     display_context_create();
     vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
-    fid glx_initial = context_create();
+    context_id glx_initial = context_create();
     vx_window_id = window_create();
     vx_window = vx_window_list[ vx_window_id ];
 
@@ -181,6 +211,23 @@ FUNCTION def::initialize()
     // Set primary thread local context
     vglx_context = vglx_context_list[ vglx_context_id ];
     context_set_current( glx_initial );
+
+    // Enable debug output
+    glEnable( GL_DEBUG_OUTPUT );
+    ldynamic::glDebugMessageCallback( gl_debug_callback, 0 );
+
+    glGetIntegerv( GL_NUM_EXTENSIONS, &m_gl_extension_count );
+    std::cout << "OpenGL Implimentation Vendor: " << glGetString( GL_VENDOR ) <<
+        "\nOpenGL Renderer String: " << glGetString( GL_RENDERER ) <<
+        "\nOpenGL Version: " << glGetString( GL_VERSION ) <<
+        "\nOpenGL Shading Language Version: " << glGetString( GL_SHADING_LANGUAGE_VERSION ) <<
+        "\nOpenGL Extensions String: ";
+    for (fint32 i_extension=0; i_extension<m_gl_extension_count; i_extension += 3)
+    {
+        std::cout << ldynamic::glGetStringi( GL_EXTENSIONS, 0+ i_extension ) << " ";
+        if (i_extension % 3) { std::cout << "\n"; };
+    }
+    std::cout << "\nGLX Extensions String: " << vglx_extensions_string << "\n";
 
     // Setup OpenGL Objects
     ldynamic::glGenVertexArrays( mattribute_limit, mattribute_names.data() );
@@ -249,7 +296,7 @@ FUNCTION def::deinitialize()
 
 }
 
-fid
+display_id
 FUNCTION def::display_context_create()
 {
     // Setup X11 Window and OpenGL Context
@@ -266,10 +313,10 @@ FUNCTION def::display_context_create()
     return true;
 }
 
-fid
+window_id
 FUNCTION def::window_create()
 {
-    fid window_id = 0;
+    window_id window_new = 0;
 
     vx_window_attributes.colormap = XCreateColormap( rx_display,
                                                      RootWindow(rx_display,
@@ -319,8 +366,6 @@ FUNCTION def::window_create()
     XStoreName( rx_display, x_window_tmp, "cpp triangle test" );
     XMapWindow( rx_display, x_window_tmp);
 
-    // Start Handling X11 events
-    XSelectInput( rx_display, x_window_tmp, ClientMessage );
     // Instruct window manager to permit self-cleanup
     Atom test_atom = 0;
     test_atom = XInternAtom( rx_display, "WM_DELETE_WINDOW", true );
@@ -333,11 +378,11 @@ FUNCTION def::window_create()
     }
 
     vx_window_list.push_back( x_window_tmp );
-    window_id = static_cast<fid>( vx_window_list.size() ) - 1;
-    return window_id;
+    window_new = static_cast<display_id>( vx_window_list.size() ) - 1;
+    return window_new;
 }
 
-fhowdit def::window_destroy( fid target )
+fhowdit def::window_destroy( window_id target )
 {
     Window target_window = vx_window_list[ target ];
     XUnmapWindow( rx_display, target_window );
@@ -346,7 +391,7 @@ fhowdit def::window_destroy( fid target )
 }
 
 fhowdit
-FUNCTION def::display_context_destroy( fid target )
+FUNCTION def::display_context_destroy( display_id target )
 {
     (void)(target);
     XUnmapWindow( rx_display, vx_window );
@@ -356,7 +401,7 @@ FUNCTION def::display_context_destroy( fid target )
     return true;
 }
 
-fid
+context_id
 FUNCTION def::context_create()
 {
     using namespace ldynamic;
@@ -403,12 +448,14 @@ FUNCTION def::context_create()
     context_tmp = glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
     vglx_context_list.push_back(context_tmp);
 
+    glViewport(0, 0, 1920, 1080);
+
     context_id = fint32( vglx_context_list.size() - 1 );
     return context_id;
 }
 
 fhowdit
-FUNCTION def::context_destroy(fid target)
+FUNCTION def::context_destroy(context_id target)
 {
     GLXContext target_context = vglx_context_list[ target ];
     glXDestroyContext( rx_display, target_context );
@@ -416,31 +463,40 @@ FUNCTION def::context_destroy(fid target)
 }
 
 fhowdit
-FUNCTION def::context_set_current(fid target)
+FUNCTION def::context_set_current(context_id target)
 {
     GLXContext target_context = vglx_context_list[ target ];
     glXMakeCurrent( rx_display, vx_window, target_context );
     return true;
 }
 
-fid
-FUNCTION def::shader_create( fstring_view name, shader_type request_type )
+shader_id
+FUNCTION def::shader_create( fstring name, shader_type request_type )
 {
     using namespace ldynamic;
-    fid out_id = -1;
+    shader_id out_id = -1;
     GLint shader_target = 0;
     char shader_log[512] = {};
     fint32 shader_log_size = 0;
+    fstring shader_debug_name;
 
-    std::cout << "Compiling Shader: " << name << "\n";
+    // Clear errors
+    while (glGetError() != GL_NO_ERROR);
+
     switch (request_type)
     {
         case shader_type::vertex :
-            shader_target = glCreateShader( GL_VERTEX_SHADER ); break;
+            shader_target = glCreateShader( GL_VERTEX_SHADER );
+            shader_debug_name = "vs_"s + name;
+            break;
         case shader_type::fragment :
-            shader_target = glCreateShader( GL_FRAGMENT_SHADER ); break;
+            shader_target = glCreateShader( GL_FRAGMENT_SHADER );
+            shader_debug_name = "fs_"s + name;
+            break;
         case shader_type::geometry :
-            shader_target = glCreateShader( GL_VERTEX_SHADER ); break;
+            shader_target = glCreateShader( GL_VERTEX_SHADER );
+            shader_debug_name = "gs_"s + name;
+            break;
         default:
             std::cout << "Shader type not implimented \n";
             return -1;
@@ -458,24 +514,51 @@ FUNCTION def::shader_create( fstring_view name, shader_type request_type )
         return -1;
     }
 
+    glObjectLabel( GL_SHADER, shader_target, shader_debug_name.size(), shader_debug_name.c_str() );
+    fstring error_message;
+    GLenum error = 0;
+    switch (glGetError())
+    {
+        case GL_NO_ERROR:
+            error_message = "GL_NO_ERROR"; break;
+        case GL_INVALID_ENUM:
+            error_message = "GL_INVALID_ENUM"; break;
+        case GL_INVALID_VALUE:
+            error_message = "GL_INVALID_VALUE"; break;
+        case GL_INVALID_OPERATION:
+            error_message = "GL_INVALID_ENUM"; break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            error_message = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
+    }
+    std::cout << "Shader Creation Error Status: " << error_message << "\n";
+
     out_id = shader_count;
     shader_list[ shader_count ] = shader_target;
     ++shader_count;
-    name.copy( static_cast<char*>( shader_names[ out_id ] ),
-               name.length() );
+
+    shader_debug_name.copy( static_cast<char*>( shader_names[ out_id ] ),
+                            shader_debug_name.length() );
 
     return out_id;
 }
 
 fhowdit
-FUNCTION def::shader_load( fid target, fpath shader_file, bool binary )
+FUNCTION def::shader_program_destroy( shader_program_id target )
+{
+    GLint doomed_program = shader_program_list[ target ];
+    ldynamic::glDeleteProgram( doomed_program );
+    return true;
+}
+
+fhowdit
+FUNCTION def::shader_load( shader_id target, fpath shader_file, bool binary )
 {
     std::cout << "Unimplimnted \n";
     return false;
 }
 
 fhowdit
-FUNCTION def::shader_compile( fid target, fstring code )
+FUNCTION def::shader_compile( shader_id target, fstring code )
 {
     using namespace ldynamic;
     GLuint compile_target = shader_list[ target ];
@@ -490,35 +573,41 @@ FUNCTION def::shader_compile( fid target, fstring code )
     glGetShaderiv( compile_target , GL_COMPILE_STATUS, &compile_success);
 
     glGetShaderInfoLog( compile_target, 512, nullptr, compile_log );
-    if (compile_success == false)
+    if (compile_success == false || code.length() < 10)
     {
-        std::cout << "Shader compilation failed, error message: " << compile_log << "\n";
+        std::cout << "[Renderer] Shader compilation failed, error message: " << compile_log << "\n";
         return false;
+    }
+    else
+    {
+        std::cout << "Compiled Shader[id:" << target << "]: " << shader_names[ target ] << "\n";
     }
     return true;
 }
 
-fid
-FUNCTION def::shader_program_create( fstring_view name, std::vector<fid> shaders_attach )
+shader_program_id
+FUNCTION def::shader_program_create( fstring name, initializer_list<shader_id> shaders_attach )
 {
     using namespace ldynamic;
     GLuint shader_program = glCreateProgram();
-    fid out_id = shader_program_count;
+    shader_program_id out_id = shader_program_count;
     shader_program_list[ out_id ] = shader_program;
     shader_program_names[ out_id ] = name;
     ++shader_program_count;
 
-    for (fid x_shader : shaders_attach)
+    for (shader_id x_shader : shaders_attach)
     {
-        glAttachShader( shader_program, x_shader );
+        glAttachShader( shader_program, shader_list[ x_shader ] );
     }
     // Not deleting shaders, OpenGL will ignore it until it's detatch anyway
+    name = "program_" + name;
+    glObjectLabel( GL_SHADER, shader_program, name.size(), name.c_str() );
 
     return out_id;
 }
 
 fhowdit
-FUNCTION def::shader_program_compile( fid target )
+FUNCTION def::shader_program_compile( shader_program_id target )
 {
     using namespace ldynamic;
     GLint shader_program_target = shader_program_list[ target ];
@@ -531,19 +620,22 @@ FUNCTION def::shader_program_compile( fid target )
     if (out_link_success == false)
     {
         glGetProgramInfoLog( shader_program_target, 512, nullptr, shader_info_log );
-        std::cout << "Shader linkage failed, error message: " << shader_info_log << "\n";
+        std::cout << "Shader program linkage failed, error message[id:" <<
+                  target << "] :" << shader_info_log << "\n";
         return false;
     }
     else
     {
-        std::cout << "Shader linked to program \n";
+        std::cout << "Linked Shader Program[id:" << target << "|gl:" <<
+            shader_program_target << "]: " <<
+            shader_program_names[ target ] << "\n";
     }
 
     return out_link_success;
 }
 
 fhowdit
-FUNCTION def::shader_program_attach( fid target, fid shader_attached )
+FUNCTION def::shader_program_attach( shader_program_id target, shader_id shader_attached )
 {
     using namespace ldynamic;
     GLint shader_program_target = shader_program_list[ target ];
@@ -555,7 +647,7 @@ FUNCTION def::shader_program_attach( fid target, fid shader_attached )
 }
 
 fhowdit
-FUNCTION def::shader_program_detach( fid target, fid shader_detatch )
+FUNCTION def::shader_program_detach( shader_program_id target, shader_id shader_detatch )
 {
     using namespace ldynamic;
     GLint shader_program_target = shader_program_list[ target ];
@@ -566,7 +658,7 @@ FUNCTION def::shader_program_detach( fid target, fid shader_detatch )
 }
 
 fhowdit
-FUNCTION def::shader_program_run( fid target )
+FUNCTION def::shader_program_run( shader_program_id target )
 {
     using namespace ldynamic;
     GLint program_target = shader_program_list[ target ];
@@ -575,7 +667,7 @@ FUNCTION def::shader_program_run( fid target )
     return true;
 }
 
-fid
+mesh_id
 FUNCTION def::mesh_create( fmesh target )
 {
     using namespace ldynamic;
@@ -610,10 +702,6 @@ FUNCTION def::mesh_create( fmesh target )
     fstring vertex_name = "buffer_vertex_"s + target.name;
     fstring index_name = "buffer_vertex_index_"s + target.name;
     fstring color_name = "buffer_vertex_color_"s + target.name;
-    glObjectLabel( GL_VERTEX_ARRAY, attributes, attribute_name.size(), attribute_name.c_str() );
-    glObjectLabel( GL_BUFFER, vertex_buffer, vertex_name.size(), vertex_name.c_str() );
-    glObjectLabel( GL_BUFFER, index_buffer, index_name.size(), index_name.c_str() );
-    glObjectLabel( GL_BUFFER, color_buffer, color_name.size(), color_name.c_str() );
 
     // Register OpenGL buffer and upload the data
     glBindVertexArray( attributes );
@@ -624,6 +712,9 @@ FUNCTION def::mesh_create( fmesh target )
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                           sizeof(ffloat3), reinterpret_cast<void*>(0));
     glEnableVertexAttribArray(0);
+
+    glObjectLabel( GL_VERTEX_ARRAY, attributes, attribute_name.size(), attribute_name.c_str() );
+    glObjectLabel( GL_BUFFER, vertex_buffer, vertex_name.size(), vertex_name.c_str() );
     if (target.index_count > 0)
     {
         // Vertex indices
@@ -633,6 +724,8 @@ FUNCTION def::mesh_create( fmesh target )
         glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE,
                               sizeof(fuint32), reinterpret_cast<void*>(0));
         glEnableVertexAttribArray(1);
+
+        glObjectLabel( GL_BUFFER, index_buffer, index_name.size(), index_name.c_str() );
     }
     if (target.color_count > 0)
     {
@@ -643,6 +736,8 @@ FUNCTION def::mesh_create( fmesh target )
         glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
                               sizeof(rgba), reinterpret_cast<void*>(0));
         glEnableVertexAttribArray(2);
+
+        glObjectLabel( GL_BUFFER, color_buffer, color_name.size(), color_name.c_str() );
     }
 
     mmesh_list[ metadata.reference_id ] = target;
@@ -655,7 +750,7 @@ FUNCTION def::mesh_create( fmesh target )
 }
 
 fhowdit
-FUNCTION def::draw_mesh( fid target, ftransform target_transform, fid target_shader )
+FUNCTION def::draw_mesh( mesh_id target, ftransform target_transform, shader_program_id target_shader )
 {
     using namespace ldynamic;
     if (target < 0)
@@ -664,7 +759,7 @@ FUNCTION def::draw_mesh( fid target, ftransform target_transform, fid target_sha
     }
     fmesh target_mesh = mmesh_list [ target ];
     fmesh_metadata target_meta = mmesh_metadata_list[ target ];
-    fid shader = target_shader >=  0 ? target_shader : target_mesh.shader_program_id ;
+    shader_program_id shader = target_shader;
 
     GLint attributes = mattribute_names[ target_meta.vertex_attribute_id ];
 
@@ -797,38 +892,9 @@ FUNCTION def::draw_test_signfield(vfloat4 p_color)
 freport
 FUNCTION def::frame_start()
 {
-    // XEvent processing
-    unsigned int vx_pending_events = 0;
-    vx_pending_events = XPending(rx_display);
-    for (unsigned int i_events = 0; i_events < vx_pending_events; ++i_events)
-    {
-        // Get the next event.
-        XEvent event;
-        XNextEvent(rx_display, &event);
-        switch (event.type)
-        {
-            case ClientMessage:
-                // Window Manager requested application exit
-                // This is an oppurtunity to ignore it and just close the window if needed
-                // The user may be provided with a conformation disalogue and choose
-                // to not exit the applicaiton, ths should be respected.
-                // If we choose not to honour the deletion, we have to restart
-                // NET_WM_DELETE protocol
-                std::cout << "[XServer] Requested application exit \n";
-                if (static_cast<Atom>( event.xclient.data.l[0] ) == vx_wm_delete_window)
-                {
-                    global->kill_program = true;
-                    return false;
-                }
-                break;
-            case DestroyNotify:
-                // throw(1);
-                break;
-        }
-    }
-
     // Rendering
-    glClearColor( 1.f, 0.5, 1.f, 1.f );
+    // glClearColor( 1.f, 0.5, 1.f, 1.f );
+    glClearColor( 0.f, 0.0f, 0.f, .5f );
     glClear( GL_COLOR_BUFFER_BIT );
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -840,11 +906,14 @@ FUNCTION def::refresh()
 {
 
     // Set the coordinate system for proper clip space conversion
-    glViewport(0, 0, 1920, 1080);
 
     // render.draw_test_rectangle(render.mrectangle_color);
     // render.draw_test_circle(render.mcircle_color);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    // glPolygonMode( GL_BACK, GL_LINE ); // Disabled front or back only disabled in profile
+
     draw_test_triangle(mtriangle_color);
     // draw_test_signfield(msignfield_color);
 
