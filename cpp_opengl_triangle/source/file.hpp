@@ -1,6 +1,8 @@
 #pragma once
 
-#include <code_helpers.h>
+#include "code_helpers.h"
+#include "include_core.h"
+
 #include <cstdio>
 #include <iostream>
 #include <utility>
@@ -20,11 +22,14 @@ FUNCTION intern_file( fpath target )
     // Always use the executable parent directory as search reference point
     path self_directory = canonical( "/proc/self/exe" );
     self_directory = self_directory.parent_path();
-    self_directory.append( target );
-    tmp = fopen( self_directory.c_str(), "r" );
+    
+    // Use search paths instead its more robust, initially just build project root
+    path location = global_database::get_primary()->project_root / path( target );
+    tmp = fopen( location.c_str(), "r" );
     if (tmp == nullptr)
     {
-        std::cout << "Failed to open file: " << target << "\n";
+        std::cout << "Failed to open file: " << location << "\n";
+        std::cout << "Failed to open file: " << global_database::get_primary()->project_root << "\n";
         return out;
     }
     fseek( tmp, 0, SEEK_END );
@@ -35,7 +40,7 @@ FUNCTION intern_file( fpath target )
     out.resize( tmp_filesize );
     fread( out.data(), sizeof(fbyte), out.size(), tmp );
     fclose( tmp );
-    std::cout << "Internalized file at path: " << target << "\n";
+    std::cout << "Internalized file at path: " << location << "\n";
 
     return out;
 }
@@ -81,6 +86,9 @@ FUNCTION read_stl_file( fpath target )
     constexpr fint32 triangle_stride = (sizeof(ffloat) * 12) + sizeof(fuint16);
 
     file = intern_file( target );
+    bool file_read_fail = file.size() <= 0;
+    if ( file_read_fail ) { return out; }
+
     triangle_count = *reinterpret_cast<fint32*>( triangle_count_byte + file.data() );
 
     out.resize( triangle_count * 3 );
@@ -88,12 +96,19 @@ FUNCTION read_stl_file( fpath target )
     ffloat3* x_memory = 0;
     for (int i_triangle=0; i_triangle < triangle_count; ++i_triangle)
     {
+        if ( (2 + i_triangle * 3) > out.size() )
+        {
+            std::cout << "ERRROR buffer overflow whilst reading file \n";
+            out.resize(0);
+            return out;
+        }
         // 96 is an offset to the first vertex data
         x_memory = reinterpret_cast<ffloat3*>( first_vertex_byte + file.data() +
                                                (i_triangle * triangle_stride) );
         out[ 0+ i_triangle *3 ] = *(0+ x_memory);
         out[ 1+ i_triangle *3 ] = *(1+ x_memory);
         out[ 2+ i_triangle *3 ] = *(2+ x_memory);
+
     }
 
     return out;

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "renderer_interface.hpp"
+#include "include_core.h"
 
 #include <X11/Xlib.h>
 #include <GL/glx.h>
@@ -9,7 +10,6 @@
 #include <memory>
 #include <vector>
 #include <array>
-#include <string_view>
 
 #include "global.h"
 #include "error.hpp"
@@ -17,17 +17,16 @@
 using std::unique_ptr;
 using std::make_unique;
 using std::array;
-using namespace std::string_literals;
 
 namespace std
 {
     template<class _t> class initializer_list;
 }
-typedef vector3<GLfloat> coord3;
-typedef vector4<GLfloat> srgba;
-typedef vector4<GLfloat> rgba;
+using coord3 = vector3<GLfloat>;
+using srgba  = vector4<GLfloat>;
+using rgba   = vector4<GLfloat>;
 
-typedef void (APIENTRYP PFNGLDRAWARRAYSPROC)(GLenum mode, GLint first, GLsizei count);
+using PFNGLDRAWARRAYSPROC = void (APIENTRYP)(GLenum mode, GLint first, GLsizei count);
 
 
 /** This is the Linux GL X version of the renderer
@@ -68,7 +67,7 @@ class renderer_opengl final INTERFACE_RENDERER
         GLenum usage_pattern = GL_STATIC_DRAW;
 
     };
-    typedef mesh_metadata fmesh_metadata;
+    using fmesh_metadata = mesh_metadata;
 
     /// Helper class to store the properties of individual vertex_buffers
     struct vertex_buffer
@@ -111,7 +110,7 @@ class renderer_opengl final INTERFACE_RENDERER
     // GL X extensions
     // Priamry Thread Local Context
     GLXContext vglx_context = nullptr;
-    fint32 vglx_context_id = 0;
+    context_id vglx_context_id = 0;
 
     std::vector<GLXContext> vglx_context_list;
     GLXFBConfig* vglx_fbconfigurations = nullptr;
@@ -196,11 +195,11 @@ class renderer_opengl final INTERFACE_RENDERER
     int progress_y = 0;
 
 public:
-    vfloat4 mtriangle_color = { .2f, .9f, .2f, 1.f };
-    vfloat4 mrectangle_color = {.5f, .1f, .5f, 1.f};
-    vfloat4 mcircle_color = { .2f, .9f, .2f, 1.f };
-    vfloat4 msignfield_color = {1.f/255*98.f, 1.f/255*42.f, 1.f/255*125.f, 1.f};
-    vfloat4 gradient_approximation[10000] = {};
+    ffloat4 mtriangle_color = { .2f, .9f, .2f, 1.f };
+    ffloat4 mrectangle_color = {.5f, .1f, .5f, 1.f};
+    ffloat4 mcircle_color = { .2f, .9f, .2f, 1.f };
+    ffloat4 msignfield_color = {1.f/255*98.f, 1.f/255*42.f, 1.f/255*125.f, 1.f};
+    ffloat4 gradient_approximation[10000] = {};
     int buffer_damage_size = 1920*1080;
 
     CONSTRUCTOR renderer_opengl();
@@ -274,16 +273,16 @@ public:
                         shader_program_id target_shader ) INTERFACE;
 
     fhowdit
-    FUNCTION draw_test_triangle(vfloat4 p_color) INTERFACE;
+    FUNCTION draw_test_triangle(ffloat4 p_color) INTERFACE;
 
     fhowdit
-    FUNCTION draw_test_circle(vfloat4 p_color) INTERFACE;
+    FUNCTION draw_test_circle(ffloat4 p_color) INTERFACE;
 
     fhowdit
-    FUNCTION draw_test_rectangle(vfloat4 p_color) INTERFACE;
+    FUNCTION draw_test_rectangle(ffloat4 p_color) INTERFACE;
 
     fhowdit
-    FUNCTION draw_test_signfield(vfloat4 p_color) INTERFACE;
+    FUNCTION draw_test_signfield(ffloat4 p_color) INTERFACE;
 
     freport
     FUNCTION frame_start();

@@ -1,7 +1,7 @@
 
 #include "input.h"
 
-typedef input impl;
+using impl = input;
 
 CONSTRUCTOR impl::input( renderer_backend& render_handle ) :
     platform( render_handle )

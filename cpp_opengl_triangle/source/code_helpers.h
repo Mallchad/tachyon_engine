@@ -1,11 +1,8 @@
 
 #pragma once
 
+// Basic functionality headers
 #include <cstdint>
-#include <cstddef>
-// Non-Trivial Containers
-#include <string_view>
-#include <vector>
 
 /**
    These are a collection of macros that provide code search hints, build system
@@ -44,6 +41,10 @@
 #define MOVE_CONSTRUCTOR
 // States a move constructor declaration or definition
 #define COPY_CONSTRUCTOR
+// States a conversion function, essentially typecasting
+#define CONVERSION
+// Member variable immediately evaluated at compile time
+#define IMMEDIATE static constexpr
 
 // States a class or structis being inherited
 #define INHERIT
@@ -91,26 +92,23 @@
 #define INTERNAL static
 #define GLOBAL static
 
-// Forward Declarations
-FORWARD template<typename _CharT, typename _Traits, typename _Alloc> class basic_string;
-
 // -- Redirectable typedefs --
-typedef int8_t   fint8;
-typedef int16_t fint16;
-typedef int32_t fint32;
-typedef int64_t fint64;
+using fint8   = int8_t;
+using fint16  = int16_t;
+using fint32  = int32_t;
+using fint64  = int64_t;
 
-typedef uint8_t   fuint8;
-typedef uint16_t fuint16;
-typedef uint32_t fuint32;
-typedef uint64_t fuint64;
+using fuint8  = uint8_t;
+using fuint16 = uint16_t;
+using fuint32 = uint32_t;
+using fuint64 = uint64_t;
 
 // Fixed width floats only supported
-typedef float ffloat;
-typedef double fdouble;
+using ffloat  = float;
+using fdouble = double;
 
 // String types
-typedef std::string fstring;
-typedef std::string_view fstring_view;
-typedef const char* cstring;
-typedef const char* fpath;
+// using fstring = std::basic_string<char>;
+// using fstring_view = std::basic_string_view<char>;
+// using cstring = const char*;
+// using fpath = const char*;

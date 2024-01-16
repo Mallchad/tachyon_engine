@@ -5,7 +5,7 @@
 #include <X11/keysym.h>
 #include <iostream>
 
-typedef input_xlib impl;
+using impl = input_xlib;
 
 CONSTRUCTOR impl::input_xlib( renderer_opengl& render_handle )
 {

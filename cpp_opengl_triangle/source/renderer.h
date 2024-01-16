@@ -4,7 +4,7 @@
 #include "linux_opengl.h"
 #include "math.hpp"
 #include "global.h"
-typedef renderer_opengl renderer_backend;
+using renderer_backend = renderer_opengl;
 
 class renderer final
 {

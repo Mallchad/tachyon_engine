@@ -173,21 +173,13 @@ struct stl_triangle
 #pragma pack(pop)
 
 
-// TO BE DELETED
-typedef vector3<ffloat> vfloat3;
-typedef vector3<fint32> vint3;
-typedef vector3<fint64> vlong3;
 
-typedef vector4<ffloat> vfloat4;
-typedef vector4<fint32> vint4;
-typedef vector4<fint64> vlong4;
-//
-typedef vector3<ffloat> ffloat3;
-typedef vector3<fint32> fint3;
-typedef vector3<fint64> flong3;
+using ffloat3 = vector3<ffloat>;
+using fint3   = vector3<fint32>;
+using flong3  = vector3<fint64>;
 
-typedef vector4<ffloat> ffloat4;
-typedef vector4<fint32> fint4;
-typedef vector4<fint64> flong4;
+using ffloat4 = vector4<ffloat>;
+using fint4   = vector4<fint32>;
+using flong4  = vector4<fint64>;
 
-typedef transform ftransform;
+using ftransform = transform;

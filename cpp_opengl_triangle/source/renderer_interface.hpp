@@ -1,10 +1,11 @@
 
 #pragma once
 
+#include "include_core.h"
+
 #include "code_helpers.h"
 #include "error.hpp"
 #include "math.hpp"
-#include "core.h"
 
 // Forward Declarations
 namespace std
@@ -39,17 +40,27 @@ FORWARD struct id;
 // Fall back to primitive error system
 #else
     #define INTERFACE
-#def    ine INTERFACE_RENDERER
+#define INTERFACE_RENDERER
 #endif
 
-typedef internal_id<id_type::display> display_id;
-typedef internal_id<id_type::window> window_id;
-typedef internal_id<id_type::graphics_context> context_id;
-typedef internal_id<id_type::vertex_attribute> attribute_id;
-typedef internal_id<id_type::buffer> buffer_id;
-typedef internal_id<id_type::mesh> mesh_id;
-typedef internal_id<id_type::shader> shader_id;
-typedef internal_id<id_type::shader_program> shader_program_id;
+/// Underlying Display Server Handle, like an X11 'Display' or a GDI Handle
+using display_id        = internal_id<id_type::display>;
+/// Individual Created Window
+using window_id         = internal_id<id_type::window>;
+/// Graphical Context
+using context_id        = internal_id<id_type::graphics_context>;
+/// Underlying Graphics Vertex Attribute, mostly OpenGL specific
+using attribute_id      = internal_id<id_type::vertex_attribute>;
+/// Underlying Graphics API Buffer, backed by internal copy
+using buffer_id         = internal_id<id_type::buffer>;
+/// Internal Mesh Format
+using mesh_id           = internal_id<id_type::mesh>;
+// Single Stage Shader
+using shader_id         = internal_id<id_type::shader>;
+/// Shader Program
+using shader_program_id = internal_id<id_type::shader_program>;
+/// Shader Program
+using program_id        = internal_id<id_type::shader_program>;
 
 enum class shader_type
 {
@@ -75,8 +86,8 @@ struct mesh
     shader_program_id shader_program_id;
 };
 
-typedef shader_type fshader_type;
-typedef mesh fmesh;
+using fshader_type = shader_type;
+using fmesh = mesh;
 
 #ifdef DEBUG_INTERFACE
 /// Interface for Platform Specific Renderer Layer

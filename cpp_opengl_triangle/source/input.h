@@ -4,7 +4,7 @@
 #include "renderer.h"
 #include "error.hpp"
 
-typedef input_xlib input_backend;
+using input_backend = input_xlib;
 
 class input final
 {

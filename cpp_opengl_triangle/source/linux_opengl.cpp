@@ -1,4 +1,7 @@
+
 #include "renderer_interface.hpp"
+#include "include_core.h"
+
 #include "linux_opengl.h"
 
 #include <GL/gl.h>
@@ -18,15 +21,11 @@
 #include <iostream>
 #include <csignal>
 #include <initializer_list>
-#include <vector>
-
-#include "core.h"
 
 using namespace std::chrono_literals;
-using namespace std::string_literals;
 using std::initializer_list;
 
-typedef renderer_opengl def;
+using def = renderer_opengl;
 
 /// Linkage Dynamic functions with less compatability than simple functions
 namespace ldynamic
@@ -55,6 +54,7 @@ namespace ldynamic
     INTERNAL PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
     INTERNAL PFNGLDELETESHADERPROC glDeleteShader;
     INTERNAL PFNGLISSHADERPROC glIsShader;
+    INTERNAL PFNGLISPROGRAMPROC glIsProgram;
 
     INTERNAL PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
     INTERNAL PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
@@ -165,6 +165,8 @@ FUNCTION def::initialize()
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glUseProgram" )));
     ldynamic::glGetProgramInfoLog = reinterpret_cast<PFNGLGETPROGRAMINFOLOGPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetProgramInfoLog" )));
+    ldynamic::glIsProgram          = reinterpret_cast<PFNGLISPROGRAMPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glIsProgram" )));
 
     ldynamic::glVertexAttribPointer=reinterpret_cast<PFNGLVERTEXATTRIBPOINTERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glVertexAttribPointer" )));
@@ -195,25 +197,21 @@ FUNCTION def::initialize()
     ldynamic::glDebugMessageCallback  = reinterpret_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDebugMessageCallback" )));
 
-    // During init, enable debug output
-    glEnable( GL_DEBUG_OUTPUT );
-
-
     // -- Initialize OpenGL --
     display_context_create();
     vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
     context_id glx_initial = context_create();
     vx_window_id = window_create();
-    vx_window = vx_window_list[ vx_window_id ];
+    vx_window = vx_window_list[ vx_window_id.cast() ];
 
     std::cout << "Starting renderer\n" ;
 
     // Set primary thread local context
-    vglx_context = vglx_context_list[ vglx_context_id ];
+    vglx_context = vglx_context_list[ vglx_context_id.cast() ];
     context_set_current( glx_initial );
 
     // Enable debug output
-    glEnable( GL_DEBUG_OUTPUT );
+    // glEnable( GL_DEBUG_OUTPUT );
     ldynamic::glDebugMessageCallback( gl_debug_callback, 0 );
 
     glGetIntegerv( GL_NUM_EXTENSIONS, &m_gl_extension_count );
@@ -265,7 +263,10 @@ FUNCTION def::initialize()
         vsync_triple_buffered = 2
     };
     // GL_EXT_swap_control
-    ldynamic::glXSwapIntervalEXT(rx_display, vx_window, vsync_adaptive);
+    // Can CRASH if extension is not supported
+    // ldynamic::glXSwapIntervalEXT( rx_display, vx_window, vsync_adaptive );
+    // GLX_MESA_swap_control
+    ldynamic::glXSwapIntervalMESA( vsync_adaptive );
 
     return true;
 }
@@ -378,13 +379,13 @@ FUNCTION def::window_create()
     }
 
     vx_window_list.push_back( x_window_tmp );
-    window_new = static_cast<display_id>( vx_window_list.size() ) - 1;
+    window_new = vx_window_list.size() - 1;
     return window_new;
 }
 
 fhowdit def::window_destroy( window_id target )
 {
-    Window target_window = vx_window_list[ target ];
+    Window target_window = vx_window_list[ target.cast() ];
     XUnmapWindow( rx_display, target_window );
     XDestroyWindow( rx_display, target_window );
     return true;
@@ -448,8 +449,6 @@ FUNCTION def::context_create()
     context_tmp = glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
     vglx_context_list.push_back(context_tmp);
 
-    glViewport(0, 0, 1920, 1080);
-
     context_id = fint32( vglx_context_list.size() - 1 );
     return context_id;
 }
@@ -457,7 +456,7 @@ FUNCTION def::context_create()
 fhowdit
 FUNCTION def::context_destroy(context_id target)
 {
-    GLXContext target_context = vglx_context_list[ target ];
+    GLXContext target_context = vglx_context_list[ target.cast() ];
     glXDestroyContext( rx_display, target_context );
     return true;
 }
@@ -465,7 +464,7 @@ FUNCTION def::context_destroy(context_id target)
 fhowdit
 FUNCTION def::context_set_current(context_id target)
 {
-    GLXContext target_context = vglx_context_list[ target ];
+    GLXContext target_context = vglx_context_list[ target.cast() ];
     glXMakeCurrent( rx_display, vx_window, target_context );
     return true;
 }
@@ -536,7 +535,7 @@ FUNCTION def::shader_create( fstring name, shader_type request_type )
     shader_list[ shader_count ] = shader_target;
     ++shader_count;
 
-    shader_debug_name.copy( static_cast<char*>( shader_names[ out_id ] ),
+    shader_debug_name.copy( static_cast<char*>( shader_names[ out_id.cast() ] ),
                             shader_debug_name.length() );
 
     return out_id;
@@ -545,7 +544,7 @@ FUNCTION def::shader_create( fstring name, shader_type request_type )
 fhowdit
 FUNCTION def::shader_program_destroy( shader_program_id target )
 {
-    GLint doomed_program = shader_program_list[ target ];
+    GLint doomed_program = shader_program_list[ target.cast() ];
     ldynamic::glDeleteProgram( doomed_program );
     return true;
 }
@@ -561,7 +560,7 @@ fhowdit
 FUNCTION def::shader_compile( shader_id target, fstring code )
 {
     using namespace ldynamic;
-    GLuint compile_target = shader_list[ target ];
+    GLuint compile_target = shader_list[ target.cast() ];
     GLint compile_success = false;
     char compile_log[512] = {};
     const char*  compile_source_pointer =  code.c_str();
@@ -580,7 +579,8 @@ FUNCTION def::shader_compile( shader_id target, fstring code )
     }
     else
     {
-        std::cout << "Compiled Shader[id:" << target << "]: " << shader_names[ target ] << "\n";
+        std::cout << "Compiled Shader[id:" << target.cast() << "]: " <<
+            shader_names[ target.cast() ] << "\n";
     }
     return true;
 }
@@ -591,13 +591,20 @@ FUNCTION def::shader_program_create( fstring name, initializer_list<shader_id> s
     using namespace ldynamic;
     GLuint shader_program = glCreateProgram();
     shader_program_id out_id = shader_program_count;
-    shader_program_list[ out_id ] = shader_program;
-    shader_program_names[ out_id ] = name;
+    shader_program_list[ out_id.cast() ] = shader_program;
+    shader_program_names[ out_id.cast() ] = name;
     ++shader_program_count;
+
+    if (ldynamic::glIsProgram( shader_program ) == false)
+    {
+        std::cout << "[Renderer] shader_program_create | for some reason created "
+            "OpenGL shader program is not actually a program \n";
+        return -1;
+    }
 
     for (shader_id x_shader : shaders_attach)
     {
-        glAttachShader( shader_program, shader_list[ x_shader ] );
+        glAttachShader( shader_program, shader_list[ x_shader.cast() ] );
     }
     // Not deleting shaders, OpenGL will ignore it until it's detatch anyway
     name = "program_" + name;
@@ -610,7 +617,7 @@ fhowdit
 FUNCTION def::shader_program_compile( shader_program_id target )
 {
     using namespace ldynamic;
-    GLint shader_program_target = shader_program_list[ target ];
+    GLint shader_program_target = shader_program_list[ target.cast<fuint32>() ];
     GLint out_link_success = false;
     char shader_info_log[512] = {};
     glLinkProgram( shader_program_target );
@@ -621,14 +628,14 @@ FUNCTION def::shader_program_compile( shader_program_id target )
     {
         glGetProgramInfoLog( shader_program_target, 512, nullptr, shader_info_log );
         std::cout << "Shader program linkage failed, error message[id:" <<
-                  target << "] :" << shader_info_log << "\n";
+                  target.cast() << "] :" << shader_info_log << "\n";
         return false;
     }
     else
     {
-        std::cout << "Linked Shader Program[id:" << target << "|gl:" <<
+        std::cout << "Linked Shader Program[id:" << target.cast() << "|gl:" <<
             shader_program_target << "]: " <<
-            shader_program_names[ target ] << "\n";
+            shader_program_names[ target.cast() ] << "\n";
     }
 
     return out_link_success;
@@ -638,8 +645,8 @@ fhowdit
 FUNCTION def::shader_program_attach( shader_program_id target, shader_id shader_attached )
 {
     using namespace ldynamic;
-    GLint shader_program_target = shader_program_list[ target ];
-    GLint shader_attached_target = shader_list[ shader_attached ];
+    GLint shader_program_target = shader_program_list[ target.cast() ];
+    GLint shader_attached_target = shader_list[ shader_attached.cast() ];
 
     glAttachShader( shader_program_target, shader_attached_target);
 
@@ -650,8 +657,8 @@ fhowdit
 FUNCTION def::shader_program_detach( shader_program_id target, shader_id shader_detatch )
 {
     using namespace ldynamic;
-    GLint shader_program_target = shader_program_list[ target ];
-    GLint shader_detached_target = shader_list[ shader_detatch ];
+    GLint shader_program_target = shader_program_list[ target.cast() ];
+    GLint shader_detached_target = shader_list[ shader_detatch.cast() ];
 
     glDetachShader( shader_program_target, shader_detached_target);
     return true;
@@ -661,7 +668,7 @@ fhowdit
 FUNCTION def::shader_program_run( shader_program_id target )
 {
     using namespace ldynamic;
-    GLint program_target = shader_program_list[ target ];
+    GLint program_target = shader_program_list[ target.cast() ];
     glUseProgram( program_target );
 
     return true;
@@ -692,10 +699,10 @@ FUNCTION def::mesh_create( fmesh target )
     mbuffer_count += 3;
     ++mmesh_count;
 
-    attributes = mattribute_names[ metadata.vertex_attribute_id ];
-    vertex_buffer = mbuffer_names[ metadata.vertex_buffer_id ];
-    index_buffer = mbuffer_names[ metadata.vertex_index_buffer_id ];
-    color_buffer = mbuffer_names[ metadata.vertex_color_buffer_id ];
+    attributes = mattribute_names[ metadata.vertex_attribute_id.cast() ];
+    vertex_buffer = mbuffer_names[ metadata.vertex_buffer_id.cast() ];
+    index_buffer = mbuffer_names[ metadata.vertex_index_buffer_id.cast() ];
+    color_buffer = mbuffer_names[ metadata.vertex_color_buffer_id.cast() ];
 
     // Set Debug Labels
     fstring attribute_name = "attributes_" + target.name;
@@ -740,8 +747,8 @@ FUNCTION def::mesh_create( fmesh target )
         glObjectLabel( GL_BUFFER, color_buffer, color_name.size(), color_name.c_str() );
     }
 
-    mmesh_list[ metadata.reference_id ] = target;
-    mmesh_metadata_list[ metadata.reference_id ] = metadata;
+    mmesh_list[ metadata.reference_id.cast() ] = target;
+    mmesh_metadata_list[ metadata.reference_id.cast() ] = metadata;
     // Reset to avoid clobbering other buffers
     glBindBuffer( GL_ARRAY_BUFFER, 0);
     glBindVertexArray( 0 );
@@ -755,13 +762,13 @@ FUNCTION def::draw_mesh( mesh_id target, ftransform target_transform, shader_pro
     using namespace ldynamic;
     if (target < 0)
     {
-        std::cout << "Something went went, draw_mesh was passed an invalid target";
+        std::cout << "Something went went, draw_mesh was passed an invalid target \n";
     }
-    fmesh target_mesh = mmesh_list [ target ];
-    fmesh_metadata target_meta = mmesh_metadata_list[ target ];
+    fmesh target_mesh = mmesh_list [ target.cast() ];
+    fmesh_metadata target_meta = mmesh_metadata_list[ target.cast() ];
     shader_program_id shader = target_shader;
 
-    GLint attributes = mattribute_names[ target_meta.vertex_attribute_id ];
+    GLint attributes = mattribute_names[ target_meta.vertex_attribute_id.cast() ];
 
     shader_program_run( shader );
     glBindVertexArray( attributes );
@@ -779,7 +786,7 @@ GLXContext def::get_gl_context() const
 }
 
 bool
-FUNCTION def::draw_test_triangle(vfloat4 color)
+FUNCTION def::draw_test_triangle(ffloat4 color)
 {
     ftransform stub_transform = {};
     draw_mesh( mtest_triangle_mesh, stub_transform, shader_program_test );
@@ -788,7 +795,7 @@ FUNCTION def::draw_test_triangle(vfloat4 color)
 }
 
 bool
-FUNCTION def::draw_test_circle(vfloat4 p_color)
+FUNCTION def::draw_test_circle(ffloat4 p_color)
 {
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
@@ -823,7 +830,7 @@ FUNCTION def::draw_test_circle(vfloat4 p_color)
 }
 
 bool
-FUNCTION def::draw_test_rectangle(vfloat4 p_color)
+FUNCTION def::draw_test_rectangle(ffloat4 p_color)
 {
     GLfloat square_width = 200;
     GLfloat square_height = 200;
@@ -844,7 +851,7 @@ FUNCTION def::draw_test_rectangle(vfloat4 p_color)
 }
 
 bool
-FUNCTION def::draw_test_signfield(vfloat4 p_color)
+FUNCTION def::draw_test_signfield(ffloat4 p_color)
 {
     // Performance optimization, can be disabled when it runs fast enough
     if (buffer_damage_size <= 0)
@@ -905,7 +912,8 @@ bool
 FUNCTION def::refresh()
 {
 
-    // Set the coordinate system for proper clip space conversion
+    // Map the render target to the window width
+    glViewport(0, 0, 1920, 1080);
 
     // render.draw_test_rectangle(render.mrectangle_color);
     // render.draw_test_circle(render.mcircle_color);
