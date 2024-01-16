@@ -29,23 +29,6 @@ void main()
                      0.,            1.,     0.,             0.,
                      -sin(y_rot),  0.,     cos(y_rot),     0.,
                      0.,            0.,    0.,              1.);
-    // transform.y = (cos(x_rotation) * arbitrary_axis.y) - (sin(x_rotation)* arbitrary_axis.z);
-    // transform.z = (sin(x_rotation) * arbitrary_axis.y) + (cos(x_rotation)* arbitrary_axis.z);
-
-    // transform.x = (cos(y_rotation) * arbitrary_axis.x) + (sin(y_rotation)* arbitrary_axis.z);
-    // transform.z = (-sin(y_rotation) * arbitrary_axis.x) + (cos(y_rotation)* arbitrary_axis.z);
-
-    // transform.x = (cos(z_rotation) * arbitrary_axis.x) - (sin(z_rotation)* arbitrary_axis.y);
-    // transform.y = (sin(z_rotation) * arbitrary_axis.x) + (cos(z_rotation)* arbitrary_axis.y);
-
-    transform.y = (cos(x_rotation) * transform.y) - (sin(x_rotation)* transform.z);
-    transform.z = (sin(x_rotation) * transform.y) + (cos(x_rotation)* transform.z);
-
-    transform.x = (cos(y_rotation) * transform.x) + (sin(y_rotation)* transform.z);
-    transform.z = (-sin(y_rotation) * transform.x) + (cos(y_rotation)* transform.z);
-
-    transform.x = (cos(z_rotation) * transform.x) - (sin(z_rotation)* transform.y);
-    transform.y = (sin(z_rotation) * transform.x) + (cos(z_rotation)* transform.y);
 
     // // Map into screen aspect
     transform.x *= ratio_16_9;
