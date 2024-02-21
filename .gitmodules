@@ -7,3 +7,12 @@
 [submodule "cpp_opengl_triangle/external/spdlog"]
 	path = cpp_opengl_triangle/external/spdlog
 	url = git@github.com:gabime/spdlog.git
+[submodule "external/nelua-lang"]
+	path = external/nelua-lang
+	url = https://github.com/edubart/nelua-lang
+[submodule "external/tracy"]
+	path = external/tracy
+	url = https://github.com/wolfpld/tracy/
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = git@github.com:gabime/spdlog.git

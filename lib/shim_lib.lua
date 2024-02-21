@@ -10,12 +10,13 @@
 require "os"
 
 local aux = {}
-global _protected = {}
+_protected = {}
+
 
 -- 'DEBUG_IGNORE' only needs to be set to be considered true
-global debug_ignore = os.getenv("DEBUG_IGNORE") or nil
-global poison_stdlib_disable = poison_stdlib_disable
-global gmodule_name = "REPLACE ME set gmodule_name"
+debug_ignore = os.getenv("DEBUG_IGNORE") or nil
+poison_stdlib_disable = poison_stdlib_disable
+gmodule_name = "REPLACE ME set gmodule_name"
 
 -- Helper functions
 
@@ -30,16 +31,16 @@ end
 function safe_assert(condition, message)
    message = message or "An undocumented error has occured"
    if condition == false and debug_ignore == nil then
-      _protected.error("[safe_assert] "..message)
+      _protected.error("[ safe_assert ] "..message)
    elseif condition == false then
-      _protected.print("[safe_assert] (supressed): "..message)
+      _protected.print("[ safe_assert ] (supressed): "..message)
    end
 end
 
 function safe_error(message)
    message = message or "An undocumented error has occured"
-   _protected.assert(debug_ignore, "[safe_error] "..message)
-   _protected.print("[safe_error] (supressed): "..message)
+   _protected.assert(debug_ignore, "[ safe_error ] "..message)
+   _protected.print("[ safe_error ] (supressed): "..message)
 end
 
 -- Produce a proxy table that is a read-only version of a table
@@ -61,10 +62,7 @@ end
 
 -- Overwrite and deprecreate some standard library functionality
 function poision_stdlib(global_table)
-   -- Can skip if the user so wishes
-   if poison_stdlib_disable == true then
-      return
-   end
+   safe_assert(global_table ~= nil, "global_table should not be nil, this is likely a mistake")
 
    _protected.print     = global_table.print
    _protected.error     = global_table.error
@@ -75,7 +73,10 @@ function poision_stdlib(global_table)
       safe_error("'os.execute' has been disabled, please use the 'safe_execute' instead")
    end
 
-   safe_assert(global_table ~= nil, "global_table should not be nil, this is likely a mistake")
+      -- Can skip if the user so wishes
+   if poison_stdlib_disable == true then
+      return
+   end
 
    for k_overriden, value in pairs(_protected) do
       if _G[k_overriden] ~= nil and type(value) == "function" then
@@ -154,7 +155,7 @@ function wrap(str, wrap_str, wrap_str_right)
    safe_assert(type(str) == "string", "str must a string")
 
    if wrap_str == "[" then
-      wrapper_right = "]"
+      return "[ ".. str.. " ]"
    end
 
    if wrap_str_right then
