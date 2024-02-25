@@ -25,7 +25,7 @@ log_verbose = true
 ]]--
 
 local build_universal_warnings: string = "-Wpedantic -Wall -Wno-unused-value -Wno-padded -Werror=return-type -Werror=inconsistent-missing-override -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-documentation-unknown-command -Wno-unreachable-code-break -Werror=shadow "
-local build_universal_arguments: string = build_universal_warnings.."-std=c++20 -fuse-ld=lld -I../tracy -lX11 -lGL source/*.cpp -ldl -Iexternal/include -Isource -fmodules-ts "
+local build_universal_arguments: string = build_universal_warnings.."-std=c++20 -fuse-ld=lld -I../tracy -lX11 -lGL source/*.cpp -ldl -Iexternal/include -Isource -Iexternal/spdlog/include -fmodules-ts -DTRIANGULATE_PROJECT_ROOT=\\\"a\\\" "
 
 local build_command: string = "clang++ -g " ..build_universal_arguments
 local build_command_shipping_test: string = "clang++ -g -O2 -march=x86-64 -Weverything -Wno-implicit-int-float-conversion -Wno-sign-conversion " ..build_universal_arguments
