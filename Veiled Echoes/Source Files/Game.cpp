@@ -70,6 +70,8 @@ void Game::init(const char* title, int xpos, int ypos, int width, int height, bo
 		//ECS Implementation
 		player.addComponent<TransformComponent>();
 		player.addComponent<SpriteComponent>("Assets/player.png");
+		player.addComponent<ColliderComponent>();
+		player.addComponent<KeyboardController>();
 
 	}
 	else { isRunning = false; }
@@ -104,8 +106,8 @@ void Game::Render()
 	SDL_RenderClear(renderer);
 	// Render shit here
 	tileMap->DrawTileMap();
-
 	manager.draw();
+	
 	SDL_RenderPresent(renderer);
 }
 

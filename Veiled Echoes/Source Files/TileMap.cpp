@@ -42,7 +42,9 @@ TileMap::TileMap()
 
 TileMap::~TileMap()
 {
-
+	SDL_DestroyTexture(grass);
+	SDL_DestroyTexture(water);
+	SDL_DestroyTexture(dirt);
 }
 
 void TileMap::LoadTileMap(int arr[20][25])

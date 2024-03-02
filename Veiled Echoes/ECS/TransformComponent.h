@@ -10,7 +10,11 @@ public:
 	Vector2D position;
 	Vector2D velocity;
 
-	int speed;
+	int height = 72; //Height of single sprite on sprite sheet (eg. see player.png)
+	int width = 48; //Width of single sprite on sprite sheet
+	int scale = 1;
+
+	float speed = 5.0f;
 
 	void init() override
 	{
@@ -20,7 +24,8 @@ public:
 
 	void update() override
 	{
-
+		position.x += velocity.x * speed;
+		position.y += velocity.y * speed;
 	}
 
 	TransformComponent(float x, float y)

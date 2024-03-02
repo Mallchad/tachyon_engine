@@ -142,13 +142,14 @@
     <ClCompile Include="Source Files\Vector2D.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ECS\ColliderComponent.h" />
     <ClInclude Include="ECS\Components.h" />
     <ClInclude Include="ECS\ECS.h" />
     <ClInclude Include="Header Files\Game.h" />
     <ClInclude Include="Header Files\GameObject.h" />
     <ClInclude Include="ECS\TransformComponent.h" />
     <ClInclude Include="ECS\SpriteComponent.h" />
-    <ClInclude Include="Header Files\KeyboardController.h" />
+    <ClInclude Include="ECS\KeyboardController.h" />
     <ClInclude Include="Header Files\TextureManager.h" />
     <ClInclude Include="Header Files\TileMap.h" />
     <ClInclude Include="Header Files\Vector2D.h" />

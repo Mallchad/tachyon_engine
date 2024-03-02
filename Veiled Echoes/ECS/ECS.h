@@ -63,16 +63,16 @@ public:
 
 	template <typename T> bool hasComponent() const
 	{
-		return componentBitSet[getComponentTypeID<T>];
+		return componentBitSet[getComponentTypeID<T>()];
 	}
 
 	template<typename T, typename... TArgs>
 	T& addComponent(TArgs&&... mArgs) // Function to add a component to a game object.
 	{
-		T* c(new T(std::forward<TArgs>(mArgs)...)); //R magic
+		T* c(new T(std::forward<TArgs>(mArgs)...)); //R OR L Val Preservation 
 		c->entity = this;
 		std::unique_ptr<Component> uPtr{ c };
-		components.emplace_back(std::move(uPtr));
+		components.emplace_back(std::move(uPtr));//R &ref conversion magic
 
 		componentArray[getComponentTypeID<T>()] = c;
 		componentBitSet[getComponentTypeID<T>()] = true;
