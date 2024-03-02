@@ -30,8 +30,24 @@ public:
 
 	TransformComponent(float x, float y)
 	{
-		position.x = 0;
-		position.y = 0;
+		position.x = x;
+		position.y = y;
+	}
+
+	TransformComponent(float x, float y, int h, int w, int s)
+	{
+		position.x = x;
+		position.y = y;
+		height = h;
+		width = w;
+		scale = s;
+	}
+
+	TransformComponent(int sc)
+	{
+		position.x = 0.0f;
+		position.y = 0.0f;
+		scale = sc;
 	}
 
 	TransformComponent()
@@ -39,5 +55,6 @@ public:
 		position.x = 0;
 		position.y = 0;
 	}
+
 
 };

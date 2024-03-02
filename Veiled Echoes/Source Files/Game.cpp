@@ -2,6 +2,7 @@
 #include "../Header Files/TextureManager.h"
 #include "../Header Files/TileMap.h"
 #include "../ECS/Components.h"
+#include "../Header Files/Collision.h"
 
 
 TileMap* tileMap;
@@ -13,6 +14,7 @@ SDL_Event Game::event;
 
 
 auto& player(manager.addEntity());
+auto& wall(manager.addEntity());
 
 Game::Game()
 {
@@ -68,11 +70,14 @@ void Game::init(const char* title, int xpos, int ypos, int width, int height, bo
 		tileMap = new TileMap();
 
 		//ECS Implementation
-		player.addComponent<TransformComponent>();
+		player.addComponent<TransformComponent>(1);
 		player.addComponent<SpriteComponent>("Assets/player.png");
-		player.addComponent<ColliderComponent>();
+		player.addComponent<ColliderComponent>("player");
 		player.addComponent<KeyboardController>();
 
+		wall.addComponent<TransformComponent>(200.0f, 200.0f, 32, 32, 1);
+		wall.addComponent<SpriteComponent>("Assets/dirt.png");
+		wall.addComponent<ColliderComponent>("wall");
 	}
 	else { isRunning = false; }
 }
@@ -95,10 +100,14 @@ void Game::HandleEvents()
 
 void Game::Update()
 {
-
-
 	manager.refresh();
 	manager.update();
+
+	if (Collision::AABB(player.getComponent<ColliderComponent>().collider, 
+		wall.getComponent<ColliderComponent>().collider)) // Debug collision check
+	{
+		std::cout << "Wall Hit!" << std::endl;
+	} else { std::cout << "Not hitting wall!" << std::endl; }
 }
 
 void Game::Render()
