@@ -62,6 +62,24 @@ using shader_program_id = internal_id<id_type::shader_program>;
 /// Shader Program
 using program_id        = internal_id<id_type::shader_program>;
 
+struct frame_shader_global
+{
+    ffloat epoch = 0;
+    ffloat time_since_epoch = 0;
+    /// Time since epoch at the beginning of previous frame
+    ffloat last_begin_epoch = 0;
+    /// Time since epoch at end of previous frame
+    ffloat last_end_epoch = 0;
+    /// Time between last frame and current frame measured at unspecified time during frame
+    ffloat delta_time = 0;
+    /// Time between last frame and current frame measured at beginning of each frame
+    ffloat delta_time_begin = 0;
+    /// Time between last frame and current frame measured at beginning of each frame
+    ffloat delta_time_end = 0;
+    // Screen aspect ratio given as vertical over horizontal
+    ffloat scren_vh_aspect_ratio = 1080.f/1920.f;
+};
+
 enum class shader_type
 {
     vertex,

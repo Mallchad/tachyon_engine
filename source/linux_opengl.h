@@ -139,6 +139,8 @@ class renderer_opengl final INTERFACE_RENDERER
     fint32 mbuffer_count = 0;
     fint32 mmesh_count = 0;
 
+    buffer_id uniform_world = 0;
+
     // Shaders
     fstring shader_fragment_source = "#version 330 core \n              \
         smooth in vec4 vertex_color;                                    \
@@ -288,7 +290,7 @@ public:
     FUNCTION frame_start();
 
     fhowdit
-    FUNCTION refresh() INTERFACE;
+    FUNCTION refresh( frame_shader_global ) INTERFACE;
 
     DESTRUCTOR ~renderer_opengl() INTERFACE;
 

@@ -22,6 +22,8 @@ class renderer final
     fpath test_shader_vert_file = "test_utah_teapot.vert";
 
 
+    frame_shader_global frame_shader_globals;
+
     public:
     renderer_backend platform = {};
 

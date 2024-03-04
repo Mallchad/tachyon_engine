@@ -1,4 +1,4 @@
-#version 330 core
+#version 420 core
 
 layout (location = 0) in vec3 vert;
 layout (location = 2) in vec4 col;
@@ -12,6 +12,24 @@ const float z_rotation = (0.0f + 1.f) *tau;
 const float x_rot = (-0.125f + 1.f)  *tau;
 const float y_rot = (0.0 + 1.f) *tau;
 const float z_rot = (0.0f + 1.f) *tau;
+layout(std140, binding = 0) uniform frame_data
+{
+    float epoch;
+    float time_since_epoch;
+    /// Time since epoch at the beginning of previous frame
+    float last_begin_epoch;
+    /// Time since epoch at end of previous frame
+    float last_end_epoch;
+    /// Time between last frame and current frame measured at unspecified time during frame
+    float delta_time;
+    /// Time between last frame and current frame measured at beginning of each frame
+    float delta_time_begin;
+    /// Time between last frame and current frame measured at beginning of each frame
+    float delta_time_end;
+    // Screen aspect ratio given as vertical over horizontal
+    float scren_vh_aspect_ratio;
+};
+
 const vec4 arbitrary_axis = vec4( 0.662f, 0.2f, 0.722f, 1.f);
 
 const float scale = 0.05f;
