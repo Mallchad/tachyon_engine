@@ -13,8 +13,7 @@ public:
 
     /// Search paths which serve as a root for a file reference
     std::vector<fstring> search_paths;
-    IMMEDIATE fstring_view project_root = TRIANGULATE_PROJECT_ROOT;
-    IMMEDIATE bool project_root_defined = project_root.size() > 0;
+    fpath project_root = TRIANGULATE_PROJECT_ROOT;
 
     /// Try to gracefully quit the program
     bool kill_program = false;

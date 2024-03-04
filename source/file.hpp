@@ -1,7 +1,7 @@
 #pragma once
 
 #include "code_helpers.h"
-#include "include_core.h"
+#include "core.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -10,6 +10,51 @@
 
 #include "math.hpp"
 
+/// Try to find a file by name by searching through a vector of provided directories
+// This can be provided as an initializer list of strings { "/foo/bar" }
+fpath
+FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths )
+{
+    namespace fs = std::filesystem;
+// Linux only call
+    // Always use the executable parent directory as search reference point
+    fpath self_directory = fs::canonical( "/proc/self/exe" );
+    self_directory = self_directory.parent_path();
+
+    // // Use search paths instead its more robust, initially just build project root
+    fpath location = global_database::get_primary()->project_root / fs::path( target );
+
+    int matches = 0;
+    fpath out_path;
+    fpath check_path;
+    for (fpath x_path : search_paths)
+    {
+        check_path = x_path / target;
+        std::cout << "[File] Searching for file '" << check_path << "' \n";
+        if (fs::exists( check_path ))
+        {
+            matches = 1;
+            out_path = check_path;
+        }
+    }
+    if (matches == 0)
+    {
+        std::cout << "[File] No viable match found for file search " << target << "\n";
+        return "";
+    }
+    if (matches > 1)
+    {
+        std::cout << "[File] Multiple candidate matches for file search " << target
+                  << " . Unsure how to proceed with operation \n";
+        return "";
+    }
+    std::cout << "[File] Candidate file found in search paths " << out_path << "\n";
+    return out_path;
+}
+
+/// Read a file into the internal storage of the program
+// This effectively reads a file and then returns a byte buffer repsenting the read file
+// in a binary format. No attempt is made at formatting it.
 byte_buffer
 FUNCTION intern_file( fpath target )
 {
@@ -18,18 +63,11 @@ FUNCTION intern_file( fpath target )
     FILE* tmp = nullptr;
     fuint32 tmp_filesize = 0;
 
-    // Linux only call
-    // Always use the executable parent directory as search reference point
-    path self_directory = canonical( "/proc/self/exe" );
-    self_directory = self_directory.parent_path();
-    
-    // Use search paths instead its more robust, initially just build project root
-    path location = global_database::get_primary()->project_root / path( target );
-    tmp = fopen( location.c_str(), "r" );
+    tmp = fopen( target.c_str(), "r" );
     if (tmp == nullptr)
     {
-        std::cout << "Failed to open file: " << location << "\n";
-        std::cout << "Failed to open file: " << global_database::get_primary()->project_root << "\n";
+        std::cout << "[File] Failed to open file: " << target << "\n";
+        std::cout << "[File] Failed to open file: " << global_database::get_primary()->project_root << "\n";
         return out;
     }
     fseek( tmp, 0, SEEK_END );
@@ -40,7 +78,7 @@ FUNCTION intern_file( fpath target )
     out.resize( tmp_filesize );
     fread( out.data(), sizeof(fbyte), out.size(), tmp );
     fclose( tmp );
-    std::cout << "Internalized file at path: " << location << "\n";
+    std::cout << "[File] Internalized file at path: " << target << "\n";
 
     return out;
 }
@@ -54,8 +92,9 @@ FUNCTION test_little_endian()
     fuint8 first_bits = *reinterpret_cast<fuint8*>( &full_bits );
     bool little_endian = static_cast<bool>( first_bits );
 
-    std::cout << (little_endian ? "Platform tested for endianess, came back as little endian" :
-                  "Platform tested for endianess, came back as big endian")<< "\n";
+    std::cout << "[File] " <<
+    (little_endian ? "Platform tested for endianess, came back as little endian" :
+     "Platform tested for endianess, came back as big endian") << "\n";
     return little_endian;
 }
 
@@ -98,7 +137,7 @@ FUNCTION read_stl_file( fpath target )
     {
         if ( (2 + i_triangle * 3) > out.size() )
         {
-            std::cout << "ERRROR buffer overflow whilst reading file \n";
+            std::cout << "[File] ERRROR buffer overflow whilst reading file \n";
             out.resize(0);
             return out;
         }

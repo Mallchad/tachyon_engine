@@ -11,7 +11,11 @@
 CONSTRUCTOR renderer::renderer()
 {
     global = global_database::get_primary();
-    test_utah_teapot_vertecies = read_stl_file( "assets/utah_teapot.stl" );
+
+    utah_teapot_file = linux_search_file(
+        "utah_teapot.stl", { std::filesystem::path( global->project_root ) / "assets" } );
+    test_utah_teapot_vertecies = read_stl_file( utah_teapot_file );
+
     bool file_read_fail = test_utah_teapot_vertecies.size() <= 0;
     if ( file_read_fail ) { return; }
 
@@ -42,8 +46,16 @@ FUNCTION renderer::frame_update(ffloat epoch_elapsed)
     if (global->reload_shaders)
     {
         global->reload_shaders = false;
-        byte_buffer new_shader = intern_file( "source/shaders/test_utah_teapot.frag" );
-        byte_buffer vert_shader = intern_file( "source/shaders/test_utah_teapot.vert" );
+        fpath found_fragment_file =
+            linux_search_file( test_shader_frag_file,
+                               { global->project_root / "source/shaders" } );
+        fpath found_vertex_file =
+            linux_search_file( test_shader_vert_file,
+                               { global->project_root / "source/shaders" } );
+
+        byte_buffer new_shader = intern_file( found_fragment_file );
+        byte_buffer vert_shader = intern_file( found_vertex_file );
+
         fstring new_shader_source( reinterpret_cast<const char*>( new_shader.data() ),
                                         new_shader.size() );
         fstring vert_shader_source( reinterpret_cast<const char*>( vert_shader.data() ),
@@ -75,6 +87,6 @@ FUNCTION renderer::frame_update(ffloat epoch_elapsed)
     ftransform stub_transform = {};
     platform.draw_mesh( test_utah_teapot_id, stub_transform, test_shader );
     (void)(epoch_elapsed);
-    platform.refresh();
+    platform.refresh( frame_shader_globals );
     std::cout << std::flush;
 }

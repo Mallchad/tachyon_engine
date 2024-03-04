@@ -231,6 +231,11 @@ FUNCTION def::initialize()
     ldynamic::glGenVertexArrays( mattribute_limit, mattribute_names.data() );
     ldynamic::glGenBuffers( mbuffer_limit, mbuffer_names.data() );
 
+    uniform_world = mbuffer_count++;
+    // ldynamic::glBindBuffer( GL_UNIFORM_BUFFER, uniform_world );
+    // Allocate 512 bytes
+    ldynamic::glBufferData( GL_UNIFORM_BUFFER, 512, nullptr, GL_STATIC_DRAW );
+
     // Setup test articles
     shader_fragment_test = shader_create( "shader_fragment_test", shader_type::fragment );
     shader_vertex_test = shader_create( "shader_vertex_test", shader_type::vertex );
@@ -909,7 +914,7 @@ FUNCTION def::frame_start()
 }
 
 bool
-FUNCTION def::refresh()
+FUNCTION def::refresh( frame_shader_global frame )
 {
 
     // Map the render target to the window width

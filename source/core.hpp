@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <filesystem>
 
 // Silence warnings in external projects
 #pragma clang diagnostic push
@@ -74,7 +75,7 @@ FUNCTION cast( auto target )
 using fstring = std::basic_string<char>;
 using fstring_view = std::basic_string_view<char>;
 using cstring = const char*;
-using fpath = const char*;
+using fpath = std::filesystem::path;
 
 /// std::byte was initially tried for buffer objects but it has the nasty side
 /// effect of introducing lots of reinterpret_casts everywhere which is really
