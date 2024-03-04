@@ -4,15 +4,24 @@
 
 # Whitelist
 
-# Blacklist
+# -- Blacklist --
+
+# Build System Outputs
 *.o
 *.out
 *.gch
 *.exe
 *.pdb
+compile_commands*
+*.obj
+*ilk
+*.idb
+*.tlog
+*.exe.recipie
+
+# Autosave Files
 *~
 ~*
-compile_commands*
 
 # Directory Blacklist
 .*
