@@ -9,6 +9,7 @@
 #include <vector>
 #include <filesystem>
 
+// Project Specific Includes
 // Silence warnings in external projects
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
@@ -80,7 +81,7 @@ using fpath = std::filesystem::path;
 /// std::byte was initially tried for buffer objects but it has the nasty side
 /// effect of introducing lots of reinterpret_casts everywhere which is really
 /// nasty and risky. An alternative would be a thin templated wrapper type with
-/// an explicitf cast which auto-disallows arithmatic operations
+/// an explicit cast which auto-disallows arithmatic operations
 using fbyte = uint8_t;
 using byte_buffer = std::vector<fbyte>;
 
@@ -88,3 +89,5 @@ using byte_buffer = std::vector<fbyte>;
 // Default ID class is untyped, strongly reccomend against using it and creating your
 // own ttype with enums
 using fid = internal_id<>;
+
+// Project Specific

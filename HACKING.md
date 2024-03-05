@@ -4,12 +4,7 @@ developer, and document design rationale alone the way
 
 
 ## Platform Independent Abstraction Layer
-This project tries very hard to keep the platform specific layer separate from the actual
-main logic code and think's of the platform layer as a service to provide the
-main program with the resources it asks for, rather then calling a bunch of void
-functions and having the platform layer do a bunch of magic. This is based on
-the Handmade Hero style of hardware abstraction
-
+This project tries very hard to keep the platform specific layer separate from the actual main logic.
 ```
 Main Program -> Platform Specific Call
 Main Logic   <- Platform Returns Generic Resources to Manage
