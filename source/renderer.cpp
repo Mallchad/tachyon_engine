@@ -46,20 +46,11 @@ FUNCTION renderer::frame_update(ffloat epoch_elapsed)
     if (global->reload_shaders)
     {
         global->reload_shaders = false;
-        fpath found_fragment_file =
-            linux_search_file( test_shader_frag_file,
-                               { global->project_root / "source/shaders" } );
-        fpath found_vertex_file =
-            linux_search_file( test_shader_vert_file,
-                               { global->project_root / "source/shaders" } );
 
-        byte_buffer new_shader = intern_file( found_fragment_file );
-        byte_buffer vert_shader = intern_file( found_vertex_file );
-
-        fstring new_shader_source( reinterpret_cast<const char*>( new_shader.data() ),
-                                        new_shader.size() );
-        fstring vert_shader_source( reinterpret_cast<const char*>( vert_shader.data() ),
-                                         vert_shader.size() );
+        fstring new_shader_source( linux_load_text_file( test_shader_frag_file,
+                               { global->project_root / "source/shaders" } ) );
+        fstring vert_shader_source( linux_load_text_file( test_shader_vert_file,
+                               { global->project_root / "source/shaders" } ) );
         shader_program_id volatile_shader = -1;
         shader_program_id tmp_shader = 0;
 

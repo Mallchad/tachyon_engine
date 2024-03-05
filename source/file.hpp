@@ -5,8 +5,10 @@
 
 #include <cstdio>
 #include <iostream>
+#include <memory>
 #include <utility>
 #include <filesystem>
+#include <cstring>
 
 #include "math.hpp"
 
@@ -20,9 +22,6 @@ FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths )
     // Always use the executable parent directory as search reference point
     fpath self_directory = fs::canonical( "/proc/self/exe" );
     self_directory = self_directory.parent_path();
-
-    // // Use search paths instead its more robust, initially just build project root
-    fpath location = global_database::get_primary()->project_root / fs::path( target );
 
     int matches = 0;
     fpath out_path;
@@ -56,7 +55,7 @@ FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths )
 // This effectively reads a file and then returns a byte buffer repsenting the read file
 // in a binary format. No attempt is made at formatting it.
 byte_buffer
-FUNCTION intern_file( fpath target )
+FUNCTION load_file_binary( fpath target )
 {
     using namespace std::filesystem;
     byte_buffer out;
@@ -82,6 +81,9 @@ FUNCTION intern_file( fpath target )
 
     return out;
 }
+/// Deprecreated. Use the new function load_file_binary
+byte_buffer
+FUNCTION intern_file( fpath target ) { return load_file_binary( target ); }
 
 /// Tests the memory layout to see if it is little endian or big endian
 // Returns true if little endian
@@ -149,6 +151,23 @@ FUNCTION read_stl_file( fpath target )
         out[ 2+ i_triangle *3 ] = *(2+ x_memory);
 
     }
+
+    return out;
+}
+
+fstring
+FUNCTION linux_load_text_file( fpath target, std::vector<fpath> search_paths )
+{
+    fpath target_path;
+    byte_buffer loaded_file;
+    fstring out;
+
+    target_path = linux_search_file( target, search_paths );
+    if (target_path.empty()) return "";
+
+    loaded_file = load_file_binary( target_path );
+    out.resize( loaded_file.size() );
+    std::memcpy( out.data(), loaded_file.data(), loaded_file.size() );
 
     return out;
 }

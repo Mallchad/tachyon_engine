@@ -1,6 +1,8 @@
 
 #pragma once
-#include "include_core.h"
+
+#include <vector>
+#include <filesystem>
 
 #ifndef TRIANGULATE_PROJECT_ROOT
     static_assert( false, "TRIANGULATE_PROJECT_ROOT not defined" );
@@ -8,6 +10,8 @@
 
 class global_database
 {
+    using fpath = std::filesystem::path;
+    using fstring = std::string;
 public:
     static global_database* primary_database;
 
