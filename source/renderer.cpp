@@ -74,10 +74,21 @@ FUNCTION renderer::frame_update(ffloat epoch_elapsed)
         }
     }
 
+    frame_shader_globals.epoch = 0;
+    frame_shader_globals.time_since_epoch = epoch_elapsed;
+    frame_shader_globals.last_begin_epoch = 0;
+    frame_shader_globals.last_end_epoch = 0;
+    frame_shader_globals.delta_time = 0;
+    frame_shader_globals.delta_time_begin = 0;
+    frame_shader_globals.delta_time_begin = 0;
+    frame_shader_globals.screen_vh_aspect_ratio = 0;
+
+    platform.shader_globals_update( frame_shader_globals );
     platform.frame_start();
     ftransform stub_transform = {};
     platform.draw_mesh( test_utah_teapot_id, stub_transform, test_shader );
-    (void)(epoch_elapsed);
+
     platform.refresh( frame_shader_globals );
+
     std::cout << std::flush;
 }

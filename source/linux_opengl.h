@@ -139,7 +139,7 @@ class renderer_opengl final INTERFACE_RENDERER
     fint32 mbuffer_count = 0;
     fint32 mmesh_count = 0;
 
-    buffer_id uniform_world = 0;
+    buffer_id uniform_frame_globals = 0;
 
     // Shaders
     fstring shader_fragment_source = "#version 330 core \n              \
@@ -265,6 +265,9 @@ public:
     fhowdit
     FUNCTION shader_program_run( shader_program_id target ) INTERFACE;
 
+    freport
+    FUNCTION shader_globals_update( frame_shader_global contents );
+
     /// Register a mesh object with the backend and copy buffer data
     mesh_id
     FUNCTION mesh_create( fmesh target ) INTERFACE;
@@ -295,4 +298,7 @@ public:
     DESTRUCTOR ~renderer_opengl() INTERFACE;
 
 private:
+    // Returns the OpenGL internal id for the associated buffer
+    GLuint
+    FUNCTION get_buffer( buffer_id target );
 };

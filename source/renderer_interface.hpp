@@ -77,7 +77,7 @@ struct frame_shader_global
     /// Time between last frame and current frame measured at beginning of each frame
     ffloat delta_time_end = 0;
     // Screen aspect ratio given as vertical over horizontal
-    ffloat scren_vh_aspect_ratio = 1080.f/1920.f;
+    ffloat screen_vh_aspect_ratio = 1080.f/1920.f;
 };
 
 enum class shader_type

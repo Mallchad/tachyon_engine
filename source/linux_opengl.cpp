@@ -36,8 +36,10 @@ namespace ldynamic
     INTERNAL PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA;
 
     INTERNAL PFNGLBINDBUFFERPROC glBindBuffer;
+    INTERNAL PFNGLBINDBUFFERBASEPROC glBindBufferBase;
     INTERNAL PFNGLGENBUFFERSPROC glGenBuffers;
     INTERNAL PFNGLBUFFERDATAPROC glBufferData;
+    INTERNAL PFNGLUNIFORMBLOCKBINDINGPROC glUniformBlockBinding;
 
     INTERNAL PFNGLCREATESHADERPROC glCreateShader;
 /// void glShaderSource( GLuint shader, GLsizei count, const GLchar **string, const GLint *length )
@@ -129,10 +131,14 @@ FUNCTION def::initialize()
 
     ldynamic::glBindBuffer        = reinterpret_cast<PFNGLBINDBUFFERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBuffer" )));
+    ldynamic::glBindBufferBase    = reinterpret_cast<PFNGLBINDBUFFERBASEPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBufferBase" )));
     ldynamic::glGenBuffers        = reinterpret_cast<PFNGLGENBUFFERSPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenBuffers" )));
     ldynamic::glBufferData        = reinterpret_cast<PFNGLBUFFERDATAPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBufferData" )));
+    ldynamic::glUniformBlockBinding = reinterpret_cast<PFNGLUNIFORMBLOCKBINDINGPROC>(
+        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glUniformBlockBinding" )));
     ldynamic::glCreateShader      = reinterpret_cast<PFNGLCREATESHADERPROC>(
         glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateShader" )));
     ldynamic::glShaderSource      = reinterpret_cast<PFNGLSHADERSOURCEPROC>(
@@ -231,10 +237,10 @@ FUNCTION def::initialize()
     ldynamic::glGenVertexArrays( mattribute_limit, mattribute_names.data() );
     ldynamic::glGenBuffers( mbuffer_limit, mbuffer_names.data() );
 
-    uniform_world = mbuffer_count++;
-    // ldynamic::glBindBuffer( GL_UNIFORM_BUFFER, uniform_world );
+    uniform_frame_globals = mbuffer_count++;
+    ldynamic::glBindBuffer( GL_UNIFORM_BUFFER, get_buffer( uniform_frame_globals ) );
     // Allocate 512 bytes
-    ldynamic::glBufferData( GL_UNIFORM_BUFFER, 512, nullptr, GL_STATIC_DRAW );
+    ldynamic::glBufferData( GL_UNIFORM_BUFFER, sizeof( frame_shader_global ), nullptr, GL_STATIC_DRAW );
 
     // Setup test articles
     shader_fragment_test = shader_create( "shader_fragment_test", shader_type::fragment );
@@ -607,6 +613,8 @@ FUNCTION def::shader_program_create( fstring name, initializer_list<shader_id> s
         return -1;
     }
 
+    ldynamic::glUniformBlockBinding( shader_program, 0, 0 );
+
     for (shader_id x_shader : shaders_attach)
     {
         glAttachShader( shader_program, shader_list[ x_shader.cast() ] );
@@ -675,6 +683,17 @@ FUNCTION def::shader_program_run( shader_program_id target )
     using namespace ldynamic;
     GLint program_target = shader_program_list[ target.cast() ];
     glUseProgram( program_target );
+
+    return true;
+}
+
+freport
+FUNCTION def::shader_globals_update( frame_shader_global contents )
+{
+    // Update frame global uniforms
+    ldynamic::glBindBuffer( GL_UNIFORM_BUFFER, uniform_frame_globals.cast() );
+    ldynamic::glBindBufferBase(GL_UNIFORM_BUFFER, 0, get_buffer( uniform_frame_globals ) );
+    ldynamic::glBufferData( GL_UNIFORM_BUFFER, sizeof( frame_shader_global ), &contents, GL_STATIC_DRAW );
 
     return true;
 }
@@ -920,14 +939,14 @@ FUNCTION def::refresh( frame_shader_global frame )
     // Map the render target to the window width
     glViewport(0, 0, 1920, 1080);
 
-    // render.draw_test_rectangle(render.mrectangle_color);
-    // render.draw_test_circle(render.mcircle_color);
+    // draw_test_rectangle(mrectangle_color);
+    // draw_test_circle(mcircle_color);
 
-    // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-    // glPolygonMode( GL_BACK, GL_LINE ); // Disabled front or back only disabled in profile
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    // glPolygonMode( GL_BACK, GL_LINE ); // Disabled front or back only disabled in core profile
 
-    draw_test_triangle(mtriangle_color);
+    // draw_test_triangle(mtriangle_color);
     // draw_test_signfield(msignfield_color);
 
     glXSwapBuffers ( rx_display, vx_window );
@@ -935,6 +954,12 @@ FUNCTION def::refresh( frame_shader_global frame )
     buffer_damage_size = 0;
 
     return true;
+}
+
+GLuint
+FUNCTION def::get_buffer( buffer_id target )
+{
+    return mbuffer_names[ target.cast() ];
 }
 
 DESTRUCTOR def::~renderer_opengl()

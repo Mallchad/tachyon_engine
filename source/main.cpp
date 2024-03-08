@@ -1,11 +1,14 @@
 
 #include "main_include.h"
-#include <iterator>
 
 int main()
 {
     using namespace std::chrono_literals;
+
     global_database global = {};
+    std::chrono::time_point<std::chrono::steady_clock> program_epoch =
+        std::chrono::steady_clock::now();
+
     global_database::primary_database = &global;
     global.kill_program = false;
 
@@ -18,10 +21,15 @@ int main()
     {
         renderer main_renderer;
         input main_input( main_renderer.platform );
+
         while ( global.kill_program == false )
         {
-            main_renderer.frame_update( 0.f );
-            main_input.frame_update( 0.f);
+            auto epoch_elapsed = std::chrono::steady_clock::now() - program_epoch;
+            float epoch_elapsed_float = std::chrono::duration_cast<
+                std::chrono::duration<ffloat>>( epoch_elapsed ).count();
+
+            main_renderer.frame_update( epoch_elapsed_float );
+            main_input.frame_update( epoch_elapsed_float );
 
             FrameMark( "Main Render Thread" );
 
