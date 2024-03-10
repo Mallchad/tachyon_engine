@@ -125,6 +125,10 @@ class renderer_opengl final INTERFACE_RENDERER
     int vglx_major = 3;
     int vglx_minor = 3;
 
+    // Internal Data
+    frame_shader_global current_frame;
+    bool fullscreen = false;
+
     static constexpr fuint32 mbuffer_limit = 1000;
     static constexpr fuint32 mattribute_limit = 1000;
     static constexpr fuint32 mmesh_limit = 1000;

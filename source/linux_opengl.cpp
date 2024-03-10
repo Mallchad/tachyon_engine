@@ -364,15 +364,16 @@ FUNCTION def::window_create()
         wm_state_maximized_horz,
         wm_state_maximized_vert,
     };
-    if (wm_state != 0 && wm_state_fullscreen != 0 && wm_state_maximized_horz!= 0 &&
-        wm_state_maximized_vert != 0 && wm_state_above != 0)
-    {
-        XChangeProperty(rx_display, x_window_tmp,
-                        wm_state, XA_ATOM, 32,
-                        PropModeReplace,
-                        reinterpret_cast<unsigned char*>( &wm_state_new ),
-                        3);
-    }
+    // if (wm_state != 0 && wm_state_fullscreen != 0 && wm_state_maximized_horz!= 0 &&
+    //     wm_state_maximized_vert != 0 && wm_state_above != 0)
+    // {
+        // fullscreen = true;
+        // XChangeProperty(rx_display, x_window_tmp,
+        //                 wm_state, XA_ATOM, 32,
+        //                 PropModeReplace,
+        //                 reinterpret_cast<unsigned char*>( &wm_state_new ),
+        //                 3);
+    // }
 
     // Set the window name
     XStoreName( rx_display, x_window_tmp, "cpp triangle test" );
@@ -693,7 +694,10 @@ FUNCTION def::shader_globals_update( frame_shader_global contents )
     // Update frame global uniforms
     ldynamic::glBindBuffer( GL_UNIFORM_BUFFER, uniform_frame_globals.cast() );
     ldynamic::glBindBufferBase(GL_UNIFORM_BUFFER, 0, get_buffer( uniform_frame_globals ) );
-    ldynamic::glBufferData( GL_UNIFORM_BUFFER, sizeof( frame_shader_global ), &contents, GL_STATIC_DRAW );
+    ldynamic::glBufferData( GL_UNIFORM_BUFFER,
+                            sizeof( frame_shader_global ),
+                            &current_frame,
+                            GL_STATIC_DRAW );
 
     return true;
 }
@@ -937,7 +941,18 @@ FUNCTION def::refresh( frame_shader_global frame )
 {
 
     // Map the render target to the window width
-    glViewport(0, 0, 1920, 1080);
+    XWindowAttributes window_properties;
+    XGetWindowAttributes(rx_display, vx_window, &window_properties);
+    current_frame = frame;
+    current_frame.screen_vh_aspect_ratio =
+        static_cast<float>( window_properties.height ) / window_properties.width;
+    if (fullscreen && (current_frame.screen_vh_aspect_ratio < .3f ||
+                       current_frame.screen_vh_aspect_ratio > .8f ))
+    {
+        std::cout << "[Renderer] WARNING: Strange screen aspect ratio found, "
+            "may not render properly \n";
+    }
+    glViewport( 0, 0, window_properties.width, window_properties.height );
 
     // draw_test_rectangle(mrectangle_color);
     // draw_test_circle(mcircle_color);
