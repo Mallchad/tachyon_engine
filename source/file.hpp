@@ -66,7 +66,7 @@ FUNCTION load_file_binary( fpath target )
     if (tmp == nullptr)
     {
         std::cout << "[File] Failed to open file: " << target << "\n";
-        std::cout << "[File] Failed to open file: " << global_database::get_primary()->project_root << "\n";
+        std::cout << "[File] Failed to open file: " << globals::get_primary()->project_root << "\n";
         return out;
     }
     fseek( tmp, 0, SEEK_END );

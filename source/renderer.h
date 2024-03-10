@@ -8,7 +8,7 @@ using renderer_backend = renderer_opengl;
 
 class renderer final
 {
-    global_database* global;
+    globals* global;
     mesh_id test_utah_teapot_id = -1;
     fmesh test_utah_teapot;
     fpath utah_teapot_file;

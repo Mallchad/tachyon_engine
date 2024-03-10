@@ -3,17 +3,20 @@
 
 #include <vector>
 #include <filesystem>
+#include <chrono>
 
 #ifndef TRIANGULATE_PROJECT_ROOT
     static_assert( false, "TRIANGULATE_PROJECT_ROOT not defined" );
 #endif
 
-class global_database
+class globals
 {
     using fpath = std::filesystem::path;
     using fstring = std::string;
 public:
-    static global_database* primary_database;
+    static globals* primary_database;
+
+    std::chrono::time_point<std::chrono::steady_clock> program_epoch;
 
     /// Search paths which serve as a root for a file reference
     std::vector<fstring> search_paths;
@@ -26,5 +29,5 @@ public:
     bool reload_shaders = false;
     bool reload_released = true;
 
-    static global_database* get_primary();
+    static globals* get_primary();
 };

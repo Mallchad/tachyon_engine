@@ -64,7 +64,9 @@ using program_id        = internal_id<id_type::shader_program>;
 
 struct frame_shader_global
 {
+    // Timestamp of the very beginning of the program lifetime
     ffloat epoch = 0;
+    // Time elapsed since program epoch
     ffloat time_since_epoch = 0;
     /// Time since epoch at the beginning of previous frame
     ffloat last_begin_epoch = 0;

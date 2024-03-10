@@ -5,11 +5,10 @@ int main()
 {
     using namespace std::chrono_literals;
 
-    global_database global = {};
-    std::chrono::time_point<std::chrono::steady_clock> program_epoch =
-        std::chrono::steady_clock::now();
+    globals global = {};
+    global.program_epoch = get_time();
 
-    global_database::primary_database = &global;
+    globals::primary_database = &global;
     global.kill_program = false;
 
     #ifdef TRACY_ENABLE
@@ -24,7 +23,7 @@ int main()
 
         while ( global.kill_program == false )
         {
-            auto epoch_elapsed = std::chrono::steady_clock::now() - program_epoch;
+            auto epoch_elapsed = std::chrono::steady_clock::now() - global.program_epoch;
             float epoch_elapsed_float = std::chrono::duration_cast<
                 std::chrono::duration<ffloat>>( epoch_elapsed ).count();
 

@@ -1,9 +1,11 @@
 
 #include "global.h"
 
-global_database* global_database::primary_database = nullptr;
+using def = globals;
 
-global_database* global_database::get_primary()
+globals* def::primary_database = nullptr;
+
+globals* def::get_primary()
 {
     return primary_database;
 }

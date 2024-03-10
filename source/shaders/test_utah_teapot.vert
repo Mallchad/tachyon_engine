@@ -63,9 +63,9 @@ void main()
                       .0, .0, 1., 0,
                       .0, .0, .0, 1. );
 
-    // // Map into screen aspect
-    transform.x *= ratio_16_9;
-    rotation.x *= ratio_16_9;
+    // // Map into screen coordinate system
+    transform.x *= screen_vh_aspect_ratio;
+    rotation.x *= screen_vh_aspect_ratio;
     gl_Position = rotation;
     vertex_color = col;
 }

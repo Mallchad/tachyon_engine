@@ -7,7 +7,7 @@
 
 class input_xlib final
 {
-    global_database* global = nullptr;
+    globals* global = nullptr;
     renderer_opengl* m_renderer = nullptr;
     Display* m_display = nullptr;
     Window m_window = 0;

@@ -77,7 +77,7 @@ class renderer_opengl final INTERFACE_RENDERER
         GLenum usage_pattern;
     };
 
-    global_database* global = nullptr;
+    globals* global = nullptr;
 
     /// Primary Display
     Display* rx_display = nullptr;

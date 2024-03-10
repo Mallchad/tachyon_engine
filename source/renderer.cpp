@@ -10,7 +10,9 @@
 
 CONSTRUCTOR renderer::renderer()
 {
-    global = global_database::get_primary();
+    global = globals::get_primary();
+    frame_shader_globals.last_begin_epoch = time_elapsed<ffloat>();
+    frame_shader_globals.last_end_epoch = time_elapsed<ffloat>();
 
     utah_teapot_file = linux_search_file(
         "utah_teapot.stl", { std::filesystem::path( global->project_root ) / "assets" } );
@@ -43,6 +45,13 @@ FUNCTION renderer::frame_update(ffloat epoch_elapsed)
 {
     ZoneScopedN("graphics refresh");
 
+    // Update early data for the frame
+    frame_shader_globals.time_since_epoch = time_elapsed<ffloat>();
+    frame_shader_globals.delta_time_begin =
+        time_elapsed<ffloat>() - frame_shader_globals.last_begin_epoch;
+    frame_shader_globals.last_begin_epoch = time_elapsed<ffloat>();
+    frame_shader_globals.delta_time = frame_shader_globals.delta_time_begin;
+
     if (global->reload_shaders)
     {
         global->reload_shaders = false;
@@ -74,15 +83,6 @@ FUNCTION renderer::frame_update(ffloat epoch_elapsed)
         }
     }
 
-    frame_shader_globals.epoch = 0;
-    frame_shader_globals.time_since_epoch = epoch_elapsed;
-    frame_shader_globals.last_begin_epoch = 0;
-    frame_shader_globals.last_end_epoch = 0;
-    frame_shader_globals.delta_time = 0;
-    frame_shader_globals.delta_time_begin = 0;
-    frame_shader_globals.delta_time_begin = 0;
-    frame_shader_globals.screen_vh_aspect_ratio = 0;
-
     platform.shader_globals_update( frame_shader_globals );
     platform.frame_start();
     ftransform stub_transform = {};
@@ -91,4 +91,8 @@ FUNCTION renderer::frame_update(ffloat epoch_elapsed)
     platform.refresh( frame_shader_globals );
 
     std::cout << std::flush;
+
+    frame_shader_globals.delta_time_end =
+        time_elapsed<ffloat>() - frame_shader_globals.last_end_epoch;
+    frame_shader_globals.last_end_epoch = time_elapsed<ffloat>();
 }

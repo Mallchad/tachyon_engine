@@ -14,7 +14,7 @@ CONSTRUCTOR impl::input_xlib( renderer_opengl& render_handle )
 freport
 FUNCTION impl::initialize( renderer_opengl& render_handle )
 {
-    global = global_database::get_primary();
+    global = globals::get_primary();
     m_renderer = &render_handle;
     m_display = m_renderer->rx_display;
     m_wm_delete_window = m_renderer->vx_wm_delete_window;

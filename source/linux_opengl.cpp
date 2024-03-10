@@ -80,8 +80,8 @@ static void
 FUNCTION sigterm_handler(int sig)
 {
     (void)(sig);
-    global_database* tmp = {};
-    tmp = global_database::get_primary();
+    globals* tmp = {};
+    tmp = globals::get_primary();
     tmp->kill_program = true;
     std::cout << "caught a signal\n" << std::flush;
     std::signal(SIGINT, sigterm_handler);
@@ -109,7 +109,7 @@ fhowdit
 FUNCTION def::initialize()
 {
     signal(SIGINT, sigterm_handler);
-    global = global_database::get_primary();
+    global = globals::get_primary();
     if (global == nullptr)
     {
         std::cout << "Could not aquire global database, cannot manage program safely \n";
