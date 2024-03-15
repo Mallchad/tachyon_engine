@@ -51,11 +51,14 @@ FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths )
     return out_path;
 }
 
-/// Read a file into the internal storage of the program
-// This effectively reads a file and then returns a byte buffer repsenting the read file
-// in a binary format. No attempt is made at formatting it.
+/*** Read a file into the internal storage of the program
+ This effectively reads a file and then returns a byte buffer repsenting the read file
+ in a binary format. No attempt is made at formatting it.
+
+ Returns a zero length byte_buffer if it failed
+*/
 byte_buffer
-FUNCTION load_file_binary( fpath target )
+FUNCTION file_load_binary( fpath target )
 {
     using namespace std::filesystem;
     byte_buffer out;
@@ -71,6 +74,11 @@ FUNCTION load_file_binary( fpath target )
     }
     fseek( tmp, 0, SEEK_END );
     tmp_filesize = ftell( tmp );
+    if (tmp_filesize <= 0)
+    {
+        std::cout << "[File] WARNING, opened file is zero length \n";
+    }
+
     // Return to beginning
     fseek( tmp, 0, SEEK_SET );
 
@@ -83,7 +91,7 @@ FUNCTION load_file_binary( fpath target )
 }
 /// Deprecreated. Use the new function load_file_binary
 byte_buffer
-FUNCTION intern_file( fpath target ) { return load_file_binary( target ); }
+FUNCTION intern_file( fpath target ) { return file_load_binary( target ); }
 
 /// Tests the memory layout to see if it is little endian or big endian
 // Returns true if little endian
@@ -100,10 +108,16 @@ FUNCTION test_little_endian()
     return little_endian;
 }
 
+/// vertex_only - Basic normal_less layout
+// vertex_and_normal - Include a full set of triangle vertecies and its assocaited normal
+// fullspec - UNIMPLIMENTED triangles, normals, and random variable length embeddable
+//  attribute data
+enum class stl_format { vertex_only, vertex_and_normal, fullspec };
+
 /// Returns a buffer of vertecies stored in an STL file
 // NOTE In future may be interlaced with normals
 std::vector<ffloat3>
-FUNCTION read_stl_file( fpath target )
+FUNCTION read_stl_file( fpath target, stl_format format = stl_format::vertex_and_normal )
 {
     /** STL Format
         Presumed little endian
@@ -119,36 +133,74 @@ FUNCTION read_stl_file( fpath target )
             50 Byte Stride from one Triangle to Next
     */
 
+    assert( (format != stl_format::fullspec) && "[File] Fullspec STL format is not impliemnted" );
+
     byte_buffer file;
     std::vector<ffloat3> out;
     fuint32 triangle_count;
+    fbyte* triangle_count_ptr = nullptr;
     constexpr fint32 triangle_count_byte = 80;
+    constexpr fint32 first_normal_byte = 84;
     constexpr fint32 first_vertex_byte = 96;
     constexpr fint32 triangle_stride = (sizeof(ffloat) * 12) + sizeof(fuint16);
+    constexpr fint32 triangle_stride_normal = 50;
 
-    file = intern_file( target );
+
+    file = file_load_binary( target );
     bool file_read_fail = file.size() <= 0;
     if ( file_read_fail ) { return out; }
 
-    triangle_count = *reinterpret_cast<fint32*>( triangle_count_byte + file.data() );
-
-    out.resize( triangle_count * 3 );
-
-    ffloat3* x_memory = 0;
-    for (int i_triangle=0; i_triangle < triangle_count; ++i_triangle)
+    if (format == stl_format::vertex_only)
     {
-        if ( (2 + i_triangle * 3) > out.size() )
+        triangle_count = *reinterpret_cast<fint32*>( triangle_count_byte + file.data() );
+
+        out.resize( triangle_count * 3 );
+
+        ffloat3* x_memory = 0;
+        for (int i_triangle=0; i_triangle < triangle_count; ++i_triangle)
         {
-            std::cout << "[File] ERRROR buffer overflow whilst reading file \n";
-            out.resize(0);
-            return out;
+            if ( (2 + i_triangle * 3) > out.size() )
+            {
+                std::cout << "[File] ERRROR buffer overflow whilst reading file \n";
+                out.resize(0);\
+                return out;
+            }
+            // 96 is an offset to the first vertex data
+            x_memory = reinterpret_cast<ffloat3*>( first_vertex_byte + file.data() +
+                                                   (i_triangle * triangle_stride) );
+            out[ 0+ i_triangle *3 ] = *(0+ x_memory);
+            out[ 1+ i_triangle *3 ] = *(1+ x_memory);
+            out[ 2+ i_triangle *3 ] = *(2+ x_memory);
+
         }
-        // 96 is an offset to the first vertex data
-        x_memory = reinterpret_cast<ffloat3*>( first_vertex_byte + file.data() +
-                                               (i_triangle * triangle_stride) );
-        out[ 0+ i_triangle *3 ] = *(0+ x_memory);
-        out[ 1+ i_triangle *3 ] = *(1+ x_memory);
-        out[ 2+ i_triangle *3 ] = *(2+ x_memory);
+    }
+    else if (format == stl_format::vertex_and_normal)
+    {
+        fbyte* first_triangle_write = nullptr;
+        triangle_count_ptr = triangle_count_byte + file.data();
+
+        std::memcpy( &triangle_count, triangle_count_ptr, sizeof(fuint32));
+        out.resize( (triangle_count * 4) + 100);
+        first_triangle_write = (triangle_count * sizeof(ffloat3)) +
+            reinterpret_cast<fbyte*>( out.data() );
+
+        fbyte* x_readhead = nullptr;
+        fbyte* x_writehead = nullptr;
+        for (int i_triangle=0; i_triangle < triangle_count; ++i_triangle)
+        {
+            // Copy normals
+            x_readhead = (i_triangle * triangle_stride_normal) + first_normal_byte +
+                reinterpret_cast<fbyte*>( file.data() );
+            x_writehead = i_triangle * sizeof(ffloat3) +
+                reinterpret_cast<fbyte*>( out.data() );
+
+            std::memcpy( x_writehead, x_readhead, sizeof(ffloat3) );
+
+            x_readhead = 12 + x_readhead;
+            x_writehead = (i_triangle * sizeof(ffloat3) * 3) + first_triangle_write;
+
+            std::memcpy( x_writehead, x_readhead, (sizeof(ffloat3) * 3) );
+        }
 
     }
 
@@ -165,7 +217,7 @@ FUNCTION linux_load_text_file( fpath target, std::vector<fpath> search_paths )
     target_path = linux_search_file( target, search_paths );
     if (target_path.empty()) return "";
 
-    loaded_file = load_file_binary( target_path );
+    loaded_file = file_load_binary( target_path );
     out.resize( loaded_file.size() );
     std::memcpy( out.data(), loaded_file.data(), loaded_file.size() );
 

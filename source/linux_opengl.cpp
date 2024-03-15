@@ -745,8 +745,11 @@ FUNCTION def::mesh_create( fmesh target )
     glBindBuffer( GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData( GL_ARRAY_BUFFER, target.vertex_count * sizeof(ffloat3),
                   target.vertex_buffer, GL_STATIC_DRAW );
+
+    // FIXME: Needs to be corrected to use the correct triangle count/size
+    // Accepts buffer with normals of each triangle first then vertecies after
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(ffloat3), reinterpret_cast<void*>(0));
+                          0, reinterpret_cast<void*>(9438 * 12));
     glEnableVertexAttribArray(0);
 
     glObjectLabel( GL_VERTEX_ARRAY, attributes, attribute_name.size(), attribute_name.c_str() );
