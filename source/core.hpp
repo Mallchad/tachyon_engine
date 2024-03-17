@@ -85,6 +85,8 @@ using fpath = std::filesystem::path;
 /// an explicit cast which auto-disallows arithmatic operations
 using fbyte = uint8_t;
 using byte_buffer = std::vector<fbyte>;
+// An untyped byte buffer
+using buffer = std::vector<fbyte>;
 
 /// Object for handling locating ID's to references of objects
 // Default ID class is untyped, strongly reccomend against using it and creating your

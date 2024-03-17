@@ -97,13 +97,14 @@ enum class shader_type
 struct mesh
 {
     fstring name;
-    ffloat3* vertex_buffer = nullptr;
-    fuint32* vertex_index_buffer = nullptr;
-    ffloat4* vertex_color_buffer = nullptr;
+    std::vector<ffloat3> vertex_buffer;
+    std::vector<fuint32> vertex_index_buffer;
+    std::vector<ffloat4> vertex_color_buffer;
+    fuint32 face_count = 0;
     fuint32 vertex_count = 0;
     fuint32 index_count = 0;
     fuint32 color_count = 0;
-    shader_program_id shader_program_id;
+    shader_program_id shader_program_id = -1;
 };
 
 using fshader_type = shader_type;

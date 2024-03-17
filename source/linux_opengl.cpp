@@ -257,12 +257,18 @@ FUNCTION def::initialize()
     fmesh test_triangle =
     {
         .name = "test_triangle",
-        .vertex_buffer = reinterpret_cast<ffloat3*>( mtest_triangle ),
-        .vertex_color_buffer = reinterpret_cast<ffloat4*>( mtest_triangle_colors ),
         .vertex_count = 3,
         .color_count = 3,
         .shader_program_id = shader_program_test
     };
+    test_triangle.vertex_buffer.resize( test_triangle.vertex_count );
+    test_triangle.vertex_color_buffer.resize( test_triangle.color_count );
+    std::memcpy( test_triangle.vertex_buffer.data(),
+                 mtest_triangle,
+                 sizeof(mtest_triangle) );
+    std::memcpy( test_triangle.vertex_color_buffer.data(),
+                 mtest_triangle_colors,
+                 sizeof(mtest_triangle_colors) );
     mtest_triangle_mesh = mesh_create( test_triangle );
 
     // Disabled VSync for performance
@@ -679,10 +685,16 @@ FUNCTION def::shader_program_detach( shader_program_id target, shader_id shader_
     return true;
 }
 
-fhowdit
+freport
 FUNCTION def::shader_program_run( shader_program_id target )
 {
     using namespace ldynamic;
+    if (target <= -1)
+    {
+        // std::cout << "[OpenGL Backend] Trying to run shader without a valid shader ID, bailing. \n";
+        return false;
+    }
+
     GLint program_target = shader_program_list[ target.cast() ];
     glUseProgram( program_target );
 
@@ -741,15 +753,15 @@ FUNCTION def::mesh_create( fmesh target )
 
     // Register OpenGL buffer and upload the data
     glBindVertexArray( attributes );
-    // Vertecies
+    // Vertecies and normals
     glBindBuffer( GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData( GL_ARRAY_BUFFER, target.vertex_count * sizeof(ffloat3),
-                  target.vertex_buffer, GL_STATIC_DRAW );
+    glBufferData( GL_ARRAY_BUFFER, target.face_count * 4 *2 *sizeof(ffloat3),
+                  target.vertex_buffer.data(), GL_STATIC_DRAW );
 
     // FIXME: Needs to be corrected to use the correct triangle count/size
     // Accepts buffer with normals of each triangle first then vertecies after
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                          0, reinterpret_cast<void*>(9438 * 12));
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE,
+                           0, reinterpret_cast<void*>(target.face_count * sizeof(ffloat3) ));
     glEnableVertexAttribArray(0);
 
     glObjectLabel( GL_VERTEX_ARRAY, attributes, attribute_name.size(), attribute_name.c_str() );
@@ -759,7 +771,7 @@ FUNCTION def::mesh_create( fmesh target )
         // Vertex indices
         glBindBuffer( GL_ARRAY_BUFFER, index_buffer);
         glBufferData( GL_ARRAY_BUFFER, target.index_count * sizeof(fint32),
-                      target.vertex_index_buffer, GL_STATIC_DRAW );
+                      target.vertex_index_buffer.data(), GL_STATIC_DRAW );
         glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE,
                               sizeof(fuint32), reinterpret_cast<void*>(0));
         glEnableVertexAttribArray(1);
@@ -771,7 +783,7 @@ FUNCTION def::mesh_create( fmesh target )
         // Vertex colors
         glBindBuffer( GL_ARRAY_BUFFER, color_buffer );
         glBufferData( GL_ARRAY_BUFFER, target.color_count * sizeof(rgba),
-                      target.vertex_color_buffer, GL_STATIC_DRAW );
+                      target.vertex_color_buffer.data(), GL_STATIC_DRAW );
         glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
                               sizeof(rgba), reinterpret_cast<void*>(0));
         glEnableVertexAttribArray(2);
