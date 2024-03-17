@@ -19,6 +19,9 @@ compile_commands*
 *.tlog
 *.exe.recipie
 
+# Devtool Autogen
+TAGS
+
 # Autosave Files
 *~
 ~*
