@@ -10,12 +10,13 @@ target( "triangulite" )
     set_policy("build.ccache", true)
     add_files( "source/*.cpp" )
     add_includedirs( "../tracy",
-                     "external/spdlog/include/" )
+                     "external/spdlog/include/",
+                     "source" )
     -- asan must be linked first
     add_links( "asan" )
+    add_links( "ubsan" )
     add_links( "dl", "X11", "GL" )
     add_defines( 'TRIANGULATE_PROJECT_ROOT="$(projectdir)"' )
-    -- include ( "source" )
 
     -- Temporary cxxflags to safe the effort of full converting to xmake --
     -- Using lld linker instead of mold for now for error messages
@@ -38,6 +39,13 @@ target( "triangulite" )
                   "-Wno-unused-private-field",
                   "-Wno-abstract-final-class",
                   "-fsanitize=address",
+                  -- "-fsanitize=thread",
+                  -- "-fsanitize=memory",
+                  "-fsanitize=undefined",
+                  -- "-fsanitize=dataflow",
+                  -- "-fsanitize=cfi",   -- Control Flow Integrity
+                  -- "-fsanitize=kcfi",  -- Kernel Indirect Call Forward-Edge Control Flow Integrity
+                  -- "-fsanitize=safe-stack",
                   "-Werror=old-style-cast" )
 
     if is_mode( "release" ) then
