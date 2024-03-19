@@ -73,6 +73,16 @@ FUNCTION cast( auto target )
     return static_cast<t_return>( target );
 }
 
+/// Reinterpret cast alias
+// Very prone to invoking Undefined Behaviour, avoid accessing objects through
+// reinterpreted pointers
+template<typename t_return> t_return
+FUNCTION ub_cast( auto target )
+{
+    return reinterpret_cast<t_return>( target );
+}
+
+
 // -- Typedefs --
 using fstring = std::basic_string<char>;
 using fstring_view = std::basic_string_view<char>;

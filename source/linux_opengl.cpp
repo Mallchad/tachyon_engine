@@ -285,6 +285,25 @@ FUNCTION def::initialize()
     // GLX_MESA_swap_control
     ldynamic::glXSwapIntervalMESA( vsync_adaptive );
 
+    // Enable Z Buffering
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glStencilMask(0xFF); // each bit is written to the stencil buffer as is
+
+    // Enable Backface Culling
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    // Enable Alpha Blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
+    glPolygonMode( GL_FRONT, GL_FILL ); // Normal Mode
+    // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    // glPolygonMode( GL_BACK, GL_LINE ); // Disabled front or back only disabled in core profile
+
     return true;
 }
 
@@ -563,6 +582,12 @@ FUNCTION def::shader_create( fstring name, shader_type request_type )
 fhowdit
 FUNCTION def::shader_program_destroy( shader_program_id target )
 {
+    if (target <= -1)
+    {
+        // std::cout << "[OpenGL Backend] Trying to run shader without a valid shader ID, bailing. \n";
+        return false;
+    }
+
     GLint doomed_program = shader_program_list[ target.cast() ];
     ldynamic::glDeleteProgram( doomed_program );
     return true;
@@ -758,26 +783,20 @@ FUNCTION def::mesh_create( fmesh target )
     glBufferData( GL_ARRAY_BUFFER, target.face_count * 4 *2 *sizeof(ffloat3),
                   target.vertex_buffer.data(), GL_STATIC_DRAW );
 
-    // FIXME: Needs to be corrected to use the correct triangle count/size
-    // Accepts buffer with normals of each triangle first then vertecies after
+    // Accepts buffer with interleaved, normal, then vertex, repeated
+    // FIXME: Will eventually include color and texture data
+    // Normals
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE,
-                           0, reinterpret_cast<void*>(target.face_count * sizeof(ffloat3) ));
+                           24, ub_cast<void*>( 0 ));
     glEnableVertexAttribArray(0);
+    // Vertecies
+    glVertexAttribPointer( 1, 3, GL_FLOAT, GL_FALSE,
+                           24, ub_cast<void*>(12) );
+    glEnableVertexAttribArray(1);
 
     glObjectLabel( GL_VERTEX_ARRAY, attributes, attribute_name.size(), attribute_name.c_str() );
     glObjectLabel( GL_BUFFER, vertex_buffer, vertex_name.size(), vertex_name.c_str() );
-    if (target.index_count > 0)
-    {
-        // Vertex indices
-        glBindBuffer( GL_ARRAY_BUFFER, index_buffer);
-        glBufferData( GL_ARRAY_BUFFER, target.index_count * sizeof(fint32),
-                      target.vertex_index_buffer.data(), GL_STATIC_DRAW );
-        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE,
-                              sizeof(fuint32), reinterpret_cast<void*>(0));
-        glEnableVertexAttribArray(1);
 
-        glObjectLabel( GL_BUFFER, index_buffer, index_name.size(), index_name.c_str() );
-    }
     if (target.color_count > 0)
     {
         // Vertex colors
@@ -789,6 +808,18 @@ FUNCTION def::mesh_create( fmesh target )
         glEnableVertexAttribArray(2);
 
         glObjectLabel( GL_BUFFER, color_buffer, color_name.size(), color_name.c_str() );
+    }
+    if (target.index_count > 0)
+    {
+        // Vertex indices
+        glBindBuffer( GL_ARRAY_BUFFER, index_buffer);
+        glBufferData( GL_ARRAY_BUFFER, target.index_count * sizeof(fint32),
+                      target.vertex_index_buffer.data(), GL_STATIC_DRAW );
+        glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE,
+                              sizeof(fuint32), reinterpret_cast<void*>(0));
+        glEnableVertexAttribArray(3);
+
+        glObjectLabel( GL_BUFFER, index_buffer, index_name.size(), index_name.c_str() );
     }
 
     mmesh_list[ metadata.reference_id.cast() ] = target;
@@ -944,9 +975,9 @@ freport
 FUNCTION def::frame_start()
 {
     // Rendering
-    // glClearColor( 1.f, 0.5, 1.f, 1.f );
-    glClearColor( 0.f, 0.0f, 0.f, .5f );
-    glClear( GL_COLOR_BUFFER_BIT );
+    glClearColor( 0.2f, 0.f, 0.2f, 1.0f );
+    // Clear Bit Buffers
+    glClear( GL_COLOR_BUFFER_BIT  | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT );
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     return true;
@@ -958,6 +989,15 @@ FUNCTION def::refresh( frame_shader_global frame )
 
     // Map the render target to the window width
     XWindowAttributes window_properties;
+
+    // draw_test_rectangle(mrectangle_color);
+    // draw_test_circle(mcircle_color);
+
+    // draw_test_triangle(mtriangle_color);
+    // draw_test_signfield(msignfield_color);
+
+    buffer_damage_size = 0;
+
     XGetWindowAttributes(rx_display, vx_window, &window_properties);
     current_frame = frame;
     current_frame.screen_vh_aspect_ratio =
@@ -969,20 +1009,7 @@ FUNCTION def::refresh( frame_shader_global frame )
             "may not render properly \n";
     }
     glViewport( 0, 0, window_properties.width, window_properties.height );
-
-    // draw_test_rectangle(mrectangle_color);
-    // draw_test_circle(mcircle_color);
-
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-    // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-    // glPolygonMode( GL_BACK, GL_LINE ); // Disabled front or back only disabled in core profile
-
-    // draw_test_triangle(mtriangle_color);
-    // draw_test_signfield(msignfield_color);
-
     glXSwapBuffers ( rx_display, vx_window );
-
-    buffer_damage_size = 0;
 
     return true;
 }

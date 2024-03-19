@@ -158,8 +158,8 @@ FUNCTION read_stl_file( fpath target )
 
     // Do quick setup with the face count
     out.face_count = triangle_count;
-    out.vertex_count = triangle_count * 3;
-    vertex_buffer.resize( (triangle_count * 4) + 100);
+    out.vertex_count = triangle_count * 3; // Sized for 3 vertecies per face, 3 normals per face
+    vertex_buffer.resize( (triangle_count * 6) );
     first_triangle_write = (triangle_count * sizeof(ffloat3)) +
         reinterpret_cast<fbyte*>( vertex_buffer.data() );
 
@@ -167,18 +167,21 @@ FUNCTION read_stl_file( fpath target )
     fbyte* x_writehead = nullptr;
     for (int i_triangle=0; i_triangle < triangle_count; ++i_triangle)
     {
-        // Copy normals
+        // Copy normal
         x_readhead = (i_triangle * triangle_stride_normal) + first_normal_byte +
-        reinterpret_cast<fbyte*>( file.data() );
-        x_writehead = i_triangle * sizeof(ffloat3) +
-        reinterpret_cast<fbyte*>( vertex_buffer.data() );
+            ub_cast<fbyte*>( file.data() );
+        x_writehead = (i_triangle * 72) +
+            ub_cast<fbyte*>( vertex_buffer.data() );
+        // Give every vertex a copy of the same normal
+        std::memcpy(  0+ x_writehead, x_readhead, sizeof(ffloat3) );
+        std::memcpy( 24+ x_writehead, x_readhead, sizeof(ffloat3) );
+        std::memcpy( 48+ x_writehead , x_readhead, sizeof(ffloat3) );
 
-        std::memcpy( x_writehead, x_readhead, sizeof(ffloat3) );
+        // Copy Vertex
+        std::memcpy( 12+ x_writehead, 12+ x_readhead, 12 );
+        std::memcpy( 36+ x_writehead, 24+ x_readhead, 12 );
+        std::memcpy( 60+ x_writehead, 36+ x_readhead, 12 );
 
-        x_readhead = 12 + x_readhead;
-        x_writehead = (i_triangle * sizeof(ffloat3) * 3) + first_triangle_write;
-
-        std::memcpy( x_writehead, x_readhead, (sizeof(ffloat3) * 3) );
     }
 
     return out;
