@@ -293,6 +293,11 @@ FUNCTION def::initialize()
     // Enable Backface Culling
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+    fint32 winding = 0;
+    glFrontFace( GL_CCW );
+    glGetIntegerv( GL_FRONT_FACE, &winding );
+    if ( winding == GL_CCW ) { std::cout << "[OpenGL] Face Winding is Counter-Clockwise \n"; }
+    else                     { std::cout << "[OpenGL] Face Winding is Clockwise \n"; }
 
     // Enable Alpha Blending
     glEnable(GL_BLEND);

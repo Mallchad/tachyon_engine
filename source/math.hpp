@@ -4,12 +4,14 @@
 #include "code_helpers.h"
 
 #include <cstdint>
+#include <cmath>
 
 // Gurantee vectors are packed tightly because of OpenGL functions
 #pragma pack(push, 1)
 template <typename t_calculable>
 class vector3 final
 {
+    using t_vector = vector3<t_calculable>;
 public:
     t_calculable mx, my, mz = 0;
 
@@ -54,16 +56,62 @@ public:
         return out;
     }
     vector3<t_calculable>&
+    operator/ (const t_calculable rhs) const
+    {
+        vector3 out = vector3(mx / rhs,
+                              my / rhs,
+                              mz / rhs);
+        return out;
+    }
+    vector3<t_calculable>&
     operator= (t_calculable all)
     {
         mx = all;
         my = all;
         mz = all;
     }
+    t_vector&
+    operator- ()
+    {
+        mx = -mx;
+        my = -my;
+        mz = -mz;
+        return *this;
+    }
+    t_vector
+    normalize() const
+    {
+        ffloat length = sqrtf( (mx * mx) + (my * my) + (mz * mz) );
+
+        return *this/length;
+    }
+
+    // Non-Member Functions
+    friend t_calculable
+    dot( const t_vector lhs, const t_vector rhs )
+    {
+        return (lhs.mx * rhs.mx) + (lhs.my * rhs.my) + (lhs.mz * rhs.mz);
+    }
+    friend t_vector
+    cross( const t_vector lhs, const t_vector rhs )
+    {
+        t_vector out;
+        out.mx = ( lhs.my * rhs.mz ) - (lhs.mz * rhs.my);
+        out.my = ( lhs.mz * rhs.mx ) - (lhs.mx * rhs.mz);
+        out.mz = ( lhs.mx * rhs.my ) - (lhs.my * rhs.mx);
+
+        return out;
+    }
+    friend t_vector
+    normalize( const t_vector v )
+    {
+        return v.normalize();
+    }
 };
 template <typename t_calculable>
 class vector4
 {
+    using t_vector = vector4<t_calculable>;
 public:
     t_calculable mx, my, mz, mw = 0;
 

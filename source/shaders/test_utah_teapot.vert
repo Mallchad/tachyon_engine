@@ -35,7 +35,7 @@ const float scale = .1;
 const float ratio_16_9 = 1080.f/1920.f;
 
 float rotation_speed = 0.1f;
-float x_rot = (-0.25f)  * tau;
+float x_rot = (-0.125f)  * tau;
 float y_rot = (0. + (time_since_epoch * rotation_speed)) * tau;
 float z_rot = (0.0f) *tau;
 

@@ -51,11 +51,33 @@ public:
     internal_id( fint32 value ) : m_value(value) {}
 
     template<id_type = t_kind>
+
+#if __cplusplus >= 202002L // C++20 (and later) code
     std::strong_ordering
     FUNCTION operator <=> ( internal_id<t_kind> rhs ) const
     { return this->m_value <=> rhs.m_value; }
     std::strong_ordering
     FUNCTION operator <=> ( int rhs ) { return m_value <=> rhs; }
+#else
+    bool
+    FUNCTION operator < ( internal_id<t_kind> rhs ) const
+    { return this->m_value < rhs.m_value; }
+    bool
+    FUNCTION operator <= ( internal_id<t_kind> rhs ) const
+    { return this->m_value <= rhs.m_value; }
+    bool
+    FUNCTION operator > ( internal_id<t_kind> rhs ) const
+    { return this->m_value <= rhs.m_value; }
+    bool
+    FUNCTION operator >= ( internal_id<t_kind> rhs ) const
+    { return this->m_value >= rhs.m_value; }
+    bool
+    FUNCTION operator == ( internal_id<t_kind> rhs ) const
+    { return this->m_value == rhs.m_value; }
+    bool
+    FUNCTION operator != ( internal_id<t_kind> rhs ) const
+    { return this->m_value != rhs.m_value; }
+#endif
     
     explicit operator
     CONVERSION fint32() const { return m_value; }
@@ -67,8 +89,8 @@ public:
 };
 
 /// Static cast alias
-template<typename t_return> t_return
-FUNCTION cast( auto target )
+template<typename t_return, typename t_target> t_return
+FUNCTION cast( t_target target )
 {
     return static_cast<t_return>( target );
 }
@@ -76,8 +98,8 @@ FUNCTION cast( auto target )
 /// Reinterpret cast alias
 // Very prone to invoking Undefined Behaviour, avoid accessing objects through
 // reinterpreted pointers
-template<typename t_return> t_return
-FUNCTION ub_cast( auto target )
+template<typename t_return, typename t_target> t_return
+FUNCTION ub_cast( t_target target )
 {
     return reinterpret_cast<t_return>( target );
 }

@@ -145,6 +145,18 @@ FUNCTION read_stl_file( fpath target )
     constexpr fint32 triangle_stride = (sizeof(ffloat) * 12) + sizeof(fuint16);
     constexpr fint32 triangle_stride_normal = 50;
 
+    ffloat3 normal;
+    ffloat3 vertex_1;
+    ffloat3 vertex_2;
+    ffloat3 vertex_3;
+    ffloat3 vertex_1c;
+    ffloat3 vertex_2c;
+    ffloat3 vertex_3c;
+    ffloat3 normal_calculated;
+    ffloat winding_alignment = 0.0f;
+    bool flipped_winding = false;
+    bool flipped_message_sent = false;
+
 
     file = file_load_binary( target );
     bool file_read_fail = file.size() <= 0;
@@ -165,23 +177,66 @@ FUNCTION read_stl_file( fpath target )
 
     fbyte* x_readhead = nullptr;
     fbyte* x_writehead = nullptr;
-    for (int i_triangle=0; i_triangle < triangle_count; ++i_triangle)
+    while (1)
     {
-        // Copy normal
-        x_readhead = (i_triangle * triangle_stride_normal) + first_normal_byte +
+        for (int i_triangle=0; i_triangle < triangle_count; ++i_triangle)
+        {
+            // Copy normal
+            x_readhead = (i_triangle * triangle_stride_normal) + first_normal_byte +
             ub_cast<fbyte*>( file.data() );
-        x_writehead = (i_triangle * 72) +
+            x_writehead = (i_triangle * 72) +
             ub_cast<fbyte*>( vertex_buffer.data() );
-        // Give every vertex a copy of the same normal
-        std::memcpy(  0+ x_writehead, x_readhead, sizeof(ffloat3) );
-        std::memcpy( 24+ x_writehead, x_readhead, sizeof(ffloat3) );
-        std::memcpy( 48+ x_writehead , x_readhead, sizeof(ffloat3) );
+            // Give every vertex a copy of the same normal
+            std::memcpy(  0+ x_writehead, x_readhead, sizeof(ffloat3) );
+            std::memcpy( 24+ x_writehead, x_readhead, sizeof(ffloat3) );
+            std::memcpy( 48+ x_writehead , x_readhead, sizeof(ffloat3) );
 
-        // Copy Vertex
-        std::memcpy( 12+ x_writehead, 12+ x_readhead, 12 );
-        std::memcpy( 36+ x_writehead, 24+ x_readhead, 12 );
-        std::memcpy( 60+ x_writehead, 36+ x_readhead, 12 );
+            // Copy Vertex
+            std::memcpy( 12+ x_writehead, 12+ x_readhead, 12 );
+            std::memcpy( 36+ x_writehead, 24+ x_readhead, 12 );
+            std::memcpy( 60+ x_writehead, 36+ x_readhead, 12 );
 
+            std::memcpy( &normal,    0+ x_writehead, 12 );
+            std::memcpy( &vertex_1, 12+ x_writehead, 12 );
+            std::memcpy( &vertex_2, 36+ x_writehead, 12 );
+            std::memcpy( &vertex_3, 60+ x_writehead, 12 );
+
+            winding_alignment = 0;
+            normal_calculated = normalize( cross( vertex_2-vertex_1, vertex_3-vertex_1 ) );
+            winding_alignment = dot( normal, normal_calculated );
+
+            // OpenGL considers counter-clockwise wound triangles from the
+            // perspective of the (invisible)interior of the object. Thus,
+            // normals aligned with the given pre-computed normal shall be
+            // flipped. A greater than zero alignment/dot product is considered
+            // closer to being aligned
+            if ( winding_alignment > 0 )
+            {
+                flipped_winding = true;
+                std::memcpy( 12+ x_writehead, 12+ x_readhead, 12 );
+                std::memcpy( 60+ x_writehead, 24+ x_readhead, 12 );
+                std::memcpy( 36+ x_writehead, 36+ x_readhead, 12 );
+                // Error Checking
+                std::memcpy( &vertex_1c, 12+ x_writehead, 12 );
+                std::memcpy( &vertex_2c, 36+ x_writehead, 12 );
+                std::memcpy( &vertex_3c, 60+ x_writehead, 12 );
+
+                std::cout << "[File] Reversed winding on triangle " << i_triangle << "\n";
+
+                winding_alignment = 0;
+                normal_calculated = normalize( cross( vertex_2c-vertex_1c, vertex_3c-vertex_1c ) );
+                winding_alignment = dot( normal, normal_calculated );
+
+                if (winding_alignment < 0)
+                { std::cout << "[File] Something went wrong! Normal is still flipped after reversed winding order!\n"; }
+            }
+            if (flipped_message_sent == false && flipped_winding)
+            {
+                flipped_message_sent = true;
+                std::cout << "[File] STL file appears to have a winding out of phase with the normal, attempting to inverse winding order \n";
+            }
+        }
+        break;
     }
 
     return out;
