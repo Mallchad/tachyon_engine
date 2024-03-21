@@ -9,6 +9,7 @@
 #include <string_view>
 #include <vector>
 #include <filesystem>
+#include <iostream>
 
 // Project Specific Includes
 // Silence warnings in external projects
@@ -22,7 +23,22 @@
 using namespace std::string_literals;
 
 #pragma pop
+
+
+#if __cplusplus >= 201402L
+#include <experimental/source_location>
 // End Passthrough Includes
+    #ifdef __cpp_lib_experimental_source_location
+template<typename t_streamable>
+void
+FUNCTION print(t_streamable message,
+               const std::experimental::source_location location =
+               std::experimental::source_location::current())
+{
+    std::cout << "[" << location.file_name() << "]" << std::setw(10) << message << "\n";
+}
+    #endif
+#endif
 
 enum class id_type
 {
