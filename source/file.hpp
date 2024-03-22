@@ -221,8 +221,6 @@ FUNCTION read_stl_file( fpath target )
                 std::memcpy( &vertex_2c, 36+ x_writehead, 12 );
                 std::memcpy( &vertex_3c, 60+ x_writehead, 12 );
 
-                std::cout << "[File] Reversed winding on triangle " << i_triangle << "\n";
-
                 winding_alignment = 0;
                 normal_calculated = normalize( cross( vertex_2c-vertex_1c, vertex_3c-vertex_1c ) );
                 winding_alignment = dot( normal, normal_calculated );
