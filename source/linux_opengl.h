@@ -133,11 +133,10 @@ class renderer_opengl final INTERFACE_RENDERER
     static constexpr fuint32 mattribute_limit = 1000;
     static constexpr fuint32 mmesh_limit = 1000;
 
-    array<GLuint, mattribute_limit>      mattribute_names;
-    array<GLuint, mbuffer_limit>                mbuffer_names;
-    array<vertex_buffer, mbuffer_limit>         mbuffer_list;
-    array<fmesh, mmesh_limit>                   mmesh_list;
-    array<fmesh_metadata, mmesh_limit>          mmesh_metadata_list;
+    array<GLuint, mattribute_limit>     mattribute_names;
+    array<GLuint, mbuffer_limit>        mbuffer_names;
+    array<fmesh, mmesh_limit>           mmesh_list;
+    array<fmesh_metadata, mmesh_limit>  mmesh_metadata_list;
 
     fint32 mattribute_count = 0;
     fint32 mbuffer_count = 0;
