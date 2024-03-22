@@ -227,7 +227,7 @@ FUNCTION read_stl_file( fpath target )
                 normal_calculated = normalize( cross( vertex_2c-vertex_1c, vertex_3c-vertex_1c ) );
                 winding_alignment = dot( normal, normal_calculated );
 
-                if (winding_alignment < 0)
+                if (winding_alignment > 0)
                 { std::cout << "[File] Something went wrong! Normal is still flipped after reversed winding order!\n"; }
             }
             if (flipped_message_sent == false && flipped_winding)
