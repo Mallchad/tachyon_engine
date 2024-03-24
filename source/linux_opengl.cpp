@@ -14,7 +14,7 @@
 #include <GL/glext.h>
 #include <GL/glxext.h>
 
-#include <bits/this_thread_sleep.h>
+#include <thread>
 #include <chrono>
 #include <cmath>
 #include <compare>
@@ -259,7 +259,7 @@ FUNCTION def::initialize()
         .name = "test_triangle",
         .vertex_count = 3,
         .color_count = 3,
-        .shader_program_id = shader_program_test
+        .shader_id = shader_program_test
     };
     test_triangle.vertex_buffer.resize( test_triangle.vertex_count );
     test_triangle.vertex_color_buffer.resize( test_triangle.color_count );
@@ -448,7 +448,7 @@ FUNCTION def::context_create()
 {
     using namespace ldynamic;
     GLXContext context_tmp = nullptr;
-    fint32 context_id = 0;
+    context_id context = 0;
 
     // Load GL core profile
     int vglx_context_attribs[] =
@@ -491,8 +491,8 @@ FUNCTION def::context_create()
     context_tmp = glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
     vglx_context_list.push_back(context_tmp);
 
-    context_id = fint32( vglx_context_list.size() - 1 );
-    return context_id;
+    context = fint32( vglx_context_list.size() - 1 );
+    return context;
 }
 
 fhowdit

@@ -23,22 +23,7 @@
 using namespace std::string_literals;
 
 #pragma pop
-
-
-#if __cplusplus >= 201402L
-#include <experimental/source_location>
 // End Passthrough Includes
-    #ifdef __cpp_lib_experimental_source_location
-template<typename t_streamable>
-void
-FUNCTION print(t_streamable message,
-               const std::experimental::source_location location =
-               std::experimental::source_location::current())
-{
-    std::cout << "[" << location.file_name() << "]" << std::setw(10) << message << "\n";
-}
-    #endif
-#endif
 
 enum class id_type
 {
@@ -52,6 +37,14 @@ enum class id_type
     shader,
     shader_program
 };
+
+#define print( message ) _print( message, __FILE__ )
+template<typename t_streamable>
+void
+FUNCTION _print( t_streamable message, const char* source_file )
+{
+    std::cout << "[" << source_file << "]" << std::setw(10) << message << "\n";
+}
 
 /// Object for handling locating ID's to references of objects
 // Default ID class, strongly reccomend against using it and creating your

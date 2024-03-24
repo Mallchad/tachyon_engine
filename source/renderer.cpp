@@ -28,7 +28,7 @@ CONSTRUCTOR renderer::renderer()
     test_utah_teapot.vertex_color_buffer.assign( test_utah_teapot.vertex_count, teapot_color );
 
     test_utah_teapot.vertex_color_buffer = test_utah_teapot_colors;
-    test_utah_teapot.shader_program_id = -1;
+    test_utah_teapot.shader_id = -1;
 
     test_utah_teapot_id = platform.mesh_create( test_utah_teapot );
 

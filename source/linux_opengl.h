@@ -69,14 +69,6 @@ class renderer_opengl final INTERFACE_RENDERER
     };
     using fmesh_metadata = mesh_metadata;
 
-    /// Helper class to store the properties of individual vertex_buffers
-    struct vertex_buffer
-    {
-        ffloat3* data;
-        fuint32 size;
-        GLenum usage_pattern;
-    };
-
     globals* global = nullptr;
 
     /// Primary Display

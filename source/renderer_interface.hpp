@@ -7,15 +7,6 @@
 #include "error.hpp"
 #include "math.hpp"
 
-// Forward Declarations
-namespace std
-{
-    FORWARD template<typename _t> class initializer_list;
-    FORWARD template <typename _t_pointer, typename _t_deleter> class unique_ptr;
-    FORWARD template<typename _t, typename _t_alloc> class vector;
-}
-FORWARD struct id;
-
 /** To check for implimented functions place the INTERFACE_DEFINE_FUNCTION macro
  * at the bottom of the .h file. It will not work properly if it is put in a
  * .cpp file, although it will work it will just throw undefined references and
@@ -104,7 +95,7 @@ struct mesh
     fuint32 vertex_count = 0;
     fuint32 index_count = 0;
     fuint32 color_count = 0;
-    shader_program_id shader_program_id = -1;
+    shader_program_id shader_id = -1;
 };
 
 using fshader_type = shader_type;
