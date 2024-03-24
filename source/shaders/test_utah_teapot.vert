@@ -1,17 +1,15 @@
-#version 420 core
+#version 430 core
 
-layout (location = 0) in vec3 normal;
-layout (location = 1) in vec3 vert;
-layout (location = 2) in vec4 col;
+layout( location = 0 ) in vec3 normal;
+layout( location = 1 ) in vec3 vert;
+layout( location = 2 ) in vec4 col;
 
-out vec3 v_normal;
-out vec3 v_position;
-smooth out vec4 vertex_color;
+layout( location = 0 ) out vec3 v_normal;
+layout( location = 1 ) out vec3 v_position;
+layout( location = 2 ) smooth out vec4 v_color;
 
 
-const float tau = 6.283185307;
-
-layout(std140) uniform frame_data
+layout(std140, binding = 0) uniform frame_data
 {
     float epoch;
     float time_since_epoch;
@@ -34,16 +32,22 @@ const vec4 arbitrary_axis = vec4( 0.662f, 0.2f, 0.722f, 1.f);
 const float scale = .1;
 const float ratio_16_9 = 1080.f/1920.f;
 
+const float tau = 6.283185307;
+
 float rotation_speed = 0.1f;
-float x_rot = (-0.125f)  * tau;
-float y_rot = (0. + (time_since_epoch * rotation_speed)) * tau;
-float z_rot = (0.0f) *tau;
+// Euler Rotation
+vec4 rot = vec4(0);
 
 // Translation
 vec3 trans = vec3( 0.0, 0.0, 0.0);
 
 void main()
 {
+    rot.x= (-0.125f) * tau;
+    rot.y = (0. + (time_since_epoch * rotation_speed)) * tau;
+    rot.z = (0.0f) *tau;
+    rot.w = 1.0;
+
     vec4 vertex = vec4( vert.x, vert.y, vert.z, 1.0 );
 
     mat4 transform = mat4( 1., .0, .0, 0,
@@ -51,16 +55,16 @@ void main()
                            .0, .0, 1., 0,
                            .0, .0, .0, 1. );
     mat4 rotation = mat4(1.,     0.,          0.,           0.,
-                         0.,     cos(x_rot), -sin(x_rot),   0.,
-                         0.,     sin(x_rot) , cos(x_rot),   0.,
+                         0.,     cos(rot.x), -sin(rot.x),   0.,
+                         0.,     sin(rot.x) , cos(rot.x),   0.,
                          0.,     0.,          0.,           1.);
-    rotation *= mat4(cos(y_rot),    0.,     sin(y_rot),     0.,
+    rotation *= mat4(cos(rot.y),    0.,     sin(rot.y),     0.,
                      0.,            1.,     0.,             0.,
-                     -sin(y_rot),   0.,     cos(y_rot),     0.,
+                     -sin(rot.y),   0.,     cos(rot.y),     0.,
                      0.,            0.,    0.,              1.);
 
-    rotation *= mat4(cos(z_rot),    -sin(z_rot),    0.,     0.,
-                     sin(z_rot),    cos(z_rot),     0.,     0.,
+    rotation *= mat4(cos(rot.z),    -sin(rot.z),    0.,     0.,
+                     sin(rot.z),    cos(rot.z),     0.,     0.,
                       0.,            0.,             1.,     0.,
                      0.,            0.,             0.,     1.);
 
@@ -81,5 +85,5 @@ void main()
 
     v_normal = ( vec4( normal, 0.0 ) * rotation ).xyz;
     v_position = (vertex * transform).xyz;
-    vertex_color = col;
+    v_color = vec4( 0.8, 0.0, 0.0 , 1.0 ) ;
 }
