@@ -844,7 +844,7 @@ FUNCTION def::draw_mesh( mesh_id target, ftransform target_transform, shader_pro
     {
         std::cout << "Something went went, draw_mesh was passed an invalid target \n";
     }
-    fmesh target_mesh = mmesh_list [ target.cast() ];
+    fmesh& target_mesh = mmesh_list [ target.cast() ];
     fmesh_metadata target_meta = mmesh_metadata_list[ target.cast() ];
     shader_program_id shader = target_shader;
 
