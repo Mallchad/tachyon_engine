@@ -280,10 +280,9 @@ FUNCTION def::initialize()
         vsync_triple_buffered = 2
     };
     // GL_EXT_swap_control
+    // sync to vblank control
     // Can CRASH if extension is not supported
-    // ldynamic::glXSwapIntervalEXT( rx_display, vx_window, vsync_adaptive );
-    // GLX_MESA_swap_control
-    ldynamic::glXSwapIntervalMESA( vsync_adaptive );
+    ldynamic::glXSwapIntervalEXT( rx_display, vx_window, vsync_adaptive );
 
     // Enable Z Buffering
     glEnable(GL_DEPTH_TEST);
