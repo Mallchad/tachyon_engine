@@ -33,7 +33,7 @@ int main()
             FrameMark( "Main Render Thread" );
 
             // DO NOT REMOVE, can lock computer if it runs too fast
-            std::this_thread::sleep_for(1.6ms);
+            std::this_thread::sleep_for(100us);
         }
     } catch (...)
     {
