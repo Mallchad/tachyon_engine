@@ -91,7 +91,7 @@ void main()
     spec *= ( reflect_contribution  ) * light_color;
     m.metallic = clamp( 1-m.metallic, 0.0, 1.0 );
 
-    vec3 metal = m.color * pow( reflect_contribution, 1/m.roughness );
+    vec3 metal = light_color * m.color * max( pow( dot( view_ray, reflect_ray ), 1-m.roughness ), 0.0 );
     vec3 reflect = mix( spec, metal, m.metallic) * light_contribution;
     diffuse = mix( diffuse, vec3(0.0), (1-m.roughness) * (1-m.metallic));
 
@@ -101,6 +101,7 @@ void main()
     // frag_color = vec4( diffuse, opac );   // Diffuse Reflection
     // frag_color = vec4( vec3(spec), opac );   // Specular Reflection
     // frag_color = vec4( vec3(metal), opac );   // Metallic Reflection
+    // frag_color = vec4( vec3(reflect), opac );   // Metallic Reflection
     // frag_color = vec4( frag.xyz, 1.0 ) * 1;  // Frag Colours
 
 }

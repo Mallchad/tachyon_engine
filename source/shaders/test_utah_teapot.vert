@@ -86,5 +86,5 @@ void main()
     v_normal = ( vec4( normal, 0.0 ) * rotation ).xyz;
     v_position = vertex.xyz;
     v_color = vec4( 0.8, 0.0, 0.0 , 1.0 ) ;
-    v_color = vec4( 1.0 );
+    // v_color = vec4( 1.0 );
 }
