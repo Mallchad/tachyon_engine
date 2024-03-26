@@ -275,7 +275,7 @@ FUNCTION def::initialize()
     enum
     {
         vsync_adaptive        = -1,
-        vsync_no              = 0,
+        vsync_off             = 0,
         vsync_double_buffered = 1,
         vsync_triple_buffered = 2
     };
