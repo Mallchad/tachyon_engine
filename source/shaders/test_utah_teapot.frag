@@ -25,31 +25,82 @@ layout(std140, binding = 0) uniform frame_data
     float screen_vh_aspect_ratio;
 };
 
+struct material
+{
+    vec3 color;
+    float specular;
+    float roughness;
+    float metallic;
+    float opacity;
+    vec3 emissive;
+    vec3 normal;
+};
+
 void main()
 {
+    material metal_polished;
+
+    metal_polished.color = v_color.xyz;
+    metal_polished.specular = 1.0;
+    metal_polished.roughness = 0.0;
+    metal_polished.metallic = 1.0;
+    metal_polished.opacity = v_color.w;
+    metal_polished.emissive = vec3( 0.0 );
+    metal_polished.normal = v_normal;
+
+    // Polished plastic
+    material plastic;
+
+    plastic.color = v_color.xyz;
+    plastic.specular = 1.0;
+    plastic.roughness = 0.0;
+    plastic.metallic = 0.0;
+    plastic.opacity = v_color.w;
+    plastic.emissive = vec3( 0.0 );
+    plastic.normal = v_normal;
+
+    material m = metal_polished;
+
     vec4 camera_pos = vec4( 0.0, 0.0, 0.0, 0.0 );
-    vec3 point_light = vec3( 0.0, 5.0, -5.0 );
+    vec3 point_light = vec3( 2.0, 5.0, 0.0 );
     float light_intensity = 1.0;
     vec3 light_color = vec3( 1.0, 1.0, 1.0 ) * light_intensity;
-    vec3 specular = vec3( 0.3 );
-    float roughness = 0.4;
+
+    vec3 diff = m.color;
+    vec3 spec = vec3( clamp( m.specular, 0.0, 1.0 ) );
+    m.roughness = clamp( m.roughness, 0.0, 1.0 );
+    float opac = m.opacity;
+
     float ambient = 0.0f;
     vec3 frag = gl_FragCoord.xyz;
-    float metallicness = 0.5;
+    m.metallic = clamp( 1-m.metallic, 0.0, 1.0 );
 
-    vec3 light_ray = normalize( point_light - vec3(0.0) );
-    vec3 view_dir = normalize( gl_FragCoord.xyz - camera_pos.xyz );
-    vec3 reflection_dir = reflect( -light_ray, v_normal );
+    // Point Light
+    vec3 point_ray = normalize( point_light - v_position.xyz );
+    // Directional Right
+    vec3 directional_ray = normalize( -point_light - vec3(0.0) );
+
+    vec3 view_ray = normalize( v_position - camera_pos.xyz );
+    vec3 reflect_ray = reflect( -point_ray, v_normal );
     // Max and clamp to prevent negative colors
     // Divide light contribution by 3 to prevent applying contribution 3 times
-    float light_contribution = max(dot( light_ray, v_normal ), 0.0 ) * 1.0;
-    roughness = clamp( 1-roughness, 0.0, 1.0 );
-    float specular_contribution = pow( max( dot( view_dir, reflection_dir ), 0.0 ), 1/ roughness );
-    vec3 diffuse = (light_contribution * light_color * v_color.xyz );
-    specular *= ( light_contribution * specular_contribution * light_color ) ;
-    metallicness = clamp( 1-metallicness, 0.0, 1.0 );
-    vec3 metallic = max( light_contribution * v_color.xyz,
-                         metallicness) ;
+    float light_contribution = max(dot( point_ray, v_normal ), 0.0 ) * 1.0;
+    m.roughness = clamp( 1-m.roughness, 0.0, 1.0 );
+    float reflect_contribution = pow( max( dot( view_ray, reflect_ray ) , 0.0 ), 1/m.specular );
+    vec3 diffuse = ( light_contribution * light_color );
+    spec *= ( reflect_contribution  ) * light_color;
+    m.metallic = clamp( 1-m.metallic, 0.0, 1.0 );
 
-    frag_color = vec4( (ambient + diffuse + specular) * (metallic) , 1.0 );
+    vec3 metal = m.color * pow( reflect_contribution, 1/m.roughness );
+    vec3 reflect = mix( spec, metal, m.metallic) * light_contribution;
+    diffuse = mix( diffuse, vec3(0.0), (1-m.roughness) * (1-m.metallic));
+
+    vec3 total = ( (ambient + diffuse) * m.color ) + reflect;
+    frag_color = vec4( total , 1.0 );
+    // Uncomment for debug colours
+    // frag_color = vec4( diffuse, opac );   // Diffuse Reflection
+    // frag_color = vec4( vec3(spec), opac );   // Specular Reflection
+    // frag_color = vec4( vec3(metal), opac );   // Metallic Reflection
+    // frag_color = vec4( frag.xyz, 1.0 ) * 1;  // Frag Colours
+
 }
