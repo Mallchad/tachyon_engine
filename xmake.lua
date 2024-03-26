@@ -1,20 +1,27 @@
 set_xmakever("2.7.3")
 
 set_defaultmode( "release" )
+add_requires("glslang", {configs = {binaryonly = true}})
 
 target( "triangulite" )
     set_kind( "binary" )
     set_languages( "c++20" )
+    add_packages("glslang")
+    add_rules("utils.glsl2spv", {outputdir = "build"})
+
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
     add_files( "source/*.cpp" )
+    add_files("source/shaders/*.vert",
+              "source/shaders//*.frag")
     add_includedirs( "../tracy",
                      "external/spdlog/include/",
                      "source" )
+
     -- asan must be linked first
-    add_links( "asan" )
-    add_links( "ubsan" )
+    -- add_links( "asan" )
+    -- add_links( "ubsan" )
     add_links( "dl", "X11", "GL" )
     add_defines( 'TRIANGULATE_PROJECT_ROOT="$(projectdir)"' )
 
@@ -38,10 +45,10 @@ target( "triangulite" )
                   "-Wno-unused-variable",
                   "-Wno-unused-private-field",
                   "-Wno-abstract-final-class",
-                  "-fsanitize=address",
+                  -- "-fsanitize=address",
                   -- "-fsanitize=thread",
                   -- "-fsanitize=memory",
-                  "-fsanitize=undefined",
+                  -- "-fsanitize=undefined",
                   -- "-fsanitize=dataflow",
                   -- "-fsanitize=cfi",   -- Control Flow Integrity
                   -- "-fsanitize=kcfi",  -- Kernel Indirect Call Forward-Edge Control Flow Integrity
@@ -62,5 +69,5 @@ target( "triangulite" )
                      "-Wno-c++98-compat-pedantic",
                      "-Wno-documentation-unknown-command",
                      "-Wno-unreachable-code-break",
-                     "-Werror=shadow -std=c++20" )
+                     "-Werror=shadow" )
     end
