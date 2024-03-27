@@ -72,15 +72,19 @@ void main()
     float opac = m.opacity;
 
     float ambient = 0.0f;
-    vec3 frag = gl_FragCoord.xyz;
+    // Fragment Coordinate
+    // Really frustrating to convert to screen/worldspace, use vertecies instead
+    vec3 frag = v_position;
+
+
     m.metallic = clamp( 1-m.metallic, 0.0, 1.0 );
 
     // Point Light
-    vec3 point_ray = normalize( point_light - v_position.xyz );
+    vec3 point_ray = normalize( point_light - frag );
     // Directional Right
-    vec3 directional_ray = normalize( -point_light - vec3(0.0) );
+    vec3 directional_ray = normalize( point_light - vec3(0.0) );
 
-    vec3 view_ray = normalize( v_position - camera_pos.xyz );
+    vec3 view_ray = normalize( frag - camera_pos.xyz );
     vec3 reflect_ray = reflect( -point_ray, v_normal );
     // Max and clamp to prevent negative colors
     // Divide light contribution by 3 to prevent applying contribution 3 times
@@ -91,9 +95,9 @@ void main()
     spec *= ( reflect_contribution  ) * light_color;
     m.metallic = clamp( 1-m.metallic, 0.0, 1.0 );
 
-    vec3 metal = light_color * m.color * max( pow( dot( view_ray, reflect_ray ), 1-m.roughness ), 0.0 );
+    vec3 metal = light_color * m.color * max( pow( dot( view_ray, reflect_ray ), 1*(m.roughness) ), 0.0 );
     vec3 reflect = mix( spec, metal, m.metallic) * light_contribution;
-    diffuse = mix( diffuse, vec3(0.0), (1-m.roughness) * (1-m.metallic));
+    diffuse = mix( diffuse, vec3(0.0), (m.roughness) );
 
     vec3 total = ( (ambient + diffuse) * m.color ) + reflect;
     frag_color = vec4( total , 1.0 );
@@ -102,6 +106,6 @@ void main()
     // frag_color = vec4( vec3(spec), opac );   // Specular Reflection
     // frag_color = vec4( vec3(metal), opac );   // Metallic Reflection
     // frag_color = vec4( vec3(reflect), opac );   // Metallic Reflection
-    // frag_color = vec4( frag.xyz, 1.0 ) * 1;  // Frag Colours
-
+    // frag_color = vec4( frag.xyz, 1.0 );  // Frag Colours
+    // frag_color = vec4( v_position.xyz, 1.0 );  // Frag Colours
 }
