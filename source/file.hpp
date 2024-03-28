@@ -183,9 +183,9 @@ FUNCTION read_stl_file( fpath target )
         {
             // Copy normal
             x_readhead = (i_triangle * triangle_stride_normal) + first_normal_byte +
-            ub_cast<fbyte*>( file.data() );
+            ptr_cast<fbyte*>( file.data() );
             x_writehead = (i_triangle * 72) +
-            ub_cast<fbyte*>( vertex_buffer.data() );
+            ptr_cast<fbyte*>( vertex_buffer.data() );
             // Give every vertex a copy of the same normal
             std::memcpy(  0+ x_writehead, x_readhead, sizeof(ffloat3) );
             std::memcpy( 24+ x_writehead, x_readhead, sizeof(ffloat3) );

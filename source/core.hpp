@@ -10,6 +10,8 @@
 #include <vector>
 #include <filesystem>
 #include <iostream>
+#include <iomanip>
+#include <type_traits>
 
 // Project Specific Includes
 // Silence warnings in external projects
@@ -96,18 +98,38 @@ public:
     template<typename t_integral = fint32> t_integral
     FUNCTION cast() const { return static_cast<t_integral>( m_value ); }
 };
-
-/// Static cast alias
-template<typename t_return, typename t_target> t_return
+#include <math.hpp>
+/// Relatively well defined cast behaviour
+// This will primarily do a static cast, but will allow reinterpret cast ONLY
+// if it is a pointer to pointer conversion which is relatively sensible.
+// Conversions to and from pointers to other values are compeltely nonsensical
+template<typename t_return, typename t_target>
+constexpr t_return
 FUNCTION cast( t_target target )
+{ return static_cast<t_return>( target ); }
+
+/// Reinterpret cast that only can return pointer types
+// This is deemed to be slightly safer than being able to reinterpret any type
+template<typename t_return, typename t_target>
+constexpr t_return
+FUNCTION ptr_cast( t_target target )
 {
-    return static_cast<t_return>( target );
+    constexpr bool pointer_return = (std::is_pointer<t_return>::value);
+    constexpr bool pointer_target = (std::is_pointer<t_target>::value);
+    constexpr bool integral_target = (std::is_integral<t_target>::value);
+
+    static_assert( pointer_return , "Return type must be of a pointer type" );
+    static_assert( integral_target || pointer_target,
+                   "Casting from non-ingetral types to pointers is unsafe" );
+    return reinterpret_cast<t_return>( target );
 }
 
 /// Reinterpret cast alias
 // Very prone to invoking Undefined Behaviour, avoid accessing objects through
-// reinterpreted pointers
-template<typename t_return, typename t_target> t_return
+// reinterpreted pointers. If looking for a way to cast between pointers use
+// ptr_cast
+template<typename t_return, typename t_target>
+constexpr t_return
 FUNCTION ub_cast( t_target target )
 {
     return reinterpret_cast<t_return>( target );
