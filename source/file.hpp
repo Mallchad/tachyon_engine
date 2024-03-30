@@ -11,8 +11,6 @@
 #include <filesystem>
 #include <cstring>
 
-#include "math.hpp"
-
 /// Try to find a file by name by searching through a vector of provided directories
 // This can be provided as an initializer list of strings { "/foo/bar" }
 fpath
