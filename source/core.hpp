@@ -137,6 +137,14 @@ FUNCTION ub_cast( t_target target )
     return reinterpret_cast<t_return>( target );
 }
 
+// Removes an object from scope, essentially calling it's destructor if sensible
+template <typename t_movable>
+void
+FUNCTION drop( t_movable doomed )
+{
+    auto _ = std::move( doomed );
+}
+
 
 // -- Typedefs --
 using fstring = std::basic_string<char>;
