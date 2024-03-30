@@ -387,22 +387,20 @@ FUNCTION def::window_create()
     wm_state_above = XInternAtom( rx_display, "_NET_WM_STATE_ABOVE", true );
     wm_allowed_actions = XInternAtom( rx_display, "_NET_WM_ALLOWED_ACTIONS", true );
 
-    Atom wm_state_new[3] =
+    Atom wm_state_new[] =
     {
-        wm_state_fullscreen,
-        wm_state_maximized_horz,
-        wm_state_maximized_vert,
+        wm_state_fullscreen
     };
-    // if (wm_state != 0 && wm_state_fullscreen != 0 && wm_state_maximized_horz!= 0 &&
-    //     wm_state_maximized_vert != 0 && wm_state_above != 0)
-    // {
+    if (wm_state != 0 && wm_state_fullscreen != 0 && wm_state_maximized_horz!= 0 &&
+        wm_state_maximized_vert != 0 && wm_state_above != 0)
+    {
         // fullscreen = true;
-        // XChangeProperty(rx_display, x_window_tmp,
-        //                 wm_state, XA_ATOM, 32,
-        //                 PropModeReplace,
-        //                 reinterpret_cast<unsigned char*>( &wm_state_new ),
-        //                 3);
-    // }
+        // XChangeProperty( rx_display, x_window_tmp,
+        //                  wm_state, XA_ATOM, 32,
+        //                  PropModeReplace,
+        //                  reinterpret_cast<unsigned char*>( &wm_state_new ),
+        //                  sizeof(wm_state_new) );
+    }
 
     // Set the window name
     XStoreName( rx_display, x_window_tmp, "cpp triangle test" );
