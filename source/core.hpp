@@ -40,7 +40,9 @@ enum class id_type
     shader_program
 };
 
-#define print( message ) _print( message, __FILE__ )
+#ifdef CLING_INTERPRETER_H
+    #define print( message ) _print( message, __FILE__ )
+#endif
 template<typename t_streamable>
 void
 FUNCTION _print( t_streamable message, const char* source_file )
