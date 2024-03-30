@@ -59,7 +59,7 @@ FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths )
  Returns a zero length byte_buffer if it failed
 */
 byte_buffer
-FUNCTION file_load_binary( fpath target )
+FUNCTION file_load_binary( const fpath target )
 {
     using namespace std::filesystem;
     byte_buffer out;
@@ -78,6 +78,8 @@ FUNCTION file_load_binary( fpath target )
     if (tmp_filesize <= 0)
     {
         std::cout << "[File] WARNING, opened file is zero length \n";
+        fclose( tmp );
+        return out;
     }
 
     // Return to beginning
