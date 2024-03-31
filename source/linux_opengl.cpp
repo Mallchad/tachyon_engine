@@ -27,8 +27,8 @@ using std::initializer_list;
 
 using def = renderer_opengl;
 
-/// Linkage Dynamic functions with less compatability than simple functions
-namespace ldynamic
+/// Dynamic Linkage functions with less compatability than simple functions
+namespace ld
 {
     INTERNAL PFNGLXCHOOSEFBCONFIGPROC glXChooseFBConfig;
     INTERNAL PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
@@ -119,89 +119,89 @@ FUNCTION def::initialize()
 
     vglx_context_list.reserve(100);
 
-    // -- GLX and X11 Initialization --
-    ldynamic::glXCreateContextAttribsARB = reinterpret_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
-       glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXCreateContextAttribsARB" )));
-    ldynamic::glXChooseFBConfig= reinterpret_cast<PFNGLXCHOOSEFBCONFIGPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXChooseFBConfig" )));
-    ldynamic::glXSwapIntervalMESA = reinterpret_cast<PFNGLXSWAPINTERVALMESAPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXSwapIntervalMESA" )));
-    ldynamic::glXSwapIntervalEXT = reinterpret_cast<PFNGLXSWAPINTERVALEXTPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glXSwapIntervalEXT" )));
+                                // -- GLX and X11 Initialization --
+    ld::glXCreateContextAttribsARB = ptr_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
+       glXGetProcAddress(            ptr_cast<const GLubyte*>( "glXCreateContextAttribsARB" )));
+    ld::glXChooseFBConfig          = ptr_cast<PFNGLXCHOOSEFBCONFIGPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXChooseFBConfig" )));
+    ld::glXSwapIntervalMESA        = ptr_cast<PFNGLXSWAPINTERVALMESAPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalMESA" )));
+    ld::glXSwapIntervalEXT         = ptr_cast<PFNGLXSWAPINTERVALEXTPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalEXT" )));
 
-    ldynamic::glBindBuffer        = reinterpret_cast<PFNGLBINDBUFFERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBuffer" )));
-    ldynamic::glBindBufferBase    = reinterpret_cast<PFNGLBINDBUFFERBASEPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindBufferBase" )));
-    ldynamic::glGenBuffers        = reinterpret_cast<PFNGLGENBUFFERSPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenBuffers" )));
-    ldynamic::glBufferData        = reinterpret_cast<PFNGLBUFFERDATAPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBufferData" )));
-    ldynamic::glUniformBlockBinding = reinterpret_cast<PFNGLUNIFORMBLOCKBINDINGPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glUniformBlockBinding" )));
-    ldynamic::glCreateShader      = reinterpret_cast<PFNGLCREATESHADERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateShader" )));
-    ldynamic::glShaderSource      = reinterpret_cast<PFNGLSHADERSOURCEPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glShaderSource" )));
-    ldynamic::glCompileShader     = reinterpret_cast<PFNGLCOMPILESHADERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCompileShader" )));
+    ld::glBindBuffer               = ptr_cast<PFNGLBINDBUFFERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindBuffer" )));
+    ld::glBindBufferBase           = ptr_cast<PFNGLBINDBUFFERBASEPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindBufferBase" )));
+    ld::glGenBuffers               = ptr_cast<PFNGLGENBUFFERSPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGenBuffers" )));
+    ld::glBufferData               = ptr_cast<PFNGLBUFFERDATAPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBufferData" )));
+    ld::glUniformBlockBinding      = ptr_cast<PFNGLUNIFORMBLOCKBINDINGPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glUniformBlockBinding" )));
+    ld::glCreateShader             = ptr_cast<PFNGLCREATESHADERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glCreateShader" )));
+    ld::glShaderSource             = ptr_cast<PFNGLSHADERSOURCEPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glShaderSource" )));
+    ld::glCompileShader            = ptr_cast<PFNGLCOMPILESHADERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glCompileShader" )));
 
-    ldynamic::glGetShaderiv       = reinterpret_cast<PFNGLGETSHADERIVPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetShaderiv" )));
-    ldynamic::glGetShaderInfoLog  = reinterpret_cast<PFNGLGETSHADERINFOLOGPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetShaderInfoLog" )));
-    ldynamic::glCreateProgram     = reinterpret_cast<PFNGLCREATEPROGRAMPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glCreateProgram" )));
-    ldynamic::glDeleteProgram     = reinterpret_cast<PFNGLDELETEPROGRAMPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDeleteProgram" )));
-    ldynamic::glAttachShader      = reinterpret_cast<PFNGLATTACHSHADERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glAttachShader" )));
-    ldynamic::glDetachShader      =  reinterpret_cast<PFNGLATTACHSHADERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDetachShader" )));
-    ldynamic::glDeleteShader      = reinterpret_cast<PFNGLDELETESHADERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDeleteShader" )));
-    ldynamic::glIsShader          = reinterpret_cast<PFNGLISSHADERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glIsShader" )));
+    ld::glGetShaderiv              = ptr_cast<PFNGLGETSHADERIVPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetShaderiv" )));
+    ld::glGetShaderInfoLog         = ptr_cast<PFNGLGETSHADERINFOLOGPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetShaderInfoLog" )));
+    ld::glCreateProgram            = ptr_cast<PFNGLCREATEPROGRAMPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glCreateProgram" )));
+    ld::glDeleteProgram            = ptr_cast<PFNGLDELETEPROGRAMPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDeleteProgram" )));
+    ld::glAttachShader             = ptr_cast<PFNGLATTACHSHADERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glAttachShader" )));
+    ld::glDetachShader             = ptr_cast<PFNGLATTACHSHADERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDetachShader" )));
+    ld::glDeleteShader             = ptr_cast<PFNGLDELETESHADERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDeleteShader" )));
+    ld::glIsShader                 = ptr_cast<PFNGLISSHADERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glIsShader" )));
 
-    ldynamic::glLinkProgram       = reinterpret_cast<PFNGLLINKPROGRAMPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glLinkProgram" )));
-    ldynamic::glGetProgramiv      = reinterpret_cast<PFNGLGETPROGRAMIVPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetProgramiv" )));
-    ldynamic::glUseProgram = reinterpret_cast<PFNGLUSEPROGRAMPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glUseProgram" )));
-    ldynamic::glGetProgramInfoLog = reinterpret_cast<PFNGLGETPROGRAMINFOLOGPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetProgramInfoLog" )));
-    ldynamic::glIsProgram          = reinterpret_cast<PFNGLISPROGRAMPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glIsProgram" )));
+    ld::glLinkProgram              = ptr_cast<PFNGLLINKPROGRAMPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glLinkProgram" )));
+    ld::glGetProgramiv             = ptr_cast<PFNGLGETPROGRAMIVPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetProgramiv" )));
+    ld::glUseProgram               = ptr_cast<PFNGLUSEPROGRAMPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glUseProgram" )));
+    ld::glGetProgramInfoLog        = ptr_cast<PFNGLGETPROGRAMINFOLOGPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetProgramInfoLog" )));
+    ld::glIsProgram                = ptr_cast<PFNGLISPROGRAMPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glIsProgram" )));
 
-    ldynamic::glVertexAttribPointer=reinterpret_cast<PFNGLVERTEXATTRIBPOINTERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glVertexAttribPointer" )));
-    ldynamic::glGenVertexArrays = reinterpret_cast<PFNGLGENVERTEXARRAYSPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGenVertexArrays" ) ));
-    ldynamic::glEnableVertexAttribArray = reinterpret_cast<PFNGLENABLEVERTEXATTRIBARRAYPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glEnableVertexAttribArray" )));
-    ldynamic::glEnableVertexArrayAttrib = reinterpret_cast<PFNGLENABLEVERTEXARRAYATTRIBPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glEnableVertexArrayAttrib" )));
-    ldynamic::glBindVertexArray = reinterpret_cast<PFNGLBINDVERTEXARRAYPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glBindVertexArray" )));
-    ldynamic::glMapBuffer  = reinterpret_cast<PFNGLMAPBUFFERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glMapBuffer" )));
-    ldynamic::glUnmapBuffer  = reinterpret_cast<PFNGLUNMAPBUFFERPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glUnmapBuffer" )));
+    ld::glVertexAttribPointer     =  ptr_cast<PFNGLVERTEXATTRIBPOINTERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glVertexAttribPointer" )));
+    ld::glGenVertexArrays         =  ptr_cast<PFNGLGENVERTEXARRAYSPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGenVertexArrays" ) ));
+    ld::glEnableVertexAttribArray =  ptr_cast<PFNGLENABLEVERTEXATTRIBARRAYPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glEnableVertexAttribArray" )));
+    ld::glEnableVertexArrayAttrib =  ptr_cast<PFNGLENABLEVERTEXARRAYATTRIBPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glEnableVertexArrayAttrib" )));
+    ld::glBindVertexArray         =  ptr_cast<PFNGLBINDVERTEXARRAYPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindVertexArray" )));
+    ld::glMapBuffer               =  ptr_cast<PFNGLMAPBUFFERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glMapBuffer" )));
+    ld::glUnmapBuffer             =  ptr_cast<PFNGLUNMAPBUFFERPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glUnmapBuffer" )));
 
-    ldynamic::glDrawArrays = reinterpret_cast<PFNGLDRAWARRAYSPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArrays" )));
-    ldynamic::glDrawArraysEXT = reinterpret_cast<PFNGLDRAWARRAYSEXTPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDrawArraysEXT" )));
+    ld::glDrawArrays              =  ptr_cast<PFNGLDRAWARRAYSPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDrawArrays" )));
+    ld::glDrawArraysEXT           =  ptr_cast<PFNGLDRAWARRAYSEXTPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDrawArraysEXT" )));
 
-    ldynamic::glObjectLabel  = reinterpret_cast<PFNGLOBJECTLABELPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glObjectLabel" )));
-    ldynamic::glGetString  = reinterpret_cast<PFNGLGETSTRINGPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetString" )));
-    ldynamic::glGetStringi  = reinterpret_cast<PFNGLGETSTRINGIPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glGetStringi" )));
-    ldynamic::glDebugMessageCallback  = reinterpret_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
-        glXGetProcAddress( reinterpret_cast<const GLubyte*>( "glDebugMessageCallback" )));
+    ld::glObjectLabel             =  ptr_cast<PFNGLOBJECTLABELPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glObjectLabel" )));
+    ld::glGetString               =  ptr_cast<PFNGLGETSTRINGPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetString" )));
+    ld::glGetStringi              =  ptr_cast<PFNGLGETSTRINGIPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetStringi" )));
+    ld::glDebugMessageCallback    =  ptr_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDebugMessageCallback" )));
 
     // -- Initialize OpenGL --
     display_context_create();
@@ -218,7 +218,7 @@ FUNCTION def::initialize()
 
     // Enable debug output
     // glEnable( GL_DEBUG_OUTPUT );
-    ldynamic::glDebugMessageCallback( gl_debug_callback, 0 );
+    ld::glDebugMessageCallback( gl_debug_callback, 0 );
 
     glGetIntegerv( GL_NUM_EXTENSIONS, &m_gl_extension_count );
     std::cout << "OpenGL Implimentation Vendor: " << glGetString( GL_VENDOR ) <<
@@ -228,19 +228,19 @@ FUNCTION def::initialize()
         "\nOpenGL Extensions String: ";
     for (fint32 i_extension=0; i_extension<m_gl_extension_count; i_extension += 3)
     {
-        std::cout << ldynamic::glGetStringi( GL_EXTENSIONS, 0+ i_extension ) << " ";
+        std::cout << ld::glGetStringi( GL_EXTENSIONS, 0+ i_extension ) << " ";
         if (i_extension % 3) { std::cout << "\n"; };
     }
     std::cout << "\nGLX Extensions String: " << vglx_extensions_string << "\n";
 
     // Setup OpenGL Objects
-    ldynamic::glGenVertexArrays( mattribute_limit, mattribute_names.data() );
-    ldynamic::glGenBuffers( mbuffer_limit, mbuffer_names.data() );
+    ld::glGenVertexArrays( mattribute_limit, mattribute_names.data() );
+    ld::glGenBuffers( mbuffer_limit, mbuffer_names.data() );
 
     uniform_frame_globals = mbuffer_count++;
-    ldynamic::glBindBuffer( GL_UNIFORM_BUFFER, get_buffer( uniform_frame_globals ) );
+    ld::glBindBuffer( GL_UNIFORM_BUFFER, get_buffer( uniform_frame_globals ) );
     // Allocate 512 bytes
-    ldynamic::glBufferData( GL_UNIFORM_BUFFER, sizeof( frame_shader_global ), nullptr, GL_STATIC_DRAW );
+    ld::glBufferData( GL_UNIFORM_BUFFER, sizeof( frame_shader_global ), nullptr, GL_STATIC_DRAW );
 
     // Setup test articles
     shader_fragment_test = shader_create( "shader_fragment_test", shader_type::fragment );
@@ -282,7 +282,7 @@ FUNCTION def::initialize()
     // GL_EXT_swap_control
     // sync to vblank control
     // Can CRASH if extension is not supported
-    ldynamic::glXSwapIntervalEXT( rx_display, vx_window, vsync_adaptive );
+    ld::glXSwapIntervalEXT( rx_display, vx_window, vsync_adaptive );
 
     // Enable Z Buffering
     glEnable(GL_DEPTH_TEST);
@@ -444,7 +444,7 @@ FUNCTION def::display_context_destroy( display_id target )
 context_id
 FUNCTION def::context_create()
 {
-    using namespace ldynamic;
+    using namespace ld;
     GLXContext context_tmp = nullptr;
     context_id context = 0;
 
@@ -480,7 +480,7 @@ FUNCTION def::context_create()
 
 
     vglx_fbconfigurations =
-        ldynamic::glXChooseFBConfig( rx_display, DefaultScreen(rx_display),
+        ld::glXChooseFBConfig( rx_display, DefaultScreen(rx_display),
                                      vglx_visual_attributes, &vglx_fb_count );
     vglx_fbselection = vglx_fbconfigurations[0];
     vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
@@ -512,7 +512,7 @@ FUNCTION def::context_set_current(context_id target)
 shader_id
 FUNCTION def::shader_create( fstring name, shader_type request_type )
 {
-    using namespace ldynamic;
+    using namespace ld;
     shader_id out_id = -1;
     GLint shader_target = 0;
     char shader_log[512] = {};
@@ -547,7 +547,7 @@ FUNCTION def::shader_create( fstring name, shader_type request_type )
         std::cout << "Shader Log: " << shader_log << "\n";
     }
     
-    if ( ldynamic::glIsShader( shader_target ) == false )
+    if ( ld::glIsShader( shader_target ) == false )
     {
         std::cout << "Something went wrong in creating the shader \n";
         return -1;
@@ -591,7 +591,7 @@ FUNCTION def::shader_program_destroy( shader_program_id target )
     }
 
     GLint doomed_program = shader_program_list[ target.cast() ];
-    ldynamic::glDeleteProgram( doomed_program );
+    ld::glDeleteProgram( doomed_program );
     return true;
 }
 
@@ -605,7 +605,7 @@ FUNCTION def::shader_load( shader_id target, fpath shader_file, bool binary )
 fhowdit
 FUNCTION def::shader_compile( shader_id target, fstring code )
 {
-    using namespace ldynamic;
+    using namespace ld;
     GLuint compile_target = shader_list[ target.cast() ];
     GLint compile_success = false;
     char compile_log[512] = {};
@@ -613,7 +613,7 @@ FUNCTION def::shader_compile( shader_id target, fstring code )
     GLint compile_source_length = static_cast<GLint>( code.length() );
 
     glShaderSource( compile_target, 1, &compile_source_pointer, &compile_source_length );
-    ldynamic::glCompileShader( compile_target );
+    ld::glCompileShader( compile_target );
 
     glGetShaderiv( compile_target , GL_COMPILE_STATUS, &compile_success);
 
@@ -634,21 +634,21 @@ FUNCTION def::shader_compile( shader_id target, fstring code )
 shader_program_id
 FUNCTION def::shader_program_create( fstring name, initializer_list<shader_id> shaders_attach )
 {
-    using namespace ldynamic;
+    using namespace ld;
     GLuint shader_program = glCreateProgram();
     shader_program_id out_id = shader_program_count;
     shader_program_list[ out_id.cast() ] = shader_program;
     shader_program_names[ out_id.cast() ] = name;
     ++shader_program_count;
 
-    if (ldynamic::glIsProgram( shader_program ) == false)
+    if (ld::glIsProgram( shader_program ) == false)
     {
         std::cout << "[Renderer] shader_program_create | for some reason created "
             "OpenGL shader program is not actually a program \n";
         return -1;
     }
 
-    ldynamic::glUniformBlockBinding( shader_program, 0, 0 );
+    ld::glUniformBlockBinding( shader_program, 0, 0 );
 
     for (shader_id x_shader : shaders_attach)
     {
@@ -664,7 +664,7 @@ FUNCTION def::shader_program_create( fstring name, initializer_list<shader_id> s
 fhowdit
 FUNCTION def::shader_program_compile( shader_program_id target )
 {
-    using namespace ldynamic;
+    using namespace ld;
     GLint shader_program_target = shader_program_list[ target.cast<fuint32>() ];
     GLint out_link_success = false;
     char shader_info_log[512] = {};
@@ -692,7 +692,7 @@ FUNCTION def::shader_program_compile( shader_program_id target )
 fhowdit
 FUNCTION def::shader_program_attach( shader_program_id target, shader_id shader_attached )
 {
-    using namespace ldynamic;
+    using namespace ld;
     GLint shader_program_target = shader_program_list[ target.cast() ];
     GLint shader_attached_target = shader_list[ shader_attached.cast() ];
 
@@ -704,7 +704,7 @@ FUNCTION def::shader_program_attach( shader_program_id target, shader_id shader_
 fhowdit
 FUNCTION def::shader_program_detach( shader_program_id target, shader_id shader_detatch )
 {
-    using namespace ldynamic;
+    using namespace ld;
     GLint shader_program_target = shader_program_list[ target.cast() ];
     GLint shader_detached_target = shader_list[ shader_detatch.cast() ];
 
@@ -715,7 +715,7 @@ FUNCTION def::shader_program_detach( shader_program_id target, shader_id shader_
 freport
 FUNCTION def::shader_program_run( shader_program_id target )
 {
-    using namespace ldynamic;
+    using namespace ld;
     if (target <= -1)
     {
         // std::cout << "[OpenGL Backend] Trying to run shader without a valid shader ID, bailing. \n";
@@ -732,9 +732,9 @@ freport
 FUNCTION def::shader_globals_update( frame_shader_global contents )
 {
     // Update frame global uniforms
-    ldynamic::glBindBuffer( GL_UNIFORM_BUFFER, uniform_frame_globals.cast() );
-    ldynamic::glBindBufferBase(GL_UNIFORM_BUFFER, 0, get_buffer( uniform_frame_globals ) );
-    ldynamic::glBufferData( GL_UNIFORM_BUFFER,
+    ld::glBindBuffer( GL_UNIFORM_BUFFER, uniform_frame_globals.cast() );
+    ld::glBindBufferBase(GL_UNIFORM_BUFFER, 0, get_buffer( uniform_frame_globals ) );
+    ld::glBufferData( GL_UNIFORM_BUFFER,
                             sizeof( frame_shader_global ),
                             &current_frame,
                             GL_STATIC_DRAW );
@@ -745,7 +745,7 @@ FUNCTION def::shader_globals_update( frame_shader_global contents )
 mesh_id
 FUNCTION def::mesh_create( fmesh target )
 {
-    using namespace ldynamic;
+    using namespace ld;
 
     fmesh_metadata metadata;
     GLint attributes;
@@ -836,7 +836,7 @@ FUNCTION def::mesh_create( fmesh target )
 fhowdit
 FUNCTION def::draw_mesh( mesh_id target, ftransform target_transform, shader_program_id target_shader )
 {
-    using namespace ldynamic;
+    using namespace ld;
     if (target < 0)
     {
         std::cout << "Something went went, draw_mesh was passed an invalid target \n";
@@ -849,7 +849,7 @@ FUNCTION def::draw_mesh( mesh_id target, ftransform target_transform, shader_pro
 
     shader_program_run( shader );
     glBindVertexArray( attributes );
-    ldynamic::glDrawArrays( GL_TRIANGLES, 0, target_mesh.vertex_count );
+    ld::glDrawArrays( GL_TRIANGLES, 0, target_mesh.vertex_count );
 
     // Unbind to avoid clobbering other procedures
     glBindVertexArray( 0 );
