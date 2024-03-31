@@ -63,7 +63,7 @@ void main()
 
     vec4 camera_pos = vec4( 0.0, 0.0, 0.0, 0.0 );
     vec3 point_light = vec3( 2.0, 5.0, 0.0 );
-    float light_intensity = 1.0;
+    float light_intensity = 5.0;
     vec3 light_color = vec3( 1.0, 1.0, 1.0 ) * light_intensity;
 
     vec3 diff = m.color;
@@ -95,7 +95,8 @@ void main()
     spec *= ( reflect_contribution  ) * light_color;
     m.metallic = clamp( 1-m.metallic, 0.0, 1.0 );
 
-    vec3 metal = light_color * m.color * max( pow( dot( view_ray, reflect_ray ), 1*(m.roughness) ), 0.0 );
+    vec3 metal = light_color * m.color * max( pow( dot( view_ray, reflect_ray ),
+                                                   8*(m.roughness) ), 0.0 );
     vec3 reflect = mix( spec, metal, m.metallic) * light_contribution;
     diffuse = mix( diffuse, vec3(0.0), (m.roughness) );
 
