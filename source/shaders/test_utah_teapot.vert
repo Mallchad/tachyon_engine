@@ -83,7 +83,8 @@ void main()
     mat4 local = identity;                  // Local Space
     mat4 world = identity;                  // Local to World Space
     mat4 camera = identity;                 // World to Camera Space
-    mat4 projection = identity;             // Orthographic to Clip-Space
+    mat4 projection = identity;             // Orthographic Camera to Clip-Space
+    mat4 viewport = identity;               // Clip-Space to Screen Space
 
     rot.x= (0.0) * tau;
     rot.y = (0.0 + (time_since_epoch * rotation_speed)) * tau;
@@ -94,21 +95,23 @@ void main()
 
     mat4 transform = identity;
 
-    local *= create_rotation( rot );
-    world *= create_rotation( vec4((-3./8.)*tau, 0.0, 0.0, 1.0) );
+    local *= create_rotation( vec4((3./8.)*tau, 0.0, 0.0, 1.0) );
+    world *= create_rotation( rot );
+    // Normal must be scaled and translated so it have to go first
+    v_normal = (projection * camera * world * local * vec4( normal, 1.0 )).xyz;
+    world *= mat4(scale,     0.,    0.,    trans.x,
+                  0.,     scale,    0.,    trans.y,
+                  0.,        0., scale,    trans.z,
+                  0.,        0.,    0.,    1.);
+    // Map into screen coordinate system
+    projection[0][0] = screen_vh_aspect_ratio;
     transform = projection * camera * world * local * transform;
-    transform *= mat4(scale,     0.,    0.,    trans.x,
-                      0.,     scale,    0.,    trans.y,
-                      0.,        0., scale,    trans.z,
-                      0.,        0.,    0.,    1.);
 
     // // Map into screen coordinate system
-    vertex *= transform;
-    vertex.x *= screen_vh_aspect_ratio;
+    vertex = projection * camera * world * local * vertex;
 
     gl_Position = vertex;
 
-    v_normal = (vec4( normal, 0.0 ) * projection * camera * world * local).xyz;
     v_position = vertex.xyz;
     v_color = vec4( 0.8, 0.0, 0.0 , 1.0 ) ;
     // v_color = vec4( 1.0 );
