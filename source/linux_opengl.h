@@ -118,7 +118,6 @@ class renderer_opengl final INTERFACE_RENDERER
     int vglx_minor = 3;
 
     // Internal Data
-    frame_shader_global current_frame;
     bool fullscreen = false;
 
     static constexpr fuint32 mbuffer_limit = 1000;
@@ -288,7 +287,7 @@ public:
     FUNCTION frame_start();
 
     fhowdit
-    FUNCTION refresh( frame_shader_global ) INTERFACE;
+    FUNCTION refresh( frame_shader_global& frame ) INTERFACE;
 
     DESTRUCTOR ~renderer_opengl() INTERFACE;
 

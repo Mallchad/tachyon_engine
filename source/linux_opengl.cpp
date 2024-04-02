@@ -738,7 +738,7 @@ FUNCTION def::shader_globals_update( frame_shader_global contents )
     ld::glBindBufferBase(GL_UNIFORM_BUFFER, 0, get_buffer( uniform_frame_globals ) );
     ld::glBufferData( GL_UNIFORM_BUFFER,
                             sizeof( frame_shader_global ),
-                            &current_frame,
+                            &contents,
                             GL_STATIC_DRAW );
 
     return true;
@@ -988,7 +988,7 @@ FUNCTION def::frame_start()
 }
 
 bool
-FUNCTION def::refresh( frame_shader_global frame )
+FUNCTION def::refresh( frame_shader_global& frame )
 {
 
     // Map the render target to the window width
@@ -1003,11 +1003,10 @@ FUNCTION def::refresh( frame_shader_global frame )
     buffer_damage_size = 0;
 
     XGetWindowAttributes(rx_display, vx_window, &window_properties);
-    current_frame = frame;
-    current_frame.screen_vh_aspect_ratio =
+    frame.screen_vh_aspect_ratio =
         static_cast<float>( window_properties.height ) / window_properties.width;
-    if (fullscreen && (current_frame.screen_vh_aspect_ratio < .3f ||
-                       current_frame.screen_vh_aspect_ratio > .8f ))
+    if (fullscreen && (frame.screen_vh_aspect_ratio < .3f ||
+                       frame.screen_vh_aspect_ratio > .8f ))
     {
         std::cout << "[Renderer] WARNING: Strange screen aspect ratio found, "
             "may not render properly \n";
