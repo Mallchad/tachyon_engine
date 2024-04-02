@@ -35,9 +35,18 @@ int main()
             // DO NOT REMOVE, can lock computer if it runs too fast
             std::this_thread::sleep_for(100us);
         }
-    } catch (...)
+    } catch (std::exception& error)
     {
-        std::cout << "An exception occured, attempting to exit safely" << std::endl;
+        std::cout << "An exception occured, attempting to exit safely\n" <<
+                  "Exception: " << error.what() << std::endl;
+    } catch (const char* error)
+    {
+        std::cout << "An exception occured, attempting to exit safely\n" <<
+                  "Exception: " << error << std::endl;
+
+    }  catch (...)
+    {
+        std::cout << "An undocumented exception occured, attempting to exit safely\n" << std::endl;
     }
     std::cout << "Exiting gracefully" << std::endl;
 

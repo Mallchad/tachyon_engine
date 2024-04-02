@@ -5,6 +5,7 @@
 #include <thread>
 
 #include <chrono>
+#include <exception>
 
 // Project Local
 #include "global.h"

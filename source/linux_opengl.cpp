@@ -482,6 +482,8 @@ FUNCTION def::context_create()
     vglx_fbconfigurations =
         ld::glXChooseFBConfig( rx_display, DefaultScreen(rx_display),
                                      vglx_visual_attributes, &vglx_fb_count );
+    if (vglx_fbconfigurations == nullptr)
+    { throw( "Could not get GL configurations from X Server" ); }
     vglx_fbselection = vglx_fbconfigurations[0];
     vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
 
