@@ -24,7 +24,7 @@
 #include <spdlog/fwd.h>
 using namespace std::string_literals;
 
-#pragma pop
+#pragma clang diagnostic pop
 // End Passthrough Includes
 
 enum class id_type

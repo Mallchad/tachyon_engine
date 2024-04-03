@@ -14,7 +14,7 @@ target( "triangulite" )
     set_policy("build.ccache", true)
     add_files( "source/*.cpp" )
     add_files("source/shaders/*.vert",
-              "source/shaders//*.frag")
+              "source/shaders/*.frag")
     add_includedirs( "../tracy",
                      "external/spdlog/include/",
                      "source" )
@@ -31,20 +31,32 @@ target( "triangulite" )
     add_cxxflags( "clang::-g",
                   "-Wpedantic",
                   "-Wall",
-                  "-Wno-unused-value",
-                  "-Wno-padded",
+                  -- Whitelist Errors
+                  -- #import is a Obj-C language extension and easily confused with C++ modules
+                  "-Werror=import-preprocessor-directive-pedantic",
+                  -- Platform unknown pragmas lead to some insanely annoying and
+                  -- unexpected When they fail silentlys
+                  "-Werror=unknown-pragmas",
+                  -- Non-Void functions that don't return can crash *at runtime*
                   "-Werror=return-type",
                   "-Werror=inconsistent-missing-override",
+                  -- Shadowing
+                  "-Werror=shadow-all",
+                  -- Has inconsistent behaviour and behaves like reinterpret cast, never use
+                  "-Werror=old-style-cast",
+
+                  -- -- Disable Warnings
+                  "-Wno-unused-value",
+                  "-Wno-padded",
                   "-Wno-c++98-compat",
                   "-Wno-c++98-compat-pedantic ",
                   "-Wno-documentation-unknown-command ",
                   "-Wno-unreachable-code-break",
-                  "-Werror=shadow ",
-                  "-fuse-ld=lld",
-                  "-fmodules-ts ",
+                  -- "-fuse-ld=lld",
+                  "-fuse-ld=mold",
                   "-Wno-unused-variable",
                   "-Wno-unused-private-field",
-                  "-Wno-abstract-final-class",
+                  "-Wno-abstract-final-class"
                   -- "-fsanitize=address",
                   -- "-fsanitize=thread",
                   -- "-fsanitize=memory",
@@ -53,7 +65,8 @@ target( "triangulite" )
                   -- "-fsanitize=cfi",   -- Control Flow Integrity
                   -- "-fsanitize=kcfi",  -- Kernel Indirect Call Forward-Edge Control Flow Integrity
                   -- "-fsanitize=safe-stack",
-                  "-Werror=old-style-cast" )
+
+                   )
 
     if is_mode( "release" ) then
        add_cxxflags( "clang::-g",
