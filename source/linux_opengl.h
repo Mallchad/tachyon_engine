@@ -4,6 +4,8 @@
 #include "renderer_interface.hpp"
 #include "include_core.h"
 
+#include "extensions.hpp"
+
 #include <X11/Xlib.h>
 #include <GL/glx.h>
 
@@ -82,6 +84,8 @@ class renderer_opengl final INTERFACE_RENDERER
     window_id vx_window_id = 0;
     std::vector<Window> vx_window_list = { 0 };
 
+    extension_database opengl_extensions = "OpenGL";
+
     fint32 vx_default_screen = -1;
     fint32 display_width = -1;
     fint32 display_height = -1;
@@ -107,7 +111,7 @@ class renderer_opengl final INTERFACE_RENDERER
     std::vector<GLXContext> vglx_context_list;
     GLXFBConfig* vglx_fbconfigurations = nullptr;
     GLXFBConfig vglx_fbselection = nullptr;
-    const char* vglx_extensions_string = nullptr;
+    fstring vglx_extensions_string;
     int vglx_fb_count = -1;
 
     fint32 m_gl_extension_count = -1;

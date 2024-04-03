@@ -279,11 +279,23 @@ FUNCTION def::initialize()
         vsync_double_buffered = 1,
         vsync_triple_buffered = 2
     };
-    // GL_EXT_swap_control
     // sync to vblank control
-    // Can CRASH if extension is not supported
-    ld::glXSwapIntervalEXT( rx_display, vx_window, vsync_adaptive );
-
+    fint32 vsync_option = vsync_adaptive;
+    if (vglx_extensions_string.find( "GLX_MESA_swap_control" ) != std::string::npos)
+    {
+        vsync_option = (vsync_option < 0 ? vsync_double_buffered : vsync_option);
+        ld::glXSwapIntervalMESA( vsync_option );
+        opengl_extensions.enable( "GLX_MESA_swap_control", extension_family::EXT_swap_control );
+        print( "Mesa swap control" );
+    }
+    else if (vglx_extensions_string.find( "GLX_EXT_swap_control" ) != std::string::npos)
+    {
+        GLXDrawable drawable = glXGetCurrentDrawable();
+        ld::glXSwapIntervalEXT( rx_display, drawable, vsync_option );
+        opengl_extensions.enable( "GLX_EXT_swap_control", extension_family::EXT_swap_control );
+    }
+    else
+    { print( "No Gl swap_control extension detected, have no control over vsync" ); }
     // Enable Z Buffering
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
@@ -488,7 +500,7 @@ FUNCTION def::context_create()
     vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
 
     // context_tmp = glXCreateContextAttribs(rx_display, vglx_fbselection, GLA_RGBA_TYPE, 0, true);
-    context_tmp = glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
+    context_tmp = ld::glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
     vglx_context_list.push_back(context_tmp);
 
     context = fint32( vglx_context_list.size() - 1 );
