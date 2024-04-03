@@ -29,6 +29,10 @@ target( "triangulite" )
     -- Using lld linker instead of mold for now for error messages
     -- Reconsider if the build gets slow
     add_cxxflags( "clang::-g",
+                  -- "-fuse-ld=lld",
+                  "-fuse-ld=mold",
+
+                  -- Warnings
                   "-Wpedantic",
                   "-Wall",
                   -- Whitelist Errors
@@ -52,11 +56,11 @@ target( "triangulite" )
                   "-Wno-c++98-compat-pedantic ",
                   "-Wno-documentation-unknown-command ",
                   "-Wno-unreachable-code-break",
-                  -- "-fuse-ld=lld",
-                  "-fuse-ld=mold",
                   "-Wno-unused-variable",
                   "-Wno-unused-private-field",
-                  "-Wno-abstract-final-class"
+                  "-Wno-abstract-final-class",
+                  -- Only runs on extra semicolons that do nothing, pointless.
+                  "-Wno-extra-semi-stmt"
                   -- "-fsanitize=address",
                   -- "-fsanitize=thread",
                   -- "-fsanitize=memory",

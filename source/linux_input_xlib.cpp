@@ -34,7 +34,7 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
 {
     ++m_tmp_frame_count;
     // XEvent processing
-    unsigned int pending_events = 0;
+    fint32 pending_events = 0;
     pending_events = XPending( m_display );
     m_events_received += pending_events;
 

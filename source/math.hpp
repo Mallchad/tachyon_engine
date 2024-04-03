@@ -22,7 +22,7 @@ public:
     CONSTRUCTOR vector3(t_calculable x, t_calculable y, t_calculable z) :
         mx(x), my(y), mz(z) {}
 
-    vector3<t_calculable>&
+    vector3<t_calculable>
     operator+ (const vector3<t_calculable> rhs) const
     {
         vector3 out = vector3(mx + rhs.mx,
@@ -30,7 +30,7 @@ public:
                               mz + rhs.mz);
         return out;
     }
-    vector3<t_calculable>&
+    vector3<t_calculable>
     operator- (const vector3<t_calculable> rhs) const
     {
         vector3 out = vector3(mx - rhs.mx,
@@ -38,7 +38,7 @@ public:
                               mz - rhs.mz);
         return out;
     }
-    vector3<t_calculable>&
+    vector3<t_calculable>
     // Pairwise multiplication, it is never assumed to be standard maths
     operator* (const vector3<t_calculable> rhs) const
     {
@@ -47,7 +47,7 @@ public:
                               mz * rhs.mz);
         return out;
     }
-    vector3<t_calculable>&
+    vector3<t_calculable>
     operator/ (const vector3<t_calculable> rhs) const
     {
         vector3 out = vector3(mx / rhs.mx,
@@ -55,7 +55,7 @@ public:
                               mz / rhs.mz);
         return out;
     }
-    vector3<t_calculable>&
+    vector3<t_calculable>
     operator/ (const t_calculable rhs) const
     {
         vector3 out = vector3(mx / rhs,
@@ -63,7 +63,7 @@ public:
                               mz / rhs);
         return out;
     }
-    vector3<t_calculable>&
+    vector3<t_calculable>
     operator= (t_calculable all)
     {
         mx = all;
