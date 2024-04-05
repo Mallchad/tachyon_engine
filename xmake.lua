@@ -3,18 +3,14 @@ set_xmakever("2.7.3")
 set_defaultmode( "release" )
 add_requires("glslang", {configs = {binaryonly = true}})
 
-target( "triangulite" )
+target( "tachyon_engine" )
     set_kind( "binary" )
     set_languages( "c++20" )
     add_packages("glslang")
-    add_rules("utils.glsl2spv", {outputdir = "build"})
-
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
     add_files( "source/*.cpp" )
-    add_files("source/shaders/*.vert",
-              "source/shaders/*.frag")
     add_includedirs( "../tracy",
                      "external/spdlog/include/",
                      "source" )
@@ -88,3 +84,8 @@ target( "triangulite" )
                      "-Wno-unreachable-code-break",
                      "-Werror=shadow" )
     end
+
+target(shaders)
+    add_rules("utils.glsl2spv", {outputdir = "build"})
+    add_files("source/shaders/*.vert",
+              "source/shaders/*.frag")
