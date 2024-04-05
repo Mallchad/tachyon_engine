@@ -109,7 +109,8 @@ class renderer_opengl final INTERFACE_RENDERER
     context_id vglx_context_id = 0;
 
     std::vector<GLXContext> vglx_context_list;
-    GLXFBConfig* vglx_fbconfigurations = nullptr;
+    GLXFBConfig* glx_fbconfigurations = nullptr;
+    GLXFBConfig* glx_simple_configurations = nullptr;
     GLXFBConfig vglx_fbselection = nullptr;
     fstring vglx_extensions_string;
     int vglx_fb_count = -1;

@@ -327,7 +327,7 @@ fhowdit
 FUNCTION def::deinitialize()
 {
     XFree( vx_buffer_config );
-    XFree( vglx_fbconfigurations );
+    XFree( glx_fbconfigurations );
     for (Window x_xwindow : vx_window_list)
     {
         if (x_xwindow != 0)
@@ -471,7 +471,7 @@ FUNCTION def::context_create()
         };
 
     // Get a matching FB config
-    static int vglx_visual_attributes[] =
+    static int visual_attributes[] =
         {
             GLX_X_RENDERABLE    , True,
             GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
@@ -489,14 +489,36 @@ FUNCTION def::context_create()
             GLX_SAMPLES         , 4,
             None
         };
+    static int simple_attributes[] =
+    {
+        GLX_X_RENDERABLE    , True,
+        GLX_DRAWABLE_TYPE   , GLX_WINDOW_BIT,
+        GLX_RENDER_TYPE     , GLX_RGBA_BIT,
+        GLX_X_VISUAL_TYPE   , GLX_TRUE_COLOR,
+        GLX_RED_SIZE        , 8,
+        GLX_GREEN_SIZE      , 8,
+        GLX_BLUE_SIZE       , 8,
+        GLX_ALPHA_SIZE      , 8,
+        GLX_DEPTH_SIZE      , 24,
+        GLX_STENCIL_SIZE    , 8,
+        GLX_DOUBLEBUFFER    , True,
+        // Enable Multi-Sample Anti-Aliasing
+        // GLX_SAMPLE_BUFFERS  , 1,
+        // GLX_SAMPLES         , 4,
+        None
+    };
 
 
-    vglx_fbconfigurations =
+    glx_fbconfigurations =
         ld::glXChooseFBConfig( rx_display, DefaultScreen(rx_display),
-                                     vglx_visual_attributes, &vglx_fb_count );
-    if (vglx_fbconfigurations == nullptr)
+                               visual_attributes, &vglx_fb_count );
+    glx_simple_configurations =
+        ld::glXChooseFBConfig( rx_display, DefaultScreen(rx_display),
+                               simple_attributes, &vglx_fb_count );
+    if (glx_fbconfigurations == nullptr && glx_simple_configurations == nullptr)
     { throw( "Could not get GL configurations from X Server" ); }
-    vglx_fbselection = vglx_fbconfigurations[0];
+    vglx_fbselection = (glx_fbconfigurations ? glx_fbconfigurations[0] :
+                        glx_simple_configurations[0]);
     vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
 
     // context_tmp = glXCreateContextAttribs(rx_display, vglx_fbselection, GLA_RGBA_TYPE, 0, true);
