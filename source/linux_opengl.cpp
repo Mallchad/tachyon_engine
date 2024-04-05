@@ -818,7 +818,7 @@ FUNCTION def::mesh_create( fmesh target )
     glBindVertexArray( attributes );
     // Vertecies and normals
     glBindBuffer( GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData( GL_ARRAY_BUFFER, target.face_count * 4 *2 *sizeof(ffloat3),
+    glBufferData( GL_ARRAY_BUFFER, target.vertex_buffer.size() * sizeof(ffloat3),
                   target.vertex_buffer.data(), GL_STATIC_DRAW );
 
     // Accepts buffer with interleaved, normal, then vertex, repeated
