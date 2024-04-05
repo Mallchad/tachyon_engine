@@ -27,7 +27,7 @@ layout(std140, binding = 0) uniform frame_data
     float screen_vh_aspect_ratio;
 };
 
-const vec4 arbitrary_axis = vec4( 0.662f, 0.2f, 0.722f, 1.f);
+const vec3 arbitrary_axis = vec3( 0.662f, 0.2f, 0.722f );
 
 const float scale = .1;
 const float ratio_16_9 = 1080.f/1920.f;
@@ -41,17 +41,36 @@ vec4 rot = vec4(0);
 // Translation
 vec3 trans = vec3( 0.0, 0.0, 0.0);
 
+// Create a Euler Rotation Matrix with w component being around an arbitrary axis
 mat4 create_rotation( vec4 euler )
 {
     // Rotation amounts
     vec4 r = euler;
-    // Arbitrary axis direction to reduce gimbal lock
-    vec4 a = arbitrary_axis;
-    // Arbitrary axis of rotation
-    // mat4 arbitraty_matrix = mat4( cos(r.y)+(a.x*a.x) * (1-cos( r.z), a.x*a.y*(1-cos) )
-                                  // );
+    vec3 a = arbitrary_axis;
+    float ar = euler.w;
+    a = normalize(a.xyz);
 
-    // Combined 3 Axis Rotation Matrix
+    // Rotation around an arbitrary axis defined by Euler coordinates
+    mat4 arbitraty_matrix =
+        mat4( cos(ar)+(a.x*a.x) * (1-cos(ar)),
+              a.x*a.y*(1-cos(ar)) - a.z*sin(ar),
+              a.x*a.z*(1-cos(ar)) + a.y*sin(ar),
+              0,
+
+              a.y*a.x *(1 - cos(ar)) + a.z*sin(ar),
+              cos(ar) + (a.y*a.y)*(1 - cos(ar)),
+              a.y*a.z*(1 - cos(ar)) - a.x*sin(ar),
+              0,
+
+              a.z*a.x* (1 - cos(ar)) - a.y*sin(ar),
+              a.z*a.y* (1 - cos(ar)) + a.z*sin(ar),
+              cos(ar) + (a.x*a.x) * (1 - cos(ar)),
+              0,
+
+              0, 0, 0, 1
+              );
+
+    // // Euler Combined 3 Axis Rotation Matrix
     mat4 rotation_matrix =
             // Row 1
         mat4( cos(r.y)*cos(r.z),
@@ -70,7 +89,7 @@ mat4 create_rotation( vec4 euler )
               0,
               // Row 4
               0, 0, 0, 1);
-    return rotation_matrix;
+    return rotation_matrix * arbitraty_matrix;
 }
 
 void main()
@@ -86,16 +105,16 @@ void main()
     mat4 projection = identity;             // Orthographic Camera to Clip-Space
     mat4 viewport = identity;               // Clip-Space to Screen Space
 
-    rot.x= (0.0) * tau;
+    rot.x = 0.0;
     rot.y = (0.0 + (time_since_epoch * rotation_speed)) * tau;
-    rot.z = (0.0) *tau;
-    rot.w = 1.0;
+    rot.z = 0.0;
+    rot.w = 0.0;
 
     vec4 vertex = vec4( vert.x, vert.y, vert.z, 1.0 );
 
     mat4 transform = identity;
 
-    local *= create_rotation( vec4((3./8.)*tau, 0.0, 0.0, 1.0) );
+    local *= create_rotation( vec4((1./8.)*tau, 0.0, 0.0, 0.0 ) );
     world *= create_rotation( rot );
     // Normal must be scaled and translated so it have to go first
     v_normal = (projection * camera * world * local * vec4( normal, 1.0 )).xyz;
@@ -109,7 +128,6 @@ void main()
 
     // // Map into screen coordinate system
     vertex = projection * camera * world * local * vertex;
-
     gl_Position = vertex;
 
     v_position = vertex.xyz;
