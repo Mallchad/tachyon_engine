@@ -44,6 +44,8 @@ using context_id        = internal_id<id_type::graphics_context>;
 using attribute_id      = internal_id<id_type::vertex_attribute>;
 /// Underlying Graphics API Buffer, backed by internal copy
 using buffer_id         = internal_id<id_type::buffer>;
+/// Uniform Management Object
+using uniform_id        = internal_id<id_type::uniform>;
 /// Internal Mesh Format
 using mesh_id           = internal_id<id_type::mesh>;
 // Single Stage Shader
@@ -202,3 +204,84 @@ public:
     DESTRUCTOR ~i_renderer() {}
 };
 #endif
+
+using alignment_format = std::array<fint32, 30>;
+
+class uniform
+{
+    /// How many members in the instance of t_struct
+    int member_count = 0;
+    int size = 0;
+    uniform_id id;
+    buffer_id id_buffer;
+    alignment_format format;
+    /// Copy stage for copying to a uniform in the correct format
+    byte_buffer copy_buffer;
+
+public:
+    constexpr fbyte*
+    FUNCTION data()
+    {
+        return copy_buffer.data();
+    }
+
+    /// Packs data from a struct into a staging buffer ready to be copied into a uniform
+    template<typename ...t_shaders>
+    constexpr freport
+    FUNCTION pack( t_shaders... member_list )
+    {
+        fint32 argument_count = sizeof...(t_shaders);
+        bool setup_alignment = false;
+
+        // Setup pack format if it doesn't already exist
+        if (member_count <= 0)
+        {
+            member_count = argument_count;
+            setup_alignment = true;
+        }
+        if ( argument_count != member_count )
+        {
+            print( "Provided member count does not match previously provided pack definition" );
+            return false;
+        }
+        member_count = argument_count;
+        fint32 iterations = 0;
+
+        // Meta-Programming Loop
+        FOLD([=]( auto new_member,
+                  alignment_format& out_format,
+                  fint32& out_size,
+                  byte_buffer& out_copy_buffer,
+                  fint32& i_member ) -> void
+        {
+            using member_t = decltype(new_member);
+            constexpr bool float_type = std::is_floating_point_v< member_t >;
+            constexpr bool int_type = std::is_integral_v< member_t >;
+            constexpr bool vector_type = (std::is_same_v< member_t, ffloat3> ||
+                                          std::is_same_v< member_t, ffloat4>);
+            constexpr bool matrix_type = false;
+            static_assert( float_type || int_type || vector_type || matrix_type,
+                           "Uniform can only contain shader types: float, int, vector, matrix" );
+            if (setup_alignment)
+            {
+                // Each data type has a specific alignment associated with it
+                constexpr fint32 alignment_size = ((float_type || int_type) ? 4 :
+                                                   vector_type || matrix_type ? 16 :
+                                                   -1);
+                const fint32 alignment_multiple = std::ceil( out_size / alignment_size );
+                fint32 alignment_location = ( alignment_multiple * alignment_size );
+                out_size = alignment_location + alignment_size;
+                out_format[ i_member ] = alignment_location;
+                out_copy_buffer.resize( out_size );
+            }
+
+            const fint32 member_size = sizeof(new_member);
+            const fint32 offset = out_format[ i_member ];
+            std::memcpy( offset+ out_copy_buffer.data(), &new_member, member_size );
+            ++i_member;
+        }( member_list, format, size, copy_buffer, iterations ), ...);
+
+        return false;
+    }
+
+};

@@ -31,8 +31,6 @@ CONSTRUCTOR renderer::renderer()
     test_utah_teapot.shader_id = -1;
 
     test_utah_teapot_id = platform.mesh_create( test_utah_teapot );
-
-
 }
 
 void
@@ -78,7 +76,15 @@ FUNCTION renderer::frame_update(ffloat epoch_elapsed)
         }
     }
 
-    platform.shader_globals_update( frame_shader_globals );
+    uniform_frame.pack( frame_shader_globals.epoch,
+                        frame_shader_globals.time_since_epoch,
+                        frame_shader_globals.last_begin_epoch,
+                        frame_shader_globals.last_end_epoch,
+                        frame_shader_globals.delta_time,
+                        frame_shader_globals.delta_time_begin,
+                        frame_shader_globals.delta_time_end,
+                        frame_shader_globals.screen_vh_aspect_ratio );
+    platform.shader_globals_update( *ptr_cast<frame_shader_global*>(uniform_frame.data()) );
     platform.frame_start();
     ftransform stub_transform = {};
     platform.draw_mesh( test_utah_teapot_id, stub_transform, test_shader );

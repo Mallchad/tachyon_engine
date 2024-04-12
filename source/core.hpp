@@ -35,6 +35,7 @@ enum class id_type
     graphics_context,
     vertex_attribute,
     buffer,
+    uniform,
     mesh,
     shader,
     shader_program
@@ -144,7 +145,6 @@ FUNCTION drop( t_movable doomed )
 {
     auto _ = std::move( doomed );
 }
-
 
 // -- Typedefs --
 using fstring = std::basic_string<char>;

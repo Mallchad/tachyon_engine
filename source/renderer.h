@@ -23,6 +23,7 @@ class renderer final
 
 
     frame_shader_global frame_shader_globals;
+    uniform uniform_frame;
 
     public:
     renderer_backend platform = {};

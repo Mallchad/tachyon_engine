@@ -55,22 +55,9 @@
 // States the following code contains friend declarations
 #define FRIENDS
 
-// States following hints are public
-#define PUBLIC_DATA public
-#define PUBLIC_MEMBERS public
-#define PUBLIC_VARIABLES public
-#define PUBLIC_FUNCTIONS public
-// States the following hints are protected (internal to the class)
-#define INTERNAL_DATA protected
-#define INTERNAL_MEMBERS protected
-#define INTERNAL_VARIABLES protected
-#define INTERNAL_FUNCTIONS protected
-// States the following hints are private
-#define PRIVATE_DATA private
-#define PRIVATE_MEMBERS private
-#define PRIVATE_VARIABLES private
-#define PRIVATE_FUNCTIONS private
-#define FRIEND_CLASSES friend
+// Marks a fold expression
+#define FOLD
+
 
 // Will break the Unreal Header Tool if defined
 // (It's parsing system is particularly basic and will misinterpret tokens)
@@ -81,9 +68,8 @@
 #define PURE_VIRTUAL
 #endif
 
-// No Operation empty statements, can silence warnings
-#define NOOP (void)(0)
-#define NOP (void)(0)
+// No Operation empty statements, can silence warnings or be used as breakpoints
+#define NOP asm("nop")
 // Empty macros, can pad declarations for tools
 #define NODECLARE
 #define NODEC
