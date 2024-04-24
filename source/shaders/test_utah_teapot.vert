@@ -53,22 +53,22 @@ mat4 create_rotation( vec4 euler )
     // Rotation around an arbitrary axis defined by Euler coordinates
     mat4 arbitraty_matrix =
         mat4( cos(ar)+(a.x*a.x) * (1-cos(ar)),
-              a.x*a.y*(1-cos(ar)) - a.z*sin(ar),
-              a.x*a.z*(1-cos(ar)) + a.y*sin(ar),
-              0,
-
               a.y*a.x *(1 - cos(ar)) + a.z*sin(ar),
-              cos(ar) + (a.y*a.y)*(1 - cos(ar)),
-              a.y*a.z*(1 - cos(ar)) - a.x*sin(ar),
+              a.z*a.x* (1 - cos(ar)) - a.y*sin(ar),
               0,
 
-              a.z*a.x* (1 - cos(ar)) - a.y*sin(ar),
+              a.x*a.y*(1-cos(ar)) - a.z*sin(ar),
+              cos(ar) + (a.y*a.y)*(1 - cos(ar)),
               a.z*a.y* (1 - cos(ar)) + a.z*sin(ar),
+              0,
+
+              a.x*a.z*(1-cos(ar)) + a.y*sin(ar),
+              a.y*a.z*(1 - cos(ar)) - a.x*sin(ar),
               cos(ar) + (a.x*a.x) * (1 - cos(ar)),
               0,
 
-              0, 0, 0, 1
-              );
+              0, 0, 0, 1 );
+
 
     // Math representation rotation matrix, needs to be rearranged to collumn major
     // [[cos(y) * cos(z), -cos(y) * sin(z), sin(y), 0],
