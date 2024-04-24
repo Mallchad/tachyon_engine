@@ -70,6 +70,21 @@ mat4 create_rotation( vec4 euler )
               0, 0, 0, 1
               );
 
+    // Math representation rotation matrix, needs to be rearranged to collumn major
+    // [[cos(y) * cos(z), -cos(y) * sin(z), sin(y), 0],
+
+    //  [cos(x) * sin(z) + cos(z) * sin(x) * sin(y),
+    //  cos(x) * cos(z) - sin(x) * sin(y) * sin(z),
+    //   -cos(y) * sin(x),
+    //   0],
+
+    //  [sin(x) * sin(z) - cos(x) * cos(z) * sin(y),
+    //  cos(x) * sin(y) * sin(z) + cos(z) * sin(x),
+    //   cos(x) * cos(y),
+    //   0],
+
+    //  [0, 0, 0, 1]]
+
     // // Euler Combined 3 Axis Rotation Matrix
     mat4 rotation_matrix =
             // Row 1
@@ -118,10 +133,10 @@ void main()
     world *= create_rotation( rot );
     // Normal must be scaled and translated so it have to go first
     v_normal = (projection * camera * world * local * vec4( normal, 1.0 )).xyz;
-    world *= mat4(scale,     0.,    0.,    trans.x,
-                  0.,     scale,    0.,    trans.y,
-                  0.,        0., scale,    trans.z,
-                  0.,        0.,    0.,    1.);
+    world *= mat4(scale,     0.,    0., 0.,
+                  0.,     scale,    0., 0.,
+                  0.,        0., scale, 0.,
+                  trans.x, trans.y, trans.z,    1.);
     // Map into screen coordinate system
     projection[0][0] = screen_vh_aspect_ratio;
     transform = projection * camera * world * local * transform;
