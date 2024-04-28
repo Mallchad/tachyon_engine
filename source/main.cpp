@@ -27,7 +27,7 @@ int main()
             float epoch_elapsed_float = std::chrono::duration_cast<
                 std::chrono::duration<ffloat>>( epoch_elapsed ).count();
 
-            main_renderer.frame_update( epoch_elapsed_float );
+            main_renderer.frame_update( );
             main_input.frame_update( epoch_elapsed_float );
 
             FrameMark( "Main Render Thread" );

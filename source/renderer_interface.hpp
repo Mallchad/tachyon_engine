@@ -268,7 +268,8 @@ public:
                 constexpr fint32 alignment_size = ((float_type || int_type) ? 4 :
                                                    vector_type || matrix_type ? 16 :
                                                    -1);
-                const fint32 alignment_multiple = std::ceil( out_size / alignment_size );
+                const fint32 alignment_multiple = cast<fint32>(
+                    std::ceil( out_size / alignment_size ));
                 fint32 alignment_location = ( alignment_multiple * alignment_size );
                 out_size = alignment_location + alignment_size;
                 out_format[ i_member ] = alignment_location;

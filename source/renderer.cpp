@@ -34,7 +34,7 @@ CONSTRUCTOR renderer::renderer()
 }
 
 void
-FUNCTION renderer::frame_update(ffloat epoch_elapsed)
+FUNCTION renderer::frame_update()
 {
     ZoneScopedN("graphics refresh");
 

@@ -87,7 +87,7 @@ FUNCTION sigterm_handler(int sig)
     std::signal(SIGINT, sigterm_handler);
 }
 
-void
+INTERNAL void
 FUNCTION gl_debug_callback( GLenum source,
                             GLenum type,
                             GLuint id,
@@ -96,6 +96,7 @@ FUNCTION gl_debug_callback( GLenum source,
                             const GLchar* message,
                             const void* user_param )
 {
+    source; type; id; severity; length; message; user_param; // Silence warnings
     std::cout << "[OpenGL Debug] " << std::left << 
         message << "  Type: " << type << "\n";
 }
@@ -218,7 +219,7 @@ FUNCTION def::initialize()
 
     // Enable debug output
     // glEnable( GL_DEBUG_OUTPUT );
-    ld::glDebugMessageCallback( gl_debug_callback, 0 );
+    ld::glDebugMessageCallback( gl_debug_callback, nullptr );
 
     glGetIntegerv( GL_NUM_EXTENSIONS, &m_gl_extension_count );
     std::cout << "OpenGL Implimentation Vendor: " << glGetString( GL_VENDOR ) <<
@@ -572,6 +573,19 @@ FUNCTION def::shader_create( fstring name, shader_type request_type )
             shader_target = glCreateShader( GL_VERTEX_SHADER );
             shader_debug_name = "gs_"s + name;
             break;
+        case shader_type::compute :
+            shader_target = glCreateShader( GL_COMPUTE_SHADER );
+            shader_debug_name = "cs_"s + name;
+            break;
+        case shader_type::tesselation_control :
+            shader_target = glCreateShader( GL_TESS_CONTROL_SHADER );
+            shader_debug_name = "tcs_"s + name;
+            break;
+        case shader_type::tesselation_eval :
+            shader_target = glCreateShader( GL_TESS_EVALUATION_SHADER );
+            shader_debug_name = "tes_"s + name;
+            break;
+
         default:
             std::cout << "Shader type not implimented \n";
             return -1;
@@ -589,7 +603,9 @@ FUNCTION def::shader_create( fstring name, shader_type request_type )
         return -1;
     }
 
-    glObjectLabel( GL_SHADER, shader_target, shader_debug_name.size(), shader_debug_name.c_str() );
+    glObjectLabel( GL_SHADER, shader_target,
+                   cast<GLsizei>( shader_debug_name.size() ),
+                   shader_debug_name.c_str() );
     fstring error_message;
     GLenum error = 0;
     switch (glGetError())
@@ -634,7 +650,8 @@ FUNCTION def::shader_program_destroy( shader_program_id target )
 fhowdit
 FUNCTION def::shader_load( shader_id target, fpath shader_file, bool binary )
 {
-    std::cout << "Unimplimnted \n";
+    unimplimented( "To be completed in the near future" );
+    target; shader_file; binary;
     return false;
 }
 

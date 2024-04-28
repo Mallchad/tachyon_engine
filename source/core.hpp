@@ -13,6 +13,8 @@
 #include <iomanip>
 #include <type_traits>
 
+#include <csignal>
+
 // Project Specific Includes
 // Silence warnings in external projects
 #pragma clang diagnostic push
@@ -48,7 +50,8 @@ template<typename t_streamable>
 void
 FUNCTION _print( t_streamable message, const char* source_file )
 {
-    std::cout << "[" << source_file << "]" << std::setw(10) << message << "\n";
+    std::cout << "[" << source_file << "]" << std::setfill(' ') << std::setw(6)
+              << ' ' << message << "\n";
 }
 
 /// Object for handling locating ID's to references of objects

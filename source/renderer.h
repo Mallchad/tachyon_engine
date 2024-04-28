@@ -30,5 +30,5 @@ class renderer final
 
     CONSTRUCTOR renderer();
 
-    void frame_update(ffloat epoch_elapsed);
+    void frame_update();
 };
