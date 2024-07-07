@@ -7,6 +7,7 @@ target( "tachyon_engine" )
     set_kind( "binary" )
     set_languages( "c++20" )
     add_packages("glslang")
+    set_policy("build.optimization.lto", true)
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
@@ -20,41 +21,47 @@ target( "tachyon_engine" )
     -- add_links( "ubsan" )
     add_links( "dl", "X11", "GL" )
     add_defines( 'TRIANGULATE_PROJECT_ROOT="$(projectdir)"' )
-
+    set_policy("check.auto_ignore_flags", false)
     -- Temporary cxxflags to safe the effort of full converting to xmake --
     -- Using lld linker instead of mold for now for error messages
     -- Reconsider if the build gets slow
     add_cxxflags( "clang::-g",
+                  -- "-analyze",
                   -- "-fuse-ld=lld",
                   "-fuse-ld=mold",
+                  -- Generate a control flow graph
+                  "gcc::-fdump-tree-all-graph",
+
+                  -- Performance Flags
+                  -- "-msse",
 
                   -- Warnings
-                  "-Wpedantic",
+                  "clang::-Wpedantic",
                   "-Wall",
                   -- Whitelist Errors
                   -- #import is a Obj-C language extension and easily confused with C++ modules
-                  "-Werror=import-preprocessor-directive-pedantic",
+                  "clang::-Werror=import-preprocessor-directive-pedantic",
                   -- Platform unknown pragmas lead to some insanely annoying and
                   -- unexpected When they fail silentlys
-                  "-Werror=unknown-pragmas",
+                  "clang::-Werror=unknown-pragmas",
                   -- Non-Void functions that don't return can crash *at runtime*
-                  "-Werror=return-type",
-                  "-Werror=inconsistent-missing-override",
+                  "clang::-Werror=return-type",
+                  "clang::-Werror=inconsistent-missing-override",
                   -- Shadowing
-                  "-Werror=shadow-all",
+                  "clang::-Werror=shadow-all",
                   -- Has inconsistent behaviour and behaves like reinterpret cast, never use
-                  "-Werror=old-style-cast",
+                  "clang::-Werror=old-style-cast",
 
                   -- -- Disable Warnings
-                  "-Wno-unused-value",
-                  "-Wno-padded",
-                  "-Wno-c++98-compat",
-                  "-Wno-c++98-compat-pedantic ",
-                  "-Wno-documentation-unknown-command ",
-                  "-Wno-unreachable-code-break",
-                  "-Wno-unused-variable",
-                  "-Wno-unused-private-field",
-                  "-Wno-abstract-final-class",
+                  "clang::-Wno-unused-value",
+                  "clang::-Wno-padded",
+                  "clang::-Wno-c++98-compat",
+                  "clang::-Wno-c++98-compat-pedantic ",
+                  "clang::-Wno-documentation-unknown-command ",
+                  "clang::-Wno-unreachable-code-break",
+                  "clang::-Wno-unused-variable",
+                  "clang::-Wno-unused-private-field",
+                  "clang::-Wno-abstract-final-class",
                   -- Only runs on extra semicolons that do nothing, pointless.
                   "-Wno-extra-semi-stmt"
                   -- "-fsanitize=address",
