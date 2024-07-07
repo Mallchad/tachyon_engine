@@ -893,6 +893,12 @@ FUNCTION def::draw_mesh( mesh_id target, ftransform target_transform, shader_pro
     if (target < 0)
     {
         std::cout << "Something went went, draw_mesh was passed an invalid target \n";
+        return false;
+    }
+    if (target_shader < 0)
+    {
+        std::cout << "Something went went, draw_mesh was passed an invalid target \n";
+        return false;
     }
     fmesh& target_mesh = mmesh_list [ target.cast() ];
     fmesh_metadata target_meta = mmesh_metadata_list[ target.cast() ];
