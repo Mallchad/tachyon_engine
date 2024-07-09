@@ -1,13 +1,16 @@
 set_xmakever("2.7.3")
 
-set_defaultmode( "release" )
+set_allowedmodes( "release",
+                  "releasedbg",
+                  "debug",
+                  {default = "debug"})
 add_requires("glslang", {configs = {binaryonly = true}})
 
 target( "tachyon_engine" )
     set_kind( "binary" )
     set_languages( "c++20" )
-    add_packages("glslang")
     set_policy("build.optimization.lto", true)
+    add_deps( "tachyon_shaders" )
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
@@ -78,7 +81,6 @@ target( "tachyon_engine" )
 target( "tachyon_libs" )
     set_kind( "static" )
     set_languages( "c++20" )
-    add_packages("glslang")
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
@@ -161,8 +163,9 @@ target( "tachyon_libs" )
                      "-Werror=shadow" )
     end
 
-target( "shaders" )
-    set_kind( "phony" )
+target( "tachyon_shaders" )
+    set_kind( "object" )
+    add_packages("glslang")
     add_rules("utils.glsl2spv", {outputdir = "build"})
     add_files("source/shaders/*.vert",
               "source/shaders/*.frag")
