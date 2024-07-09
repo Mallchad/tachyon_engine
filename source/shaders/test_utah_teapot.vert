@@ -29,17 +29,16 @@ layout(std140, binding = 0) uniform frame_data
 
 const vec3 arbitrary_axis = vec3( 0.662f, 0.2f, 0.722f );
 
-const float scale = .1;
-const float ratio_16_9 = 1080.f/1920.f;
+const float scale = 1.0;
+// Translation
+vec3 trans = vec3( 0.0, 0.0, -20.0 );
 
+const float ratio_16_9 = 1080.f/1920.f;
 const float tau = 6.283185307;
 
 float rotation_speed = 0.1f;
 // Euler Rotation
 vec4 rot = vec4(0);
-
-// Translation
-vec3 trans = vec3( 0.0, 0.0, 0.0);
 
 // Create a Euler Rotation Matrix with w component being around an arbitrary axis
 mat4 create_rotation( vec4 euler )
@@ -107,6 +106,33 @@ mat4 create_rotation( vec4 euler )
     return rotation_matrix * arbitraty_matrix;
 }
 
+mat4 projection_create()
+{
+    float camera_width = 1.0;
+    float aspect_ratio_vh = 0.5625;
+    // Clip Plane Dimensions
+    // Near
+    float n = 1;
+    // Far
+    float f = 70.0;
+    // Right
+    float r = -(camera_width / 2.0);
+    // Left
+    float l = -r;
+    // Top
+    float t = camera_width * 0.5625;
+    // Bottom
+    float b = -t;
+
+    mat4 out_projection =
+        mat4( (2.*n) / (r-l),0.,                0.0,                0,
+              0.,            (2.*n) / (t-b),    0.0,                0,
+              (r+l) / (r-l), (t+b) / (t-b),     -(f+n) / (f-n),     -1,
+              0.,            0.,                -(2.*f*n) / (f-n),  0 );
+
+    return out_projection;
+}
+
 void main()
 {
     mat4 identity = mat4( 1., .0, .0, 0,
@@ -122,6 +148,7 @@ void main()
 
     rot.x = 0.0;
     rot.y = (0.0 + (time_since_epoch * rotation_speed)) * tau;
+    // rot.y = 0.0;
     rot.z = 0.0;
     rot.w = 0.0;
 
@@ -130,22 +157,26 @@ void main()
     mat4 transform = identity;
 
     local *= create_rotation( vec4((1./8.)*tau, 0.0, 0.0, 0.0 ) );
-    world *= create_rotation( rot );
-    // Normal must be scaled and translated so it have to go first
-    v_normal = (projection * camera * world * local * vec4( normal, 1.0 )).xyz;
-    world *= mat4(scale,     0.,    0., 0.,
+    mat4 world_anim = create_rotation( rot );
+    world = mat4(scale,     0.,    0.,  0.,
                   0.,     scale,    0., 0.,
-                  0.,        0., scale, 0.,
+                  0.,        0., scale, 0.0,
                   trans.x, trans.y, trans.z,    1.);
-    // Map into screen coordinate system
-    projection[0][0] = screen_vh_aspect_ratio;
-    transform = projection * camera * world * local * transform;
 
-    // // Map into screen coordinate system
-    vertex = projection * camera * world * local * vertex;
+    // Normals don't particularly need or want scale and translation so we're skipping some
+    vec4 norm = projection * camera * world_anim * local * vec4( normal, 1.0 );
+
+    // Perspective Projection
+    // This is mapping into screen coordinate system and skewing based on distance
+    projection = projection_create();
+
+    vertex = projection * camera * world * world_anim * local * vertex;
     gl_Position = vertex;
+    v_normal = normalize(norm / norm.w).xyz;
 
     v_position = vertex.xyz;
     v_color = vec4( 0.8, 0.0, 0.0 , 1.0 ) ;
+
+    // Debug Coloring
     // v_color = vec4( 1.0 );
 }

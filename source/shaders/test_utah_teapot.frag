@@ -42,7 +42,7 @@ void main()
 
     metal_polished.color = v_color.xyz;
     metal_polished.specular = 1.0;
-    metal_polished.roughness = 0.0;
+    metal_polished.roughness = 0.1;
     metal_polished.metallic = 1.0;
     metal_polished.opacity = v_color.w;
     metal_polished.emissive = vec3( 0.0 );
@@ -53,7 +53,7 @@ void main()
 
     plastic.color = v_color.xyz;
     plastic.specular = 1.0;
-    plastic.roughness = 0.0;
+    plastic.roughness = 0.5;
     plastic.metallic = 0.0;
     plastic.opacity = v_color.w;
     plastic.emissive = vec3( 0.0 );
@@ -61,6 +61,7 @@ void main()
 
     material m = metal_polished;
 
+    // This is current done entirely in NDC (Normalized Device Coordinates)
     vec4 camera_pos = vec4( 0.0, 0.0, 0.0, 0.0 );
     vec3 point_light = vec3( 2.0, 5.0, 0.0 );
     float light_intensity = 5.0;
@@ -71,7 +72,7 @@ void main()
     m.roughness = clamp( m.roughness, 0.0, 1.0 );
     float opac = m.opacity;
 
-    float ambient = 0.0f;
+    float ambient = 0.0;
     // Fragment Coordinate
     // Really frustrating to convert to screen/worldspace, use vertecies instead
     vec3 frag = v_position;
@@ -88,7 +89,7 @@ void main()
     vec3 reflect_ray = reflect( -point_ray, v_normal );
     // Max and clamp to prevent negative colors
     // Divide light contribution by 3 to prevent applying contribution 3 times
-    float light_contribution = max(dot( point_ray, v_normal ), 0.0 ) * 1.0;
+    float light_contribution = max(dot( -point_ray, v_normal ), 0.0 ) * 1.0;
     m.roughness = clamp( 1-m.roughness, 0.0, 1.0 );
     float reflect_contribution = pow( max( dot( view_ray, reflect_ray ) , 0.0 ), 1/m.specular );
     vec3 diffuse = ( light_contribution * light_color );
@@ -102,11 +103,15 @@ void main()
 
     vec3 total = ( (ambient + diffuse) * m.color ) + reflect;
     frag_color = vec4( total , 1.0 );
+
     // Uncomment for debug colours
-    // frag_color = vec4( diffuse, opac );   // Diffuse Reflection
+    // frag_color = vec4( vec3(light_contribution), opac );   // Diffuse Reflection
     // frag_color = vec4( vec3(spec), opac );   // Specular Reflection
     // frag_color = vec4( vec3(metal), opac );   // Metallic Reflection
     // frag_color = vec4( vec3(reflect), opac );   // Metallic Reflection
-    // frag_color = vec4( frag.xyz, 1.0 );  // Frag Colours
+    // frag_color = vec4( m.color, 1.0 );  // Base Color
     // frag_color = vec4( v_position.xyz, 1.0 );  // Frag Colours
+
+    // frag_color = vec4( v_normal.xyz, 1.0 );  // Normal
+    // frag_color = vec4( 0.7, 0.7, 0.7, 1.0 );                // Gray
 }
