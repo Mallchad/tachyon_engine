@@ -50,4 +50,5 @@ int main()
     }
     std::cout << "Exiting gracefully" << std::endl;
 
+    return EXIT_SUCCESS;
 }
