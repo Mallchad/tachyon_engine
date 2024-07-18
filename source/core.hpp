@@ -44,14 +44,14 @@ enum class id_type
 };
 
 #ifndef CLING_INTERPRETER_H
-    #define print( message ) _print( message, __FILE__ )
+    #define print( message ) log( message, __FILE__ )
 #endif
-template<typename t_streamable>
+template<typename... t_streamable>
 void
-FUNCTION _print( t_streamable message, const char* source_file )
+FUNCTION log( const char* category, t_streamable... messages )
 {
-    std::cout << "[" << source_file << "]" << std::setfill(' ') << std::setw(6)
-              << ' ' << message << "\n";
+    std::cout << "[" << category << "]" << std::setfill(' ') << std::setw(6) << " ";
+    ((std::cout << messages  << " "), ...) << "\n";
 }
 
 /// Object for handling locating ID's to references of objects
