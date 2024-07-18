@@ -219,7 +219,7 @@ class uniform
     byte_buffer copy_buffer;
 
 public:
-    constexpr fbyte*
+    fbyte*
     FUNCTION data()
     {
         return copy_buffer.data();
