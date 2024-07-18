@@ -640,7 +640,7 @@ FUNCTION def::shader_program_destroy( shader_program_id target )
 {
     if (target <= -1)
     {
-        // std::cout << "[OpenGL Backend] Trying to run shader without a valid shader ID, bailing. \n";
+        std::cout << "[OpenGL Backend] Trying to run shader without a valid shader ID, bailing. \n";
         return false;
     }
 
