@@ -141,9 +141,19 @@ FUNCTION ub_cast( t_target target )
     return reinterpret_cast<t_return>( target );
 }
 
+template<typename t_result, typename t_target>
+constexpr auto
+binary_cast( t_target& target )
+{
+    t_result result;
+    static_assert( sizeof(t_result) == sizeof(t_target), "Target must have same size as result" );
+    std::memcpy( &target, &result, sizeof( target ) );
+    return result;
+}
+
 // Removes an object from scope, essentially calling it's destructor if sensible
 template <typename t_movable>
-void
+constexpr void
 FUNCTION drop( t_movable doomed )
 {
     auto _ = std::move( doomed );
