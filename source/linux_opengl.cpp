@@ -607,8 +607,8 @@ FUNCTION def::shader_create( fstring name, shader_type request_type )
                    cast<GLsizei>( shader_debug_name.size() ),
                    shader_debug_name.c_str() );
     fstring error_message;
-    GLenum error = 0;
-    switch (glGetError())
+    GLenum error = glGetError();
+    switch (error)
     {
         case GL_NO_ERROR:
             error_message = "GL_NO_ERROR"; break;
@@ -621,8 +621,10 @@ FUNCTION def::shader_create( fstring name, shader_type request_type )
         case GL_INVALID_FRAMEBUFFER_OPERATION:
             error_message = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
     }
-    std::cout << "Shader Creation Error Status: " << error_message << "\n";
-
+    if (error != GL_NO_ERROR)
+    {
+        std::cout << "Shader Creation Error Status: " << error_message << "\n";
+    }
     out_id = shader_count;
     shader_list[ shader_count ] = shader_target;
     ++shader_count;
