@@ -88,6 +88,7 @@ FUNCTION renderer::frame_update()
     platform.frame_start();
     ftransform stub_transform = {};
     platform.draw_mesh( test_utah_teapot_id, stub_transform, test_shader );
+    // platform.draw_test_signfield( platform.msignfield_color );
 
     platform.refresh( frame_shader_globals );
 

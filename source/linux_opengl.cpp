@@ -991,11 +991,6 @@ FUNCTION def::draw_test_rectangle(ffloat4 p_color)
 bool
 FUNCTION def::draw_test_signfield(ffloat4 p_color)
 {
-    // Performance optimization, can be disabled when it runs fast enough
-    if (buffer_damage_size <= 0)
-    {
-        return false;
-    }
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
     GLfloat circle_y = 1080.f / 2.f;
@@ -1020,8 +1015,6 @@ FUNCTION def::draw_test_signfield(ffloat4 p_color)
             mbuffer[x + (1920*y)] = p_color * color_mult;
         }
     }
-    buffer_damage_size = 1920*1080;
-
     // Interferes with fragment shader
     if (progress_x < 1920) progress_x += 5;
     else progress_x = 1920;
@@ -1057,9 +1050,6 @@ FUNCTION def::refresh( frame_shader_global& frame )
     // draw_test_circle(mcircle_color);
 
     // draw_test_triangle(mtriangle_color);
-    // draw_test_signfield(msignfield_color);
-
-    buffer_damage_size = 0;
 
     XGetWindowAttributes(rx_display, vx_window, &window_properties);
     frame.screen_vh_aspect_ratio =
