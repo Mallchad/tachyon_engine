@@ -109,18 +109,18 @@ mat4 create_rotation( vec4 euler )
 mat4 projection_create()
 {
     float camera_width = 1.0;
-    float aspect_ratio_vh = 0.5625;
+    float aspect_ratio_vh = screen_vh_aspect_ratio;
     // Clip Plane Dimensions
     // Near
     float n = 1;
     // Far
     float f = 70.0;
     // Right
-    float r = -(camera_width / 2.0);
+    float r = -(camera_width / 2.0) / aspect_ratio_vh;
     // Left
     float l = -r;
     // Top
-    float t = camera_width * 0.5625;
+    float t = (camera_width / 2.0);
     // Bottom
     float b = -t;
 

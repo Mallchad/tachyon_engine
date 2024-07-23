@@ -784,15 +784,16 @@ FUNCTION def::shader_program_run( shader_program_id target )
 }
 
 freport
-FUNCTION def::shader_globals_update( frame_shader_global contents )
+FUNCTION def::shader_globals_update( uniform& contents )
 {
     // Update frame global uniforms
     ld::glBindBuffer( GL_UNIFORM_BUFFER, uniform_frame_globals.cast() );
     ld::glBindBufferBase(GL_UNIFORM_BUFFER, 0, get_buffer( uniform_frame_globals ) );
     ld::glBufferData( GL_UNIFORM_BUFFER,
-                            sizeof( frame_shader_global ),
-                            &contents,
-                            GL_STATIC_DRAW );
+                      contents.size ,
+                      contents.data(),
+                      GL_STATIC_DRAW );
+    ld::glBindBuffer( GL_UNIFORM_BUFFER, 0 );
 
     return true;
 }
@@ -1053,7 +1054,7 @@ FUNCTION def::refresh( frame_shader_global& frame )
 
     XGetWindowAttributes(rx_display, vx_window, &window_properties);
     frame.screen_vh_aspect_ratio =
-        static_cast<float>( window_properties.height ) / window_properties.width;
+        cast<float>( window_properties.height ) / cast<float>( window_properties.width );
     if (fullscreen && (frame.screen_vh_aspect_ratio < .3f ||
                        frame.screen_vh_aspect_ratio > .8f ))
     {

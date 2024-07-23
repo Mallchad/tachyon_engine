@@ -84,7 +84,7 @@ FUNCTION renderer::frame_update()
                         frame_shader_globals.delta_time_begin,
                         frame_shader_globals.delta_time_end,
                         frame_shader_globals.screen_vh_aspect_ratio );
-    platform.shader_globals_update( *ptr_cast<frame_shader_global*>(uniform_frame.data()) );
+    platform.shader_globals_update( uniform_frame );
     platform.frame_start();
     ftransform stub_transform = {};
     platform.draw_mesh( test_utah_teapot_id, stub_transform, test_shader );

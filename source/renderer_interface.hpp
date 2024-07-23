@@ -207,7 +207,7 @@ public:
 
 using alignment_format = std::array<fint32, 30>;
 
-class uniform
+struct uniform
 {
     /// How many members in the instance of t_struct
     int member_count = 0;

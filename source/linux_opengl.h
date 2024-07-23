@@ -39,7 +39,7 @@ using PFNGLDRAWARRAYSPROC = void (APIENTRYP)(GLenum mode, GLint first, GLsizei c
  */
 
 /// GLX Implimentation
-class renderer_opengl final INTERFACE_RENDERER
+struct renderer_opengl final INTERFACE_RENDERER
 {
     friend class input_xlib;
     // Forward Declarations
@@ -265,7 +265,7 @@ public:
     FUNCTION shader_program_run( shader_program_id target ) INTERFACE;
 
     freport
-    FUNCTION shader_globals_update( frame_shader_global contents );
+    FUNCTION shader_globals_update( uniform& contents );
 
     /// Register a mesh object with the backend and copy buffer data
     mesh_id
