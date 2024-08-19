@@ -24,7 +24,7 @@ FUNCTION impl::initialize( renderer_opengl& render_handle )
     // Buttons are pointer/mouse numbers
     fuint32 event_mask = ClientMessage  |
     KeyPressMask | KeyReleaseMask |
-    ButtonPressMask | PointerMotionMask;
+    ButtonPressMask | PointerMotionMask | StructureNotifyMask;
     XSelectInput( m_display, m_window, event_mask );
     return true;
 }
@@ -81,7 +81,10 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
                     global->reload_shaders = true;
                     global->reload_released = false;
                 }
-
+                break;
+            case ConfigureNotify:
+                global->window_requested.width = event.xconfigure.width;
+                global->window_requested.height = event.xconfigure.height;
                 break;
             case KeyRelease:
                 if ( XKeysymToKeycode( m_display, XK_R ) == event.xkey.keycode )

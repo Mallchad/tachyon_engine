@@ -1,7 +1,7 @@
 
-#include "include_core.h"
-
 #pragma once
+
+#include "include_core.h"
 
 /// How'd it go? Status report on what happened to the function
 using fhowdit = bool;

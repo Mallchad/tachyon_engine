@@ -6,7 +6,8 @@
 #include "code_helpers.h"
 #include "math.hpp"
 #include "file.hpp"
-
+#include "memory.hpp"
+#include "string.h"
 
 CONSTRUCTOR renderer::renderer()
 {
@@ -36,7 +37,8 @@ CONSTRUCTOR renderer::renderer()
 void
 FUNCTION renderer::frame_update()
 {
-    ZoneScopedN("graphics refresh");
+    cstring frame_label = "Graphical";
+    FrameMarkNamed( frame_label );
 
     // Update early data for the frame
     frame_shader_globals.time_since_epoch = time_elapsed<ffloat>();
@@ -97,4 +99,5 @@ FUNCTION renderer::frame_update()
     frame_shader_globals.delta_time_end =
         time_elapsed<ffloat>() - frame_shader_globals.last_end_epoch;
     frame_shader_globals.last_end_epoch = time_elapsed<ffloat>();
+    FrameMarkEnd( frame_label );
 }

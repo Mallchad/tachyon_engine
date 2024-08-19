@@ -89,12 +89,25 @@ using fuint16 = uint16_t;
 using fuint32 = uint32_t;
 using fuint64 = uint64_t;
 
+using i8   = int8_t;
+using i16  = int16_t;
+using i32  = int32_t;
+using i64  = int64_t;
+
+using u8  = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+
 // Fixed width floats only supported
 using ffloat  = float;
 using fdouble = double;
 
+using f32 = float;
+using f64 = double;
+
 // String types
 // using fstring = std::basic_string<char>;
 // using fstring_view = std::basic_string_view<char>;
-// using cstring = const char*;
+using cstring = const char*;
 // using fpath = const char*;

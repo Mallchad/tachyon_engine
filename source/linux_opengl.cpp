@@ -3,6 +3,8 @@
 #include "include_core.h"
 
 #include "linux_opengl.h"
+#include <Tracy.hpp>
+
 
 #include <GL/gl.h>
 #include <GL/glx.h>
@@ -22,6 +24,7 @@
 #include <csignal>
 #include <initializer_list>
 
+using namespace tyon;
 using namespace std::chrono_literals;
 using std::initializer_list;
 
@@ -34,6 +37,7 @@ namespace ld
     INTERNAL PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB;
     INTERNAL PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
     INTERNAL PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA;
+    INTERNAL PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI;
 
     INTERNAL PFNGLBINDBUFFERPROC glBindBuffer;
     INTERNAL PFNGLBINDBUFFERBASEPROC glBindBufferBase;
@@ -129,6 +133,8 @@ FUNCTION def::initialize()
         glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalMESA" )));
     ld::glXSwapIntervalEXT         = ptr_cast<PFNGLXSWAPINTERVALEXTPROC>(
         glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalEXT" )));
+    ld::glXSwapIntervalSGI        = ptr_cast<PFNGLXSWAPINTERVALSGIPROC>(
+        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalSGI" )));
 
     ld::glBindBuffer               = ptr_cast<PFNGLBINDBUFFERPROC>(
         glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindBuffer" )));
@@ -281,19 +287,27 @@ FUNCTION def::initialize()
         vsync_triple_buffered = 2
     };
     // sync to vblank control
-    fint32 vsync_option = vsync_adaptive;
+    fint32 vsync_option = vsync_off;
     if (vglx_extensions_string.find( "GLX_MESA_swap_control" ) != std::string::npos)
     {
         vsync_option = (vsync_option < 0 ? vsync_double_buffered : vsync_option);
         ld::glXSwapIntervalMESA( vsync_option );
         opengl_extensions.enable( "GLX_MESA_swap_control", extension_family::EXT_swap_control );
-        print( "Mesa swap control" );
+        log( "OpenGL", "Mesa swap control" );
+    }
+    else if (vglx_extensions_string.find( "GLX_MESA_swap_control" ) != std::string::npos)
+    {
+        vsync_option = (vsync_option < 0 ? vsync_double_buffered : vsync_option);
+        ld::glXSwapIntervalMESA( vsync_option );
+        opengl_extensions.enable( "GLX_MESA_swap_control", extension_family::EXT_swap_control );
+        log( "OpenGL", "Mesa swap control" );
     }
     else if (vglx_extensions_string.find( "GLX_EXT_swap_control" ) != std::string::npos)
     {
         GLXDrawable drawable = glXGetCurrentDrawable();
-        ld::glXSwapIntervalEXT( rx_display, drawable, vsync_option );
+        ld::glXSwapIntervalEXT( rx_display, drawable, 0 );
         opengl_extensions.enable( "GLX_EXT_swap_control", extension_family::EXT_swap_control );
+        log( "OpenGL", "EXT swap control" );
     }
     else
     { print( "No Gl swap_control extension detected, have no control over vsync" ); }
@@ -416,7 +430,7 @@ FUNCTION def::window_create()
     }
 
     // Set the window name
-    XStoreName( rx_display, x_window_tmp, "cpp triangle test" );
+    XStoreName( rx_display, x_window_tmp, "Tachyon Engine" );
     XMapWindow( rx_display, x_window_tmp);
 
     // Instruct window manager to permit self-cleanup
@@ -547,7 +561,7 @@ FUNCTION def::context_set_current(context_id target)
 }
 
 shader_id
-FUNCTION def::shader_create( fstring name, shader_type request_type )
+FUNCTION def::shader_create( string name, shader_type request_type )
 {
     using namespace ld;
     shader_id out_id = -1;
@@ -563,27 +577,27 @@ FUNCTION def::shader_create( fstring name, shader_type request_type )
     {
         case shader_type::vertex :
             shader_target = glCreateShader( GL_VERTEX_SHADER );
-            shader_debug_name = "vs_"s + name;
+            shader_debug_name = "vs_"s + name.data;
             break;
         case shader_type::fragment :
             shader_target = glCreateShader( GL_FRAGMENT_SHADER );
-            shader_debug_name = "fs_"s + name;
+            shader_debug_name = "fs_"s + name.data;
             break;
         case shader_type::geometry :
             shader_target = glCreateShader( GL_VERTEX_SHADER );
-            shader_debug_name = "gs_"s + name;
+            shader_debug_name = "gs_"s + name.data;
             break;
         case shader_type::compute :
             shader_target = glCreateShader( GL_COMPUTE_SHADER );
-            shader_debug_name = "cs_"s + name;
+            shader_debug_name = "cs_"s + name.data;
             break;
         case shader_type::tesselation_control :
             shader_target = glCreateShader( GL_TESS_CONTROL_SHADER );
-            shader_debug_name = "tcs_"s + name;
+            shader_debug_name = "tcs_"s + name.data;
             break;
         case shader_type::tesselation_eval :
             shader_target = glCreateShader( GL_TESS_EVALUATION_SHADER );
-            shader_debug_name = "tes_"s + name;
+            shader_debug_name = "tes_"s + name.data;
             break;
 
         default:
@@ -992,6 +1006,7 @@ FUNCTION def::draw_test_rectangle(ffloat4 p_color)
 bool
 FUNCTION def::draw_test_signfield(ffloat4 p_color)
 {
+    ZoneScopedN( "signfield" );
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
     GLfloat circle_y = 1080.f / 2.f;
@@ -1025,7 +1040,6 @@ FUNCTION def::draw_test_signfield(ffloat4 p_color)
     glDrawPixels(1920, progress_y, GL_RGBA, GL_FLOAT, mbuffer.get());
 
     return true;
-
 }
 
 freport
@@ -1043,25 +1057,34 @@ FUNCTION def::frame_start()
 bool
 FUNCTION def::refresh( frame_shader_global& frame )
 {
-
     // Map the render target to the window width
-    XWindowAttributes window_properties;
+    tyon::window_properties& window = global->window;
+    tyon::window_properties& req = global->window_requested;
 
     // draw_test_rectangle(mrectangle_color);
     // draw_test_circle(mcircle_color);
-
     // draw_test_triangle(mtriangle_color);
 
-    XGetWindowAttributes(rx_display, vx_window, &window_properties);
-    frame.screen_vh_aspect_ratio =
-        cast<float>( window_properties.height ) / cast<float>( window_properties.width );
-    if (fullscreen && (frame.screen_vh_aspect_ratio < .3f ||
-                       frame.screen_vh_aspect_ratio > .8f ))
+    // TODO: Time to 60 ms
+    if (req.width != window.width &&
+        req.height != window.height)
     {
-        std::cout << "[Renderer] WARNING: Strange screen aspect ratio found, "
+        XWindowChanges settings = {};
+        settings.width = req.width;
+        settings.height = req.height;
+        // XConfigureWindow( rx_display, vx_window, CWWidth | CWHeight, &settings );
+        window.width = req.width;
+        window.height = req.height;
+        frame.screen_vh_aspect_ratio =
+        cast<float>( req.height ) / cast<float>( req.width );
+        glViewport( 0, 0, req.width, req.height );
+        if (fullscreen && (frame.screen_vh_aspect_ratio < .3f ||
+                           frame.screen_vh_aspect_ratio > .8f ))
+        {
+            std::cout << "[Renderer] WARNING: Strange screen aspect ratio found, "
             "may not render properly \n";
+        }
     }
-    glViewport( 0, 0, window_properties.width, window_properties.height );
     glXSwapBuffers ( rx_display, vx_window );
 
     return true;

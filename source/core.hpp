@@ -151,18 +151,10 @@ binary_cast( t_target& target )
     return result;
 }
 
-// Removes an object from scope, essentially calling it's destructor if sensible
-template <typename t_movable>
-constexpr void
-FUNCTION drop( t_movable doomed )
-{
-    auto _ = std::move( doomed );
-}
-
 // -- Typedefs --
 using fstring = std::basic_string<char>;
 using fstring_view = std::basic_string_view<char>;
-using cstring = const char*;
+// using cstring = char*;
 using fpath = std::filesystem::path;
 
 /// std::byte was initially tried for buffer objects but it has the nasty side

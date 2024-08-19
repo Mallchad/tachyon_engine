@@ -15,6 +15,7 @@
 
 #include "global.h"
 #include "error.hpp"
+#include "string.hpp"
 
 using std::unique_ptr;
 using std::make_unique;
@@ -237,7 +238,7 @@ public:
 
     /// \type_request The OpenGL shader type to create
     shader_id
-    FUNCTION shader_create( fstring name, shader_type type_request ) INTERFACE;
+    FUNCTION shader_create( tyon::string name, shader_type type_request ) INTERFACE;
 
     fhowdit
     FUNCTION shader_load( shader_id target, fpath shader_file, bool binary = false ) INTERFACE;

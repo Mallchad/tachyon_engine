@@ -9,7 +9,15 @@
     static_assert( false, "TRIANGULATE_PROJECT_ROOT not defined" );
 #endif
 
-class globals
+namespace tyon
+{
+    struct window_properties
+    {
+        int width;
+        int height;
+    };
+}
+struct globals
 {
     using fpath = std::filesystem::path;
     using fstring = std::string;
@@ -28,6 +36,9 @@ public:
     /// Try to reload all active shaders
     bool reload_shaders = false;
     bool reload_released = true;
+
+    tyon::window_properties window;
+    tyon::window_properties window_requested;
 
     static globals* get_primary();
 };

@@ -4,7 +4,6 @@
 int main()
 {
     using namespace std::chrono_literals;
-
     globals global = {};
     global.program_epoch = get_time();
 
@@ -30,10 +29,11 @@ int main()
             main_renderer.frame_update( );
             main_input.frame_update( epoch_elapsed_float );
 
-            FrameMark( "Main Render Thread" );
+
 
             // DO NOT REMOVE, can lock computer if it runs too fast
             std::this_thread::sleep_for(100us);
+            FrameMark;
         }
     } catch (std::exception& error)
     {
