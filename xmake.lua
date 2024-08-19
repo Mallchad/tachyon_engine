@@ -4,20 +4,22 @@ set_allowedmodes( "release",
                   "releasedbg",
                   "debug",
                   {default = "debug"})
-add_requires("glslang", {configs = {binaryonly = true}})
+-- add_requires("glslang", {configs = {binaryonly = true}})
 
 target( "tachyon_engine" )
     set_kind( "binary" )
     set_languages( "c++20" )
-    set_policy("build.optimization.lto", true)
-    add_deps( "tachyon_shaders" )
+    add_deps( "tachyon_shaders",
+              "tracy" )
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
-    add_files( "source/*.cpp" )
-    add_includedirs( "../tracy",
+    add_files( "source/*.cpp"
+    )
+    add_includedirs( "source",
                      "external/spdlog/include/",
-                     "source" )
+                     "external/tracy/public/tracy/",
+                     "external/tracy/" )
 
     -- asan must be linked first
     -- add_links( "asan" )
@@ -25,6 +27,13 @@ target( "tachyon_engine" )
     add_links( "dl", "X11", "GL" )
     add_defines( 'TRIANGULATE_PROJECT_ROOT="$(projectdir)"' )
     set_policy("check.auto_ignore_flags", false)
+
+    if is_mode( "release" ) then
+       -- set_policy("build.optimization.lto", true)
+       set_optimize("faster")
+    else
+       set_optimize( "none" )
+    end
     -- Temporary cxxflags to safe the effort of full converting to xmake --
     -- Using lld linker instead of mold for now for error messages
     -- Reconsider if the build gets slow
@@ -32,8 +41,14 @@ target( "tachyon_engine" )
                   -- "-analyze",
                   -- "-fuse-ld=lld",
                   "-fuse-ld=mold",
+                  "-march=native",
                   -- Generate a control flow graph
                   "gcc::-fdump-tree-all-graph",
+
+                  -- Enable Tracy Profiler
+                  "-DTRACY_ENABLE=1",
+                  -- Can't Make this flag work
+                  -- "-DTRACY_ON_DEMAND=1",
 
                   -- Performance Flags
                   -- "-msse",
@@ -53,7 +68,7 @@ target( "tachyon_engine" )
                   -- Shadowing
                   "clang::-Werror=shadow-all",
                   -- Has inconsistent behaviour and behaves like reinterpret cast, never use
-                  "clang::-Werror=old-style-cast",
+                  -- "clang::-Werror=old-style-cast",
 
                   -- -- Disable Warnings
                   "clang::-Wno-unused-value",
@@ -78,9 +93,27 @@ target( "tachyon_engine" )
 
                    )
 
+target( "tracy" )
+    set_kind( "static" )
+    add_files( "external/tracy/public/TracyClient.cpp",
+               "external/tracy/TracyClient.cpp" )
+    add_includedirs(  "external/tracy/public/tracy/",
+                      "external/tracy/" )
+
+    set_languages( "c++20" )
+
+    set_toolchains( "clang" )
+
+    add_links( "pthread" )
+    add_cxxflags( "-DTRACY_ENABLE=1",
+                  "-g",
+                  "-pthread" )
+
 target( "tachyon_libs" )
     set_kind( "static" )
     set_languages( "c++20" )
+    set_default( false )
+
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
@@ -89,7 +122,7 @@ target( "tachyon_libs" )
                "source/file.cpp",
                "source/time.cpp" )
 
-    add_includedirs( "../tracy",
+    add_includedirs( "external/tracy/public/tracy/",
                      "external/spdlog/include/",
                      "source" )
 
@@ -116,7 +149,7 @@ target( "tachyon_libs" )
                   -- unexpected When they fail silentlys
                   "-Werror=unknown-pragmas",
                   -- Non-Void functions that don't return can crash *at runtime*
-                  -- "-Werror=return-type",
+                  "-Werror=return-type",
                   "-Werror=inconsistent-missing-override",
                   -- Shadowing
                   "-Werror=shadow-all",
@@ -147,21 +180,23 @@ target( "tachyon_libs" )
                    )
 
     if is_mode( "release" ) then
-       add_cxxflags( "clang::-g",
-                     "-Weverything", "-Wno-implicit-int-float-conversion",
-                     "-Wno-sign-conversion",
-                     "-Wpedantic",
-                     "-Wall",
-                     "-Wno-unused-value",
-                     "-Wno-padded",
-                     "-Werror=return-type",
-                     "-Werror=inconsistent-missing-override",
-                     "-Wno-c++98-compat",
-                     "-Wno-c++98-compat-pedantic",
-                     "-Wno-documentation-unknown-command",
-                     "-Wno-unreachable-code-break",
-                     "-Werror=shadow" )
+       set_optimize("fastest")
     end
+
+    add_cxxflags( "clang::-g",
+                  "-Weverything", "-Wno-implicit-int-float-conversion",
+                  "-Wno-sign-conversion",
+                  "-Wpedantic",
+                  "-Wall",
+                  "-Wno-unused-value",
+                  "-Wno-padded",
+                  "-Werror=return-type",
+                  "-Werror=inconsistent-missing-override",
+                  "-Wno-c++98-compat",
+                  "-Wno-c++98-compat-pedantic",
+                  "-Wno-documentation-unknown-command",
+                  "-Wno-unreachable-code-break",
+                  "-Werror=shadow" )
 
 target( "tachyon_shaders" )
     set_kind( "object" )
@@ -176,8 +211,7 @@ target( "tachyon_tests" )
     add_deps( "tachyon_libs" )
 
     add_tests( "catch2" )
-    add_links( "build/linux/x86_64/release/libtachyon_libs.a",
-               "external/catch2/build/src/catch2/libCatch2.a" )
+    add_links( "external/catch2/build/src/catch2/libCatch2.a" )
     add_files( "tests/*.cpp" )
     add_includedirs( "../tracy",
                      "external/spdlog/include/",
