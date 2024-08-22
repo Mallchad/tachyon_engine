@@ -78,6 +78,8 @@
 #define INTERNAL static
 #define GLOBAL static
 
+#define FORCEINLINE __attribute__((always_inline))
+
 // -- Redirectable typedefs --
 using fint8   = int8_t;
 using fint16  = int16_t;
