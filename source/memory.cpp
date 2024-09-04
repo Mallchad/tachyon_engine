@@ -18,7 +18,7 @@ FUNCTION raw_allocate( u64 bytes )
         result = stub + stub_bump;
         stub_bump += bytes;
     }
-    // Zero and prefault
+    // Zero and prefault to get real memory
     memset( result, 0, bytes );
     return result;
 }

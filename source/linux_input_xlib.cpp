@@ -4,8 +4,10 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <iostream>
+#include <include_core.h>
 
 using impl = input_xlib;
+using namespace tyon;
 
 CONSTRUCTOR impl::input_xlib( renderer_opengl& render_handle )
 {
@@ -39,12 +41,17 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
     m_events_received += pending_events;
 
     // Report events every 5 seconds
-    if (pending_events > 0 && m_tmp_frame_count > 144 * 5)
+    static monotonic_time last_update = get_time();
+    auto xserver_update_period = 2s;
+    bool log_update_5s = (pending_events > 0) && (get_time() - last_update > xserver_update_period);
+    if (log_update_5s)
     {
+        last_update = get_time();
         std::cout << "[XServer] Processing " << m_events_received << " events from the server \n";
         m_events_received = 0;
         m_tmp_frame_count = 0;
     }
+
     for (fint32 i_events = 0; i_events < pending_events; ++i_events)
     {
         // Get the next event.
@@ -55,7 +62,7 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
             case ClientMessage:
                 // Window Manager requested application exit
                 // This is an oppurtunity to ignore it and just close the window if needed
-                // The user may be provided with a conformation disalogue and choose
+                // The user may be provided with a conformation dialogue and choose
                 // to not exit the applicaiton, ths should be respected.
                 // If we choose not to honour the deletion, we have to restart
                 // NET_WM_DELETE protocol

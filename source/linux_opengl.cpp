@@ -1084,9 +1084,8 @@ FUNCTION def::refresh( frame_shader_global& frame )
             std::cout << "[Renderer] WARNING: Strange screen aspect ratio found, "
             "may not render properly \n";
         }
-    }
-    glXSwapBuffers ( rx_display, vx_window );
-
+    } // Maybe stability improvement so it doesn't hang as bad during window resizing?
+    else { glXSwapBuffers ( rx_display, vx_window ); }
     return true;
 }
 
