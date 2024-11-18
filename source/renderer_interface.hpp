@@ -75,6 +75,8 @@ struct frame_shader_global
     ffloat screen_vh_aspect_ratio = 1080.f/1920.f;
 };
 
+/** Physical shader types that a GPU may be able to support
+*/
 enum class shader_type
 {
     vertex,
@@ -83,6 +85,15 @@ enum class shader_type
     compute,
     tesselation_control,
     tesselation_eval
+};
+
+enum class e_vsync_mode
+{
+    off,
+    adaptive,
+    double_buffered,
+    triple_buffered,
+    variable_refresh
 };
 
 /// All attributes are baked when copied to the graphiccs layer

@@ -220,6 +220,8 @@ FUNCTION def::initialize()
     std::cout << "Starting renderer\n" ;
 
     // Set primary thread local context
+    // BUG: Multiple OpenGL contexts is glichy on many platforms,
+    // this should probably never be used
     vglx_context = vglx_context_list[ vglx_context_id.cast() ];
     context_set_current( glx_initial );
 
@@ -248,35 +250,6 @@ FUNCTION def::initialize()
     ld::glBindBuffer( GL_UNIFORM_BUFFER, get_buffer( uniform_frame_globals ) );
     // Allocate 512 bytes
     ld::glBufferData( GL_UNIFORM_BUFFER, sizeof( frame_shader_global ), nullptr, GL_STATIC_DRAW );
-
-    // Setup test articles
-    shader_fragment_test = shader_create( "shader_fragment_test", shader_type::fragment );
-    shader_vertex_test = shader_create( "shader_vertex_test", shader_type::vertex );
-
-    shader_compile( shader_fragment_test, shader_fragment_source );
-    shader_compile( shader_vertex_test, shader_vertex_source );
-
-    shader_program_test = shader_program_create( "shader_primitive_test" );
-    shader_program_attach( shader_program_test, shader_vertex_test );
-    shader_program_attach( shader_program_test, shader_fragment_test );
-    shader_program_compile( shader_program_test );
-
-    fmesh test_triangle =
-    {
-        .name = "test_triangle",
-        .vertex_count = 3,
-        .color_count = 3,
-        .shader_id = shader_program_test
-    };
-    test_triangle.vertex_buffer.resize( test_triangle.vertex_count );
-    test_triangle.vertex_color_buffer.resize( test_triangle.color_count );
-    std::memcpy( test_triangle.vertex_buffer.data(),
-                 mtest_triangle,
-                 sizeof(mtest_triangle) );
-    std::memcpy( test_triangle.vertex_color_buffer.data(),
-                 mtest_triangle_colors,
-                 sizeof(mtest_triangle_colors) );
-    mtest_triangle_mesh = mesh_create( test_triangle );
 
     // Disabled VSync for performance
     enum
@@ -938,13 +911,12 @@ GLXContext def::get_gl_context() const
     return vglx_context;
 }
 
-bool
+freport
 FUNCTION def::draw_test_triangle(ffloat4 color)
 {
     ftransform stub_transform = {};
-    draw_mesh( mtest_triangle_mesh, stub_transform, shader_program_test );
 
-    return true;
+    return false;
 }
 
 bool

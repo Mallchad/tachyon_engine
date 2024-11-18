@@ -125,6 +125,7 @@ struct renderer_opengl final INTERFACE_RENDERER
 
     // Internal Data
     bool fullscreen = false;
+    e_vsync_mode vsync = e_vsync_mode::off;
 
     static constexpr fuint32 mbuffer_limit = 1000;
     static constexpr fuint32 mattribute_limit = 1000;
@@ -177,21 +178,6 @@ struct renderer_opengl final INTERFACE_RENDERER
 
     ffloat dr = 1080.f/1920.f;  // 1080p clip space transformation
     unique_ptr<rgba[]> mbuffer = make_unique<rgba[]>( 1920*1080 );
-
-    mesh_id mtest_triangle_mesh = -1;
-    // 0.433 pre-computed magic number for unit triangle
-    float mtest_triangle[9] =
-    {
-        -0.5f * dr, -0.4330127019f, 0.0f,
-        0.5f * dr, -0.4330127019f, 0.0f,
-        0.0f * dr,  0.4330127019f, 0.0f
-    };
-    float mtest_triangle_colors[12] =
-    {
-        1.f, .0f, .0f, 0.f,
-        .0f, 1.f, .0f, 0.f,
-        .0f, .0f, 1.f, 0.f
-    };
 
     int progress_x = 0;
     int progress_y = 0;
@@ -277,7 +263,7 @@ public:
                         ftransform target_transform,
                         shader_program_id target_shader ) INTERFACE;
 
-    fhowdit
+    freport
     FUNCTION draw_test_triangle(ffloat4 p_color) INTERFACE;
 
     fhowdit

@@ -11,6 +11,7 @@
 
 CONSTRUCTOR renderer::renderer()
 {
+    // Generic initialization
     global = globals::get_primary();
     frame_shader_globals.last_begin_epoch = time_elapsed<ffloat>();
     frame_shader_globals.last_end_epoch = time_elapsed<ffloat>();
@@ -32,6 +33,41 @@ CONSTRUCTOR renderer::renderer()
     test_utah_teapot.shader_id = -1;
 
     test_utah_teapot_id = platform.mesh_create( test_utah_teapot );
+
+    // Platform specific initialization
+    // Setup test articles
+    shader_fragment_test = platform.shader_create( "shader_fragment_test", shader_type::fragment );
+    shader_vertex_test = platform.shader_create( "shader_vertex_test", shader_type::vertex );
+
+    fstring shadersource_triangle_fragment = linux_load_text_file( "test_triangle.frag",
+                                                                   global->asset_search_paths );
+    fstring shadersource_triangle_vertex = linux_load_text_file( "test_triangle.vert",
+                                                                 global->asset_search_paths );
+    platform.shader_compile( shader_fragment_test, shadersource_triangle_fragment );
+    platform.shader_compile( shader_vertex_test, shadersource_triangle_vertex );
+
+    shader_program_triangle = platform.shader_program_create( "shader_triangle_test" );
+    platform.shader_program_attach( shader_program_triangle, shader_vertex_test );
+    platform.shader_program_attach( shader_program_triangle, shader_fragment_test );
+    platform.shader_program_compile( shader_program_triangle );
+
+    fmesh test_triangle =
+    {
+        .name = "test_triangle",
+        .face_count = 1,
+        .vertex_count = 3,
+        .color_count = 3,
+        .shader_id = shader_program_triangle
+    };
+    test_triangle.vertex_buffer.resize( test_triangle.vertex_count * 2 );
+    test_triangle.vertex_color_buffer.resize( test_triangle.color_count );
+    std::memcpy( test_triangle.vertex_buffer.data(),
+                 mtest_triangle,
+                 sizeof(mtest_triangle) );
+    std::memcpy( test_triangle.vertex_color_buffer.data(),
+                 mtest_triangle_colors,
+                 sizeof(mtest_triangle_colors) );
+    mtest_triangle_mesh = platform.mesh_create( test_triangle );
 }
 
 void
@@ -90,6 +126,7 @@ FUNCTION renderer::frame_update()
     platform.frame_start();
     ftransform stub_transform = {};
     platform.draw_mesh( test_utah_teapot_id, stub_transform, test_shader );
+    platform.draw_mesh( mtest_triangle_mesh, stub_transform, shader_program_triangle );
     // platform.draw_test_signfield( platform.msignfield_color );
 
     platform.refresh( frame_shader_globals );

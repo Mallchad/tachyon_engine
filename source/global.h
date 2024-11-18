@@ -40,5 +40,7 @@ public:
     tyon::window_properties window;
     tyon::window_properties window_requested;
 
+    std::vector<fpath> asset_search_paths = { project_root / "source/shaders" };
+
     static globals* get_primary();
 };
