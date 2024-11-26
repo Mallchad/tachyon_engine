@@ -3,6 +3,11 @@
 #include "include_core.h"
 #include "global.h"
 
+namespace tyon
+{
+    using namespace std::chrono_literals;
+}
+
 /// Has no time period adjustments, is most accurate for time measurements
 using monotonic_time = std::chrono::time_point<std::chrono::steady_clock>;
 using date_time = std::chrono::time_point<std::chrono::system_clock>;

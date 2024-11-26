@@ -25,6 +25,8 @@ layout(std140, binding = 0) uniform frame_data
     float delta_time_end;
     // Screen aspect ratio given as vertical over horizontal
     float screen_vh_aspect_ratio;
+    // Primary activate camera
+    mat4 camera;
 };
 
 const vec3 arbitrary_axis = vec3( 0.662f, 0.2f, 0.722f );
@@ -114,7 +116,7 @@ mat4 projection_create()
     // Near
     float n = 1;
     // Far
-    float f = 70.0;
+    float f = 700.0;
     // Right
     float r = -(camera_width / 2.0) / aspect_ratio_vh;
     // Left
@@ -142,7 +144,7 @@ void main()
     // Transformation Matrices
     mat4 local = identity;                  // Local Space
     mat4 world = identity;                  // Local to World Space
-    mat4 camera = identity;                 // World to Camera Space
+    mat4 cam = camera;                   // World to Camera Space
     mat4 projection = identity;             // Orthographic Camera to Clip-Space
     mat4 viewport = identity;               // Clip-Space to Screen Space
 
@@ -164,13 +166,13 @@ void main()
                   trans.x, trans.y, trans.z,    1.);
 
     // Normals don't particularly need or want scale and translation so we're skipping some
-    vec4 norm = projection * camera * world_anim * local * vec4( normal, 1.0 );
+    vec4 norm = projection * cam * world_anim * local * vec4( normal, 1.0 );
 
     // Perspective Projection
     // This is mapping into screen coordinate system and skewing based on distance
     projection = projection_create();
 
-    vertex = projection * camera * world * world_anim * local * vertex;
+    vertex = projection * cam * world * world_anim * local * vertex;
     gl_Position = vertex;
     v_normal = normalize(norm / norm.w).xyz;
 

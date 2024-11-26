@@ -73,6 +73,8 @@ struct frame_shader_global
     ffloat delta_time_end = 0;
     // Screen aspect ratio given as vertical over horizontal
     ffloat screen_vh_aspect_ratio = 1080.f/1920.f;
+    // Primary activate camera
+    matrix camera;
 };
 
 /** Physical shader types that a GPU may be able to support
@@ -270,25 +272,24 @@ public:
             constexpr bool int_type = std::is_integral_v< member_t >;
             constexpr bool vector_type = (std::is_same_v< member_t, ffloat3> ||
                                           std::is_same_v< member_t, ffloat4>);
-            constexpr bool matrix_type = false;
+            constexpr bool matrix_type = std::is_same_v< member_t, matrix >;
             static_assert( float_type || int_type || vector_type || matrix_type,
                            "Uniform can only contain shader types: float, int, vector, matrix" );
-            if (setup_alignment)
-            {
-                // Each data type has a specific alignment associated with it
-                constexpr fint32 alignment_size = ((float_type || int_type) ? 4 :
-                                                   vector_type || matrix_type ? 16 :
-                                                   -1);
-                const fint32 alignment_multiple = cast<fint32>(
-                    std::ceil( out_size / alignment_size ));
-                fint32 alignment_location = ( alignment_multiple * alignment_size );
-                out_size = alignment_location + alignment_size;
-                out_format[ i_member ] = alignment_location;
-                out_copy_buffer.resize( out_size );
-            }
 
+            // Each data type has a specific alignment associated with it
+            constexpr fint32 alignment_size = ((float_type || int_type) ? 4 :
+                                               vector_type || matrix_type ? 16 :
+                                               -1);
+            const i32 next_boundry = (alignment_size - (out_size % alignment_size));
+            fint32 alignment_location = (out_size % alignment_size) ?
+                (out_size + next_boundry) :
+                out_size;
+            out_format[ i_member ] = alignment_location;
             const fint32 member_size = sizeof(new_member);
             const fint32 offset = out_format[ i_member ];
+            out_size = alignment_location + member_size;
+            out_copy_buffer.resize( out_size );
+
             std::memcpy( offset+ out_copy_buffer.data(), &new_member, member_size );
             ++i_member;
         }( member_list, format, size, copy_buffer, iterations ), ...);

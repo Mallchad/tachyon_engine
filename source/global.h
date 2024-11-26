@@ -42,5 +42,11 @@ public:
 
     std::vector<fpath> asset_search_paths = { project_root / "source/shaders" };
 
+    // Movement States
+    bool action_forward = false;
+    bool action_left = false;
+    bool action_right = false;
+    bool action_backward = false;
+
     static globals* get_primary();
 };

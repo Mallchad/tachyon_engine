@@ -23,6 +23,8 @@ layout(std140, binding = 0) uniform frame_data
     float delta_time_end;
     // Screen aspect ratio given as vertical over horizontal
     float screen_vh_aspect_ratio;
+    // Primary activate camera
+    mat4 camera;
 };
 
 struct material
@@ -63,7 +65,7 @@ void main()
 
     // This is current done entirely in NDC (Normalized Device Coordinates)
     vec4 camera_pos = vec4( 0.0, 0.0, 0.0, 0.0 );
-    vec3 point_light = vec3( 2.0, 5.0, 0.0 );
+    vec3 point_light = (vec4( 2.0, 5.0, 0.0, 0.0 ) * camera).xyz;
     float light_intensity = 5.0;
     vec3 light_color = vec3( 1.0, 1.0, 1.0 ) * light_intensity;
 
@@ -76,6 +78,7 @@ void main()
     // Fragment Coordinate
     // Really frustrating to convert to screen/worldspace, use vertecies instead
     vec3 frag = v_position;
+    vec3 norm = (vec4( v_normal, 1.0 ) * camera).xyz;
 
 
     m.metallic = clamp( 1-m.metallic, 0.0, 1.0 );
@@ -86,10 +89,10 @@ void main()
     vec3 directional_ray = normalize( point_light - vec3(0.0) );
 
     vec3 view_ray = normalize( frag - camera_pos.xyz );
-    vec3 reflect_ray = reflect( -point_ray, v_normal );
+    vec3 reflect_ray = reflect( -point_ray, norm );
     // Max and clamp to prevent negative colors
     // Divide light contribution by 3 to prevent applying contribution 3 times
-    float light_contribution = max(dot( -point_ray, v_normal ), 0.0 ) * 1.0;
+    float light_contribution = max(dot( -point_ray, norm ), 0.0 ) * 1.0;
     m.roughness = clamp( 1-m.roughness, 0.0, 1.0 );
     float reflect_contribution = pow( max( dot( view_ray, reflect_ray ) , 0.0 ), 1/m.specular );
     vec3 diffuse = ( light_contribution * light_color );
@@ -109,9 +112,9 @@ void main()
     // frag_color = vec4( vec3(spec), opac );   // Specular Reflection
     // frag_color = vec4( vec3(metal), opac );   // Metallic Reflection
     // frag_color = vec4( vec3(reflect), opac );   // Metallic Reflection
-    // frag_color = vec4( m.color, 1.0 );  // Base Color
+    frag_color = vec4( m.color, 1.0 );  // Base Color
     // frag_color = vec4( v_position.xyz, 1.0 );  // Frag Colours
 
-    // frag_color = vec4( v_normal.xyz, 1.0 );  // Normal
+    // frag_color = vec4( norm.xyz, 1.0 );  // Normal
     // frag_color = vec4( 0.7, 0.7, 0.7, 1.0 );                // Gray
 }

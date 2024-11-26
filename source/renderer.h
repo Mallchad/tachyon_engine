@@ -9,6 +9,8 @@ using renderer_backend = renderer_opengl;
 class renderer final
 {
     globals* global;
+    /// The primary camera for the player
+    matrix camera;
     // == Test articles ==
     // Triangle Articles
     shader_id shader_fragment_test = -1;
@@ -49,8 +51,8 @@ class renderer final
     fpath test_shader_vert_file = "test_utah_teapot.vert";
 
 
-    frame_shader_global frame_shader_globals;
-    uniform uniform_frame;
+    frame_shader_global frame_data;
+    frame_shader_global& frame_shader_globals = frame_data;
 
     public:
     renderer_backend platform = {};

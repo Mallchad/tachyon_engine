@@ -68,6 +68,10 @@ CONSTRUCTOR renderer::renderer()
                  mtest_triangle_colors,
                  sizeof(mtest_triangle_colors) );
     mtest_triangle_mesh = platform.mesh_create( test_triangle );
+
+    // Setup Scene Objects
+    camera = matrix::one;
+    frame_shader_globals.camera = camera;
 }
 
 void
@@ -114,6 +118,38 @@ FUNCTION renderer::frame_update()
         }
     }
 
+    // Random temporary stuff
+    v3 left_vector = { -1., .0, .0 };
+    f32 camera_speed = 45.0;
+    matrix camera_velocity = { 0., .0, .0, .0,
+                               0., .0, .0, .0,
+                               0., .0, .0, .0,
+                               -camera_speed, .0, .0, .0 };
+    matrix camera_velocity2 = { 0., .0, .0, .0,
+                               0., .0, .0, .0,
+                               0., .0, .0, .0,
+                               camera_speed, .0, .0, .0 };
+    matrix camera_velocity3 = { 0., .0, .0, .0,
+                               0., .0, .0, .0,
+                               0., .0, .0, .0,
+                               0., .0, -camera_speed, .0 };
+    if (global->action_left)
+    {
+        print( "Trying to apply action_left" );
+        frame_data.camera += (camera_velocity * frame_data.delta_time);
+    }
+    if (global->action_right)
+    {
+        print( "Trying to apply action_right" );
+        frame_data.camera += (camera_velocity2 * frame_data.delta_time);
+    }
+    if (global->action_backward)
+    {
+        print( "Trying to apply action_backward" );
+        frame_data.camera += (camera_velocity3 * frame_data.delta_time);
+    }
+
+    uniform uniform_frame;
     uniform_frame.pack( frame_shader_globals.epoch,
                         frame_shader_globals.time_since_epoch,
                         frame_shader_globals.last_begin_epoch,
@@ -121,12 +157,13 @@ FUNCTION renderer::frame_update()
                         frame_shader_globals.delta_time,
                         frame_shader_globals.delta_time_begin,
                         frame_shader_globals.delta_time_end,
-                        frame_shader_globals.screen_vh_aspect_ratio );
+                        frame_shader_globals.screen_vh_aspect_ratio,
+                        frame_data.camera );
     platform.shader_globals_update( uniform_frame );
     platform.frame_start();
     ftransform stub_transform = {};
     platform.draw_mesh( test_utah_teapot_id, stub_transform, test_shader );
-    platform.draw_mesh( mtest_triangle_mesh, stub_transform, shader_program_triangle );
+    // platform.draw_mesh( mtest_triangle_mesh, stub_transform, shader_program_triangle );
     // platform.draw_test_signfield( platform.msignfield_color );
 
     platform.refresh( frame_shader_globals );

@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <cmath>
+#include <initializer_list>
 
 // Gurantee vectors are packed tightly because of OpenGL functions
 #pragma pack(push, 1)
@@ -47,6 +48,16 @@ public:
                               mz * rhs.mz);
         return out;
     }
+    /// Scalar multiplication
+    vector3<t_calculable>
+    // Pairwise multiplication, it is never assumed to be standard maths
+    operator* (const t_calculable rhs) const
+    {
+        vector3 out = vector3(mx * rhs,
+                              my * rhs,
+                              mz * rhs);
+        return out;
+    }
     vector3<t_calculable>
     operator/ (const vector3<t_calculable> rhs) const
     {
@@ -78,6 +89,17 @@ public:
         mz = -mz;
         return *this;
     }
+
+    /// Compound Functions
+    vector3<t_calculable>
+    operator+= (const vector3<t_calculable> rhs) const
+    {
+        this->x += rhs.mx;
+        this->y += rhs.my;
+        this->z += rhs.my;
+        return *this;
+    }
+
     t_vector
     normalize() const
     {
@@ -180,6 +202,62 @@ public:
 private:
 };
 
+struct matrix;
+/// 4x4 matrix
+struct matrix
+{
+    union
+    {
+        f32 access[4][4];
+        f32 data[16];
+    };
+    static matrix one;
+
+    CONSTRUCTOR matrix()
+        : data() {}
+    // COPY_CONSTRUCTOR matrix(matrix& rhs) {}
+    CONSTRUCTOR matrix( std::initializer_list<f32> list )
+    {
+        int i = 0;
+        for (auto& x : list) { data[i] = x; ++i; }
+    }
+
+    f32
+    operator[] (u32 i)
+    { return this->data[i]; }
+
+    // Math Operators
+    matrix
+    operator* (f32 rhs)
+    {
+        return { data[0] *rhs, data[1] *rhs, data[2] *rhs, data[3] *rhs,
+                 data[4] *rhs, data[5] *rhs, data[6] *rhs, data[7] *rhs,
+                 data[8] *rhs, data[9] *rhs, data[10] *rhs, data[11] *rhs,
+                 data[12] *rhs, data[13] *rhs, data[14] *rhs, data[15] *rhs };
+    }
+    matrix
+    operator+ (matrix rhs)
+    {
+        return { data[0]+  rhs[0],  data[1]+  rhs[1],  data[2]+  rhs[2],  data[3]+  rhs[3],
+                 data[4]+  rhs[4],  data[5]+  rhs[5],  data[6]+  rhs[6],  data[7]+  rhs[7],
+                 data[8]+  rhs[8],  data[9]+  rhs[9],  data[10]+ rhs[10], data[11]+ rhs[11],
+                 data[12]+ rhs[12], data[13]+ rhs[13], data[14]+ rhs[14], data[15]+ rhs[15] };
+    }
+    matrix
+    operator- (matrix rhs)
+    {
+        return { data[0]*  rhs[0],  data[1]*  rhs[1],  data[2]*  rhs[2],  data[3]*  rhs[3],
+                 data[4]*  rhs[4],  data[5]*  rhs[5],  data[6]*  rhs[6],  data[7]*  rhs[7],
+                 data[8]*  rhs[8],  data[9]*  rhs[9],  data[10]* rhs[10], data[11]* rhs[11],
+                 data[12]* rhs[12], data[13]* rhs[13], data[14]* rhs[14], data[15]* rhs[15] };
+    }
+
+    // Compound Math Operators
+    matrix
+    operator+= (matrix rhs)
+    { return *this = (*this) + rhs; }
+};
+
 struct transform
 {
     vector4<ffloat> position;
@@ -229,5 +307,8 @@ using flong3  = vector3<fint64>;
 using ffloat4 = vector4<ffloat>;
 using fint4   = vector4<fint32>;
 using flong4  = vector4<fint64>;
+
+using v3 = vector3<f32>;
+using v4 = vector4<f32>;
 
 using ftransform = transform;

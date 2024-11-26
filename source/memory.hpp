@@ -17,10 +17,10 @@ FUNCTION raw_copy( void* dest, const void* src, u64 bytes);
 
 template <typename t_src>
 void
-FUNCTION typed_copy( void* dest, const t_src* src, u64 bytes)
+FUNCTION typed_copy( void* dest, const t_src* src, u64 count)
 {
     using t_target = decltype( *src );
-    memcpy( dest, src, bytes* sizeof(t_target) );
+    memcpy( dest, src, count* sizeof(t_target) );
 }
 
 template <typename t_dest>
@@ -122,7 +122,7 @@ struct ptr final
         cleans it up */
     DESTRUCTOR ~ptr()
     {
-        if (scoped_resource) { delete data; data = nullptr; propagate_data() };
+        if (scoped_resource) { delete data; data = nullptr; propagate_data(); }
     }
 
     void
