@@ -28,6 +28,10 @@ FUNCTION impl::initialize( renderer_opengl& render_handle )
     KeyPressMask | KeyReleaseMask |
     ButtonPressMask | PointerMotionMask | StructureNotifyMask;
     XSelectInput( m_display, m_window, event_mask );
+
+    // Fix auto repeat smashing simeltaneous key input
+    XAutoRepeatOn( m_display );
+
     return true;
 }
 
@@ -88,6 +92,14 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
                     global->reload_shaders = true;
                     global->reload_released = false;
                 }
+                if (XKeysymToKeycode( m_display, XK_W ) == event.xkey.keycode)
+                { global->action_forward = true; }
+                if (XKeysymToKeycode( m_display, XK_S ) == event.xkey.keycode)
+                { global->action_backward = true; }
+                if (XKeysymToKeycode( m_display, XK_A ) == event.xkey.keycode)
+                { global->action_left = true; }
+                if (XKeysymToKeycode( m_display, XK_D ) == event.xkey.keycode)
+                { global->action_right = true; }
                 break;
             case ConfigureNotify:
                 global->window_requested.width = event.xconfigure.width;
@@ -95,9 +107,15 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
                 break;
             case KeyRelease:
                 if ( XKeysymToKeycode( m_display, XK_R ) == event.xkey.keycode )
-                {
-                    global->reload_released = true;
-                }
+                { global->reload_released = true; }
+                if (XKeysymToKeycode( m_display, XK_W ) == event.xkey.keycode)
+                { global->action_forward = false; }
+                if (XKeysymToKeycode( m_display, XK_S ) == event.xkey.keycode)
+                { global->action_backward = false; }
+                if (XKeysymToKeycode( m_display, XK_A ) == event.xkey.keycode)
+                { global->action_left = false; }
+                if (XKeysymToKeycode( m_display, XK_D ) == event.xkey.keycode)
+                { global->action_right = false; }
                 break;
             default: break;
         }

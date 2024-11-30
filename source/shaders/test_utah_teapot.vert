@@ -7,6 +7,7 @@ layout( location = 2 ) in vec4 col;
 layout( location = 0 ) out vec3 v_normal;
 layout( location = 1 ) out vec3 v_position;
 layout( location = 2 ) smooth out vec4 v_color;
+layout( location = 3 ) out mat4 world_matrix;
 
 
 layout(std140, binding = 0) uniform frame_data
@@ -31,7 +32,7 @@ layout(std140, binding = 0) uniform frame_data
 
 const vec3 arbitrary_axis = vec3( 0.662f, 0.2f, 0.722f );
 
-const float scale = 1.0;
+const float scale = 1;
 // Translation
 vec3 trans = vec3( 0.0, 0.0, -20.0 );
 
@@ -147,6 +148,7 @@ void main()
     mat4 cam = camera;                   // World to Camera Space
     mat4 projection = identity;             // Orthographic Camera to Clip-Space
     mat4 viewport = identity;               // Clip-Space to Screen Space
+    // cam = mat4(1);                          // Debug
 
     rot.x = 0.0;
     rot.y = (0.0 + (time_since_epoch * rotation_speed)) * tau;
@@ -166,7 +168,8 @@ void main()
                   trans.x, trans.y, trans.z,    1.);
 
     // Normals don't particularly need or want scale and translation so we're skipping some
-    vec4 norm = projection * cam * world_anim * local * vec4( normal, 1.0 );
+    // Add back camera rotation when its made available
+    vec4 norm = projection * world_anim * local * vec4( normal, 1.0 );
 
     // Perspective Projection
     // This is mapping into screen coordinate system and skewing based on distance
@@ -174,10 +177,11 @@ void main()
 
     vertex = projection * cam * world * world_anim * local * vertex;
     gl_Position = vertex;
-    v_normal = normalize(norm / norm.w).xyz;
+    v_normal = normalize(norm).xyz;
 
     v_position = vertex.xyz;
     v_color = vec4( 0.8, 0.0, 0.0 , 1.0 ) ;
+    world_matrix = projection * cam;
 
     // Debug Coloring
     // v_color = vec4( 1.0 );

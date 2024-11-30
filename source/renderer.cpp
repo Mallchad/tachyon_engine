@@ -133,21 +133,18 @@ FUNCTION renderer::frame_update()
                                0., .0, .0, .0,
                                0., .0, .0, .0,
                                0., .0, -camera_speed, .0 };
+    matrix camera_velocity4 = { 0., .0, .0, .0,
+                                0., .0, .0, .0,
+                                0., .0, .0, .0,
+                                0., .0, camera_speed, .0 };
     if (global->action_left)
-    {
-        print( "Trying to apply action_left" );
-        frame_data.camera += (camera_velocity * frame_data.delta_time);
-    }
+    { frame_data.camera += (camera_velocity * frame_data.delta_time); }
     if (global->action_right)
-    {
-        print( "Trying to apply action_right" );
-        frame_data.camera += (camera_velocity2 * frame_data.delta_time);
-    }
+    { frame_data.camera += (camera_velocity2 * frame_data.delta_time); }
+    if (global->action_forward)
+    { frame_data.camera += (camera_velocity4 * frame_data.delta_time); }
     if (global->action_backward)
-    {
-        print( "Trying to apply action_backward" );
-        frame_data.camera += (camera_velocity3 * frame_data.delta_time);
-    }
+    { frame_data.camera += (camera_velocity3 * frame_data.delta_time); }
 
     uniform uniform_frame;
     uniform_frame.pack( frame_shader_globals.epoch,
