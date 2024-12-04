@@ -47,6 +47,8 @@ public:
     bool action_left = false;
     bool action_right = false;
     bool action_backward = false;
+    bool action_up = false;
+    bool action_down = false;
 
     static globals* get_primary();
 };

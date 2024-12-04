@@ -100,6 +100,10 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
                 { global->action_left = true; }
                 if (XKeysymToKeycode( m_display, XK_D ) == event.xkey.keycode)
                 { global->action_right = true; }
+                if (XKeysymToKeycode( m_display, XK_space ) == event.xkey.keycode)
+                { global->action_up = true; }
+                if (XKeysymToKeycode( m_display, XK_Control_L ) == event.xkey.keycode)
+                { global->action_down = true; }
                 break;
             case ConfigureNotify:
                 global->window_requested.width = event.xconfigure.width;
@@ -116,6 +120,10 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
                 { global->action_left = false; }
                 if (XKeysymToKeycode( m_display, XK_D ) == event.xkey.keycode)
                 { global->action_right = false; }
+                if (XKeysymToKeycode( m_display, XK_space ) == event.xkey.keycode)
+                { global->action_up = false; }
+                if (XKeysymToKeycode( m_display, XK_Control_L ) == event.xkey.keycode)
+                { global->action_down = false; }
                 break;
             default: break;
         }
