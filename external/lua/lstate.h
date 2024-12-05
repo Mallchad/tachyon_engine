@@ -232,7 +232,7 @@ struct CallInfo {
 /* call is running a C function (still in first 16 bits) */
 #define CIST_C		(1u << (CIST_RECST + 3))
 /* call is on a fresh "luaV_execute" frame */
-#define CIST_FRESH	cast(l_uint32, CIST_C << 1)
+#define CIST_FRESH	lua_cast(l_uint32, CIST_C << 1)
 /* function is closing tbc variables */
 #define CIST_CLSRET	(CIST_FRESH << 1)
 /* original value of 'allowhook' */
@@ -265,7 +265,7 @@ struct CallInfo {
 #define setcistrecst(ci,st)  \
   check_exp(((st) & 7) == (st),   /* status must fit in three bits */  \
             ((ci)->callstatus = ((ci)->callstatus & ~(7u << CIST_RECST))  \
-                                | (cast(l_uint32, st) << CIST_RECST)))
+                                | (lua_cast(l_uint32, st) << CIST_RECST)))
 
 
 /* active function is a Lua function */
@@ -400,7 +400,7 @@ union GCUnion {
 ** "A pointer to a union object, suitably converted, points to each of
 ** its members [...], and vice versa."
 */
-#define cast_u(o)	cast(union GCUnion *, (o))
+#define cast_u(o)	lua_cast(union GCUnion *, (o))
 
 /* macros to convert a GCObject into a specific value */
 #define gco2ts(o)  \

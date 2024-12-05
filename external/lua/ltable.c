@@ -60,7 +60,7 @@ typedef union {
 } Limbox;
 
 #define haslastfree(t)     ((t)->lsizenode > LIMFORLAST)
-#define getlastfree(t)     ((cast(Limbox *, (t)->node) - 1)->lastfree)
+#define getlastfree(t)     ((lua_cast(Limbox *, (t)->node) - 1)->lastfree)
 
 
 /*
@@ -225,7 +225,7 @@ static Node *mainpositionTV (const Table *t, const TValue *key) {
 
 l_sinline Node *mainpositionfromnode (const Table *t, Node *nd) {
   TValue key;
-  getnodekey(cast(lua_State *, NULL), &key, nd);
+  getnodekey(lua_cast(lua_State *, NULL), &key, nd);
   return mainpositionTV(t, &key);
 }
 
@@ -627,7 +627,7 @@ static Value *resizearray (lua_State *L , Table *t,
   }
   else {
     size_t newasizeb = concretesize(newasize);
-    Value *np = cast(Value *,
+    Value *np = lua_cast(Value *,
                   luaM_reallocvector(L, NULL, 0, newasizeb, lu_byte));
     if (np == NULL)  /* allocation error? */
       return NULL;
@@ -655,7 +655,7 @@ static Value *resizearray (lua_State *L , Table *t,
 */
 static void setnodevector (lua_State *L, Table *t, unsigned size) {
   if (size == 0) {  /* no elements to hash part? */
-    t->node = cast(Node *, dummynode);  /* use common 'dummynode' */
+    t->node = lua_cast(Node *, dummynode);  /* use common 'dummynode' */
     t->lsizenode = 0;
     setdummy(t);  /* signal that it is using dummy node */
   }
@@ -670,7 +670,7 @@ static void setnodevector (lua_State *L, Table *t, unsigned size) {
     else {
       size_t bsize = size * sizeof(Node) + sizeof(Limbox);
       char *node = luaM_newblock(L, bsize);
-      t->node = cast(Node *, node + sizeof(Limbox));
+      t->node = lua_cast(Node *, node + sizeof(Limbox));
       getlastfree(t) = gnode(t, size);  /* all positions are free */
     }
     t->lsizenode = cast_byte(lsize);
@@ -864,7 +864,7 @@ Table *luaH_new (lua_State *L) {
 
 
 lu_mem luaH_size (Table *t) {
-  lu_mem sz = cast(lu_mem, sizeof(Table))
+  lu_mem sz = lua_cast(lu_mem, sizeof(Table))
             + luaH_realasize(t) * (sizeof(Value) + 1);
   if (!isdummy(t))
     sz += sizehash(t);
@@ -1041,7 +1041,7 @@ static const TValue *Hgetstr (Table *t, TString *key) {
     return luaH_Hgetshortstr(t, key);
   else {  /* for long strings, use generic case */
     TValue ko;
-    setsvalue(cast(lua_State *, NULL), &ko, key);
+    setsvalue(lua_cast(lua_State *, NULL), &ko, key);
     return getgeneric(t, &ko, 0);
   }
 }
@@ -1091,13 +1091,13 @@ lu_byte luaH_get (Table *t, const TValue *key, TValue *res) {
 
 static int finishnodeset (Table *t, const TValue *slot, TValue *val) {
   if (!ttisnil(slot)) {
-    setobj(((lua_State*)NULL), cast(TValue*, slot), val);
+    setobj(((lua_State*)NULL), lua_cast(TValue*, slot), val);
     return HOK;  /* success */
   }
   else if (isabstkey(slot))
     return HNOTFOUND;  /* no slot with that key */
   else  /* return node encoded */
-    return cast_int((cast(Node*, slot) - t->node)) + HFIRSTNODE;
+    return cast_int((lua_cast(Node*, slot) - t->node)) + HFIRSTNODE;
 }
 
 
@@ -1105,7 +1105,7 @@ static int rawfinishnodeset (const TValue *slot, TValue *val) {
   if (isabstkey(slot))
     return 0;  /* no slot with that key */
   else {
-    setobj(((lua_State*)NULL), cast(TValue*, slot), val);
+    setobj(((lua_State*)NULL), lua_cast(TValue*, slot), val);
     return 1;  /* success */
   }
 }

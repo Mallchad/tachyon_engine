@@ -60,7 +60,7 @@ static const char *const CLIBS = "_CLIBS";
 
 
 /* cast void* to a Lua function */
-#define cast_Lfunc(p)	cast(lua_CFunction, cast_func(p))
+#define cast_Lfunc(p)	lua_cast(lua_CFunction, cast_func(p))
 
 
 /*

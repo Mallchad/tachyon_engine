@@ -174,7 +174,7 @@ void luaF_newtbcupval (lua_State *L, StkId level) {
     L->tbclist.p += MAXDELTA;  /* create a dummy node at maximum delta */
     L->tbclist.p->tbclist.delta = 0;
   }
-  level->tbclist.delta = cast(unsigned short, level - L->tbclist.p);
+  level->tbclist.delta = lua_cast(unsigned short, level - L->tbclist.p);
   L->tbclist.p = level;
 }
 
@@ -265,7 +265,7 @@ Proto *luaF_newproto (lua_State *L) {
 
 
 lu_mem luaF_protosize (Proto *p) {
-  lu_mem sz = cast(lu_mem, sizeof(Proto))
+  lu_mem sz = lua_cast(lu_mem, sizeof(Proto))
             + cast_uint(p->sizep) * sizeof(Proto*)
             + cast_uint(p->sizek) * sizeof(TValue)
             + cast_uint(p->sizelocvars) * sizeof(LocVar)

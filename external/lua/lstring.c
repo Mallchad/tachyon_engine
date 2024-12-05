@@ -233,7 +233,7 @@ static TString *internshrstr (lua_State *L, const char *str, size_t l) {
     list = &tb->hash[lmod(h, tb->size)];  /* rehash with new size */
   }
   ts = createstrobj(L, sizestrshr(l), LUA_VSHRSTR, h);
-  ts->shrlen = cast(ls_byte, l);
+  ts->shrlen = lua_cast(ls_byte, l);
   getshrstr(ts)[l] = '\0';  /* ending 0 */
   memcpy(getshrstr(ts), str, l * sizeof(char));
   ts->u.hnext = *list;
@@ -309,14 +309,14 @@ struct NewExt {
 
 
 static void f_newext (lua_State *L, void *ud) {
-  struct NewExt *ne = cast(struct NewExt *, ud);
+  struct NewExt *ne = lua_cast(struct NewExt *, ud);
   size_t size = luaS_sizelngstr(0, ne->kind);
   ne->ts = createstrobj(L, size, LUA_VLNGSTR, G(L)->seed);
 }
 
 
 static void f_pintern (lua_State *L, void *ud) {
-  struct NewExt *ne = cast(struct NewExt *, ud);
+  struct NewExt *ne = lua_cast(struct NewExt *, ud);
   ne->ts = internshrstr(L, ne->s, ne->len);
 }
 

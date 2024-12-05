@@ -439,9 +439,9 @@ LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
 LUA_API lua_Unsigned lua_rawlen (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   switch (ttypetag(o)) {
-    case LUA_VSHRSTR: return cast(lua_Unsigned, tsvalue(o)->shrlen);
-    case LUA_VLNGSTR: return cast(lua_Unsigned, tsvalue(o)->u.lnglen);
-    case LUA_VUSERDATA: return cast(lua_Unsigned, uvalue(o)->len);
+    case LUA_VSHRSTR: return lua_cast(lua_Unsigned, tsvalue(o)->shrlen);
+    case LUA_VLNGSTR: return lua_cast(lua_Unsigned, tsvalue(o)->u.lnglen);
+    case LUA_VUSERDATA: return lua_cast(lua_Unsigned, uvalue(o)->len);
     case LUA_VTABLE: return luaH_getn(hvalue(o));
     default: return 0;
   }
@@ -1064,7 +1064,7 @@ struct CallS {  /* data to 'f_call' */
 
 
 static void f_call (lua_State *L, void *ud) {
-  struct CallS *c = cast(struct CallS *, ud);
+  struct CallS *c = lua_cast(struct CallS *, ud);
   luaD_callnoyield(L, c->func, c->nresults);
 }
 
@@ -1197,7 +1197,7 @@ LUA_API int lua_gc (lua_State *L, int what, ...) {
     }
     case LUA_GCSTEP: {
       lu_byte oldstp = g->gcstp;
-      l_mem n = cast(l_mem, va_arg(argp, size_t));
+      l_mem n = lua_cast(l_mem, va_arg(argp, size_t));
       int work = 0;  /* true if GC did some work */
       g->gcstp = 0;  /* allow GC to run (other bits must be zero here) */
       if (n <= 0)
@@ -1351,7 +1351,7 @@ LUA_API void *lua_newuserdatauv (lua_State *L, size_t size, int nuvalue) {
   Udata *u;
   lua_lock(L);
   api_check(L, 0 <= nuvalue && nuvalue < SHRT_MAX, "invalid value");
-  u = luaS_newudata(L, size, cast(unsigned short, nuvalue));
+  u = luaS_newudata(L, size, lua_cast(unsigned short, nuvalue));
   setuvalue(L, s2v(L->top.p), u);
   api_incr_top(L);
   luaC_checkGC(L);

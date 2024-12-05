@@ -90,7 +90,7 @@ LUAI_FUNC void lua_printstack (lua_State *L);
 struct L_EXTRA { int lock; int *plock; };
 #undef LUA_EXTRASPACE
 #define LUA_EXTRASPACE	sizeof(struct L_EXTRA)
-#define getlock(l)	cast(struct L_EXTRA*, lua_getextraspace(l))
+#define getlock(l)	lua_cast(struct L_EXTRA*, lua_getextraspace(l))
 #define luai_userstateopen(l)  \
 	(getlock(l)->lock = 0, getlock(l)->plock = &(getlock(l)->lock))
 #define luai_userstateclose(l)  \

@@ -93,7 +93,7 @@ static int tpanic (lua_State *L) {
 ** - 2.store: all warnings go to the global '_WARN';
 */
 static void warnf (void *ud, const char *msg, int tocont) {
-  lua_State *L = cast(lua_State *, ud);
+  lua_State *L = lua_cast(lua_State *, ud);
   static char buff[200] = "";  /* should be enough for tests... */
   static int onoff = 0;
   static int mode = 0;  /* start in normal mode */
@@ -209,8 +209,8 @@ static void freeblock (Memcontrol *mc, Header *block) {
 
 
 void *debug_realloc (void *ud, void *b, size_t oldsize, size_t size) {
-  Memcontrol *mc = cast(Memcontrol *, ud);
-  Header *block = cast(Header *, b);
+  Memcontrol *mc = lua_cast(Memcontrol *, ud);
+  Header *block = lua_cast(Header *, b);
   int type;
   if (mc->memlimit == 0) {  /* first time? */
     char *limit = getenv("MEMLIMIT");  /* initialize memory limit */
@@ -246,7 +246,7 @@ void *debug_realloc (void *ud, void *b, size_t oldsize, size_t size) {
     size_t commonsize = (oldsize < size) ? oldsize : size;
     size_t realsize = sizeof(Header) + size + MARKSIZE;
     if (realsize < size) return NULL;  /* arithmetic overflow! */
-    newblock = cast(Header *, malloc(realsize));  /* alloc a new block */
+    newblock = lua_cast(Header *, malloc(realsize));  /* alloc a new block */
     if (newblock == NULL)
       return NULL;  /* really out of memory? */
     if (block) {
@@ -847,13 +847,13 @@ static int get_limits (lua_State *L) {
 
 static int mem_query (lua_State *L) {
   if (lua_isnone(L, 1)) {
-    lua_pushinteger(L, cast(lua_Integer, l_memcontrol.total));
-    lua_pushinteger(L, cast(lua_Integer, l_memcontrol.numblocks));
-    lua_pushinteger(L, cast(lua_Integer, l_memcontrol.maxmem));
+    lua_pushinteger(L, lua_cast(lua_Integer, l_memcontrol.total));
+    lua_pushinteger(L, lua_cast(lua_Integer, l_memcontrol.numblocks));
+    lua_pushinteger(L, lua_cast(lua_Integer, l_memcontrol.maxmem));
     return 3;
   }
   else if (lua_isnumber(L, 1)) {
-    unsigned long limit = cast(unsigned long, luaL_checkinteger(L, 1));
+    unsigned long limit = lua_cast(unsigned long, luaL_checkinteger(L, 1));
     if (limit == 0) limit = ULONG_MAX;
     l_memcontrol.memlimit = limit;
     return 0;
@@ -863,7 +863,7 @@ static int mem_query (lua_State *L) {
     int i;
     for (i = LUA_NUMTYPES - 1; i >= 0; i--) {
       if (strcmp(t, ttypename(i)) == 0) {
-        lua_pushinteger(L, cast(lua_Integer, l_memcontrol.objcount[i]));
+        lua_pushinteger(L, lua_cast(lua_Integer, l_memcontrol.objcount[i]));
         return 1;
       }
     }
@@ -874,9 +874,9 @@ static int mem_query (lua_State *L) {
 
 static int alloc_count (lua_State *L) {
   if (lua_isnone(L, 1))
-    l_memcontrol.countlimit = cast(unsigned long, ~0L);
+    l_memcontrol.countlimit = lua_cast(unsigned long, ~0L);
   else
-    l_memcontrol.countlimit = cast(unsigned long, luaL_checkinteger(L, 1));
+    l_memcontrol.countlimit = lua_cast(unsigned long, luaL_checkinteger(L, 1));
   return 0;
 }
 
@@ -1011,7 +1011,7 @@ static int hash_query (lua_State *L) {
     Table *t;
     luaL_checktype(L, 2, LUA_TTABLE);
     t = hvalue(obj_at(L, 2));
-    lua_pushinteger(L, cast(lua_Integer, luaH_mainposition(t, o) - t->node));
+    lua_pushinteger(L, lua_cast(lua_Integer, luaH_mainposition(t, o) - t->node));
   }
   return 1;
 }
@@ -1019,9 +1019,9 @@ static int hash_query (lua_State *L) {
 
 static int stacklevel (lua_State *L) {
   int a = 0;
-  lua_pushinteger(L, cast(lua_Integer, L->top.p - L->stack.p));
+  lua_pushinteger(L, lua_cast(lua_Integer, L->top.p - L->stack.p));
   lua_pushinteger(L, stacksize(L));
-  lua_pushinteger(L, cast(lua_Integer, L->nCcalls));
+  lua_pushinteger(L, lua_cast(lua_Integer, L->nCcalls));
   lua_pushinteger(L, L->nci);
   lua_pushinteger(L, (lua_Integer)(size_t)&a);
   return 5;
@@ -1036,9 +1036,9 @@ static int table_query (lua_State *L) {
   t = hvalue(obj_at(L, 1));
   asize = luaH_realasize(t);
   if (i == -1) {
-    lua_pushinteger(L, cast(lua_Integer, asize));
-    lua_pushinteger(L, cast(lua_Integer, allocsizenode(t)));
-    lua_pushinteger(L, cast(lua_Integer, t->alimit));
+    lua_pushinteger(L, lua_cast(lua_Integer, asize));
+    lua_pushinteger(L, lua_cast(lua_Integer, allocsizenode(t)));
+    lua_pushinteger(L, lua_cast(lua_Integer, t->alimit));
     return 3;
   }
   else if (cast_uint(i) < asize) {
@@ -1094,7 +1094,7 @@ static int test_codeparam (lua_State *L) {
 static int test_applyparam (lua_State *L) {
   lua_Integer p = luaL_checkinteger(L, 1);
   lua_Integer x = luaL_checkinteger(L, 2);
-  lua_pushinteger(L, cast(lua_Integer, luaO_applyparam(cast_byte(p), x)));
+  lua_pushinteger(L, lua_cast(lua_Integer, luaO_applyparam(cast_byte(p), x)));
   return 1;
 }
 
@@ -1194,7 +1194,7 @@ static int pushuserdata (lua_State *L) {
 
 
 static int udataval (lua_State *L) {
-  lua_pushinteger(L, cast(lua_Integer, cast(size_t, lua_touserdata(L, 1))));
+  lua_pushinteger(L, lua_cast(lua_Integer, lua_cast(size_t, lua_touserdata(L, 1))));
   return 1;
 }
 
@@ -1212,13 +1212,13 @@ static int doonnewstack (lua_State *L) {
 
 
 static int s2d (lua_State *L) {
-  lua_pushnumber(L, cast_num(*cast(const double *, luaL_checkstring(L, 1))));
+  lua_pushnumber(L, cast_num(*lua_cast(const double *, luaL_checkstring(L, 1))));
   return 1;
 }
 
 
 static int d2s (lua_State *L) {
-  double d = cast(double, luaL_checknumber(L, 1));
+  double d = lua_cast(double, luaL_checknumber(L, 1));
   lua_pushlstring(L, cast_charp(&d), sizeof(d));
   return 1;
 }
@@ -1231,7 +1231,7 @@ static int num2int (lua_State *L) {
 
 
 static int makeseed (lua_State *L) {
-  lua_pushinteger(L, cast(lua_Integer, luaL_makeseed(L)));
+  lua_pushinteger(L, lua_cast(lua_Integer, luaL_makeseed(L)));
   return 1;
 }
 
@@ -1251,7 +1251,7 @@ static int newstate (lua_State *L) {
 
 
 static lua_State *getstate (lua_State *L) {
-  lua_State *L1 = cast(lua_State *, lua_touserdata(L, 1));
+  lua_State *L1 = lua_cast(lua_State *, lua_touserdata(L, 1));
   luaL_argcheck(L, L1 != NULL, 1, "state expected");
   return L1;
 }
@@ -1570,7 +1570,7 @@ static int runC (lua_State *L, lua_State *L1, const char *pc) {
     }
     else if EQ("func2num") {
       lua_CFunction func = lua_tocfunction(L1, getindex);
-      lua_pushinteger(L1, cast(lua_Integer, cast(size_t, func)));
+      lua_pushinteger(L1, lua_cast(lua_Integer, lua_cast(size_t, func)));
     }
     else if EQ("getfield") {
       int t = getindex;
@@ -1937,7 +1937,7 @@ static int Cfunc (lua_State *L) {
 static int Cfunck (lua_State *L, int status, lua_KContext ctx) {
   lua_pushstring(L, statcodes[status]);
   lua_setglobal(L, "status");
-  lua_pushinteger(L, cast(lua_Integer, ctx));
+  lua_pushinteger(L, lua_cast(lua_Integer, ctx));
   lua_setglobal(L, "ctx");
   return runC(L, L, lua_tostring(L, cast_int(ctx)));
 }

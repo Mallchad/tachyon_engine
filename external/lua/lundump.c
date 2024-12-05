@@ -71,7 +71,7 @@ static void loadAlign (LoadState *S, unsigned align) {
 }
 
 
-#define getaddr(S,n,t)	cast(t *, getaddr_(S,(n) * sizeof(t)))
+#define getaddr(S,n,t)	lua_cast(t *, getaddr_(S,(n) * sizeof(t)))
 
 static const void *getaddr_ (LoadState *S, size_t size) {
   const void *block = luaZ_getaddr(S->Z, size);
@@ -156,7 +156,7 @@ static void loadString (LoadState *S, Proto *p, TString **sl) {
     return;
   }
   else if (size == 1) {  /* previously saved string? */
-    lua_Integer idx = cast(lua_Integer, loadSize(S));  /* get its index */
+    lua_Integer idx = lua_cast(lua_Integer, loadSize(S));  /* get its index */
     TValue stv;
     luaH_getint(S->h, idx, &stv);  /* get its value */
     *sl = ts = tsvalue(&stv);

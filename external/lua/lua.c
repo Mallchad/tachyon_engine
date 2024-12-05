@@ -499,14 +499,14 @@ static void lua_initreadline (lua_State *L) {
   if (lib == NULL)
     lua_warning(L, "library '" LUA_READLINELIB "'not found", 0);
   else {
-    const char **name = cast(const char**, dlsym(lib, "rl_readline_name"));
+    const char **name = lua_cast(const char**, dlsym(lib, "rl_readline_name"));
     if (name != NULL)
       *name = "Lua";
-    l_readline = cast(l_readline_t, cast_func(dlsym(lib, "readline")));
+    l_readline = lua_cast(l_readline_t, cast_func(dlsym(lib, "readline")));
     if (l_readline == NULL)
       lua_warning(L, "unable to load 'readline'", 0);
     else
-      l_addhist = cast(l_addhist_t, cast_func(dlsym(lib, "add_history")));
+      l_addhist = lua_cast(l_addhist_t, cast_func(dlsym(lib, "add_history")));
   }
 }
 

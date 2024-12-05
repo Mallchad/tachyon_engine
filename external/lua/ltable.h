@@ -42,7 +42,7 @@
 
 
 /* returns the Node, given the value of a table entry */
-#define nodefromval(v)	cast(Node *, (v))
+#define nodefromval(v)	lua_cast(Node *, (v))
 
 
 
@@ -109,7 +109,7 @@
 */
 
 /* Computes the address of the tag for the abstract C-index 'k' */
-#define getArrTag(t,k)	(cast(lu_byte*, (t)->array) + (k))
+#define getArrTag(t,k)	(lua_cast(lu_byte*, (t)->array) + (k))
 
 /* Computes the address of the value for the abstract C-index 'k' */
 #define getArrVal(t,k)	((t)->array - 1 - (k))
