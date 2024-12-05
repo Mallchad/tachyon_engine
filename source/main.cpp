@@ -27,6 +27,13 @@ int main()
         luaL_openlibs( lua );
         log( "lua", "Lua VM Initialized" );
 
+        // Testing lua stuff
+        table options;
+        options.table = "options";
+        options.lua = lua;
+        lua_createtable( lua, 30, 200 );
+        lua_setglobal( lua, options.table );
+
         while ( global.kill_program == false )
         {
             auto epoch_elapsed = std::chrono::steady_clock::now() - global.program_epoch;

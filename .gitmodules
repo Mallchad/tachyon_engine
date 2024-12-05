@@ -19,6 +19,3 @@
 [submodule "external/catch2"]
 	path = external/catch2
 	url = git@github.com:catchorg/Catch2.git
-[submodule "external/lua"]
-	path = external/lua
-	url = git@github.com:lua/lua.git

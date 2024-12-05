@@ -23,6 +23,8 @@ namespace tyon
         /// with them should be treated as dangerous / unreliable
         bool null_tainted = false;
 
+        CONSTRUCTOR string() = default;
+
         constexpr
         COPY_CONSTRUCTOR string( const char* target )
         {
