@@ -81,7 +81,7 @@ void main()
     // Fragment Coordinate
     // Really frustrating to convert to screen/worldspace, use vertecies instead
     vec3 frag = v_position.xyz;
-    vec3 norm = (vec4( v_normal, 1.0 ) * camera).xyz;
+    vec3 norm = (vec4( v_normal, 1.0 )).xyz;
 
 
     m.metallic = clamp( 1-m.metallic, 0.0, 1.0 );

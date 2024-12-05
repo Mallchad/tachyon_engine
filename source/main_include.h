@@ -13,3 +13,10 @@
 #include "input.h"
 
 #include "include_tracy.h"
+
+extern "C"
+{
+    #include "lua.h"
+    #include "lualib.h"
+    #include "lauxlib.h"
+};

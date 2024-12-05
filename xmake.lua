@@ -10,7 +10,8 @@ target( "tachyon_engine" )
     set_kind( "binary" )
     set_languages( "c++20" )
     add_deps( "tachyon_shaders",
-              "tracy" )
+              "tracy",
+              "lua_static" )
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
@@ -19,7 +20,8 @@ target( "tachyon_engine" )
     add_includedirs( "source",
                      "external/spdlog/include/",
                      "external/tracy/public/tracy/",
-                     "external/tracy/" )
+                     "external/tracy/",
+                     "external/lua" )
 
     -- asan must be linked first
     -- add_links( "asan" )
@@ -95,8 +97,7 @@ target( "tachyon_engine" )
 
 target( "tracy" )
     set_kind( "static" )
-    add_files( "external/tracy/public/TracyClient.cpp",
-               "external/tracy/TracyClient.cpp" )
+    add_files( "external/tracy/public/TracyClient.cpp" )
     add_includedirs(  "external/tracy/public/tracy/",
                       "external/tracy/" )
 
@@ -220,6 +221,11 @@ target( "tachyon_tests" )
                      "source" )
 
     add_defines( 'TRIANGULATE_PROJECT_ROOT="$(projectdir)"' )
+
+target( "lua_static" )
+    set_kind( "static" )
+    add_defines( "MAKE_LIB=1" )
+    add_files( "external/lua/onelua.c" )
 
 target( "catch2" )
     set_kind( "phony" )
