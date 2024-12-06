@@ -19,6 +19,7 @@ int main()
     try
     {
         lua = luaL_newstate();
+        global.lua_state = lua;
         renderer main_renderer;
         input main_input( main_renderer.platform );
 
@@ -26,13 +27,13 @@ int main()
         // Make C libraries available to Lua
         luaL_openlibs( lua );
         log( "lua", "Lua VM Initialized" );
+        if (luaL_dofile( lua, "/mnt/tmp/repos/tachyon_engine/content/options.lua" ))
+        { throw 1; };
 
         // Testing lua stuff
         table options;
-        options.table = "options";
+        options.name = "options";
         options.lua = lua;
-        lua_createtable( lua, 30, 200 );
-        lua_setglobal( lua, options.table );
 
         while ( global.kill_program == false )
         {

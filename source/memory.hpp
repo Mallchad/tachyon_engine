@@ -1,8 +1,10 @@
 
 #pragma once
 
-#include <core.hpp>
 #include <memory.h>
+
+#include "core.hpp"
+#include "error.hpp"
 
 // Removes an object from scope, essentially calling it's destructor if sensible
 template <typename t_movable>
@@ -10,6 +12,15 @@ constexpr void
 FUNCTION drop( t_movable doomed )
 {
     auto _ = std::move( doomed );
+}
+
+template <typename t_ptr>
+fresult
+raw_zero( t_ptr target, i64 count)
+{
+    using t_any = decltype(*target);
+    std::memset( target, 0x0, count * sizeof(t_any) );
+    return true;
 }
 
 void
