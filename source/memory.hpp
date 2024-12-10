@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <memory.h>
+#include <memory>
 
 #include "core.hpp"
 #include "error.hpp"
@@ -15,7 +15,7 @@ FUNCTION drop( t_movable doomed )
 }
 
 template <typename t_ptr>
-fresult
+bool
 raw_zero( t_ptr target, i64 count)
 {
     using t_any = decltype(*target);
@@ -61,6 +61,15 @@ FUNCTION allocate( u64 count )
     // Zero and prefault to get real memory
     memset( result, 0, allocation );
     return result;
+}
+
+template <typename t_any>
+void
+swap( t_any& lhs, t_any& rhs )
+{
+    t_any tmp = lhs;
+    lhs = rhs;
+    rhs = tmp;
 }
 
 /* Default allocation in raw bytes

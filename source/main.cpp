@@ -45,7 +45,7 @@ int main()
             main_input.frame_update( epoch_elapsed_float );
 
             // DO NOT REMOVE, can lock computer if it runs too fast
-            std::this_thread::sleep_for(100us);
+            std::this_thread::sleep_for(16ms);
             FrameMark;
         }
     } catch (std::exception& error)

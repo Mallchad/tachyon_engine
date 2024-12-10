@@ -108,6 +108,8 @@ using fdouble = double;
 using f32 = float;
 using f64 = double;
 
+using fbyte = u8;
+
 // String types
 // using fstring = std::basic_string<char>;
 // using fstring_view = std::basic_string_view<char>;

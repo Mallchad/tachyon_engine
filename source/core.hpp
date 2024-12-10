@@ -104,7 +104,7 @@ public:
     template<typename t_integral = fint32> t_integral
     FUNCTION cast() const { return static_cast<t_integral>( m_value ); }
 };
-#include <math.hpp>
+
 /// Relatively well defined cast behaviour
 // This will primarily do a static cast, but will allow reinterpret cast ONLY
 // if it is a pointer to pointer conversion which is relatively sensible.
@@ -161,7 +161,6 @@ using fpath = std::filesystem::path;
 /// effect of introducing lots of reinterpret_casts everywhere which is really
 /// nasty and risky. An alternative would be a thin templated wrapper type with
 /// an explicit cast which auto-disallows arithmatic operations
-using fbyte = uint8_t;
 using byte_buffer = std::vector<fbyte>;
 // An untyped byte buffer
 using buffer = std::vector<fbyte>;

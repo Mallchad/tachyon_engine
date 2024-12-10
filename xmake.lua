@@ -147,7 +147,7 @@ target( "tachyon_libs" )
                   -- #import is a Obj-C language extension and easily confused with C++ modules
                   "-Werror=import-preprocessor-directive-pedantic",
                   -- Platform unknown pragmas lead to some insanely annoying and
-                  -- unexpected When they fail silentlys
+                  -- unexpected When they fail silently
                   "-Werror=unknown-pragmas",
                   -- Non-Void functions that don't return can crash *at runtime*
                   "-Werror=return-type",
@@ -156,6 +156,7 @@ target( "tachyon_libs" )
                   "-Werror=shadow-all",
                   -- Has inconsistent behaviour and behaves like reinterpret cast, never use
                   "-Werror=old-style-cast",
+                  "-Werror=empty-body",
 
                   -- -- Disable Warnings
                   "-Wno-unused-value",
