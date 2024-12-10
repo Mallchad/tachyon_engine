@@ -123,7 +123,7 @@ FUNCTION renderer::frame_update()
 
     // Random temporary stuff
     v3 left_vector = { -1., .0, .0 };
-    f32 camera_speed = 45.0;
+    f32 camera_speed = 45.0 * frame_data.delta_time;
     matrix camera_velocity_left = matrix::create_translation( v4{ camera_speed, 0.0, 0.0, 0.0 } );
     matrix camera_velocity_right = matrix::create_translation( v4{ -camera_speed, 0.0, 0.0, 0.0 } );
     matrix camera_velocity_up = matrix::create_translation( v4{ 0., camera_speed, 0.0, 0.0 } );
@@ -131,19 +131,18 @@ FUNCTION renderer::frame_update()
     matrix camera_velocity_forward = matrix::create_translation( v4{ 0., 0., -camera_speed, 0.0 } );
     matrix camera_velocity_backward = matrix::create_translation( v4{ 0., 0., camera_speed, 0.0 } );
 
-    // TODO: Needs to be FIXED to use matrix multiplication with unit vectors set
-    // if (global->action_left)
-    // { frame_data.camera *= (camera_velocity_left * frame_data.delta_time); }
-    // if (global->action_right)
-    // { frame_data.camera *= (camera_velocity_right * frame_data.delta_time); }
-    // if (global->action_forward)
-    // { frame_data.camera *= (camera_velocity_forward * frame_data.delta_time); }
-    // if (global->action_backward)
-    // { frame_data.camera *= (camera_velocity_backward * frame_data.delta_time); }
-    // if (global->action_up)
-    // { frame_data.camera *= (camera_velocity_up * frame_data.delta_time); }
-    // if (global->action_down)
-    // { frame_data.camera *= (camera_velocity_down * frame_data.delta_time); }
+    if (global->action_left)
+    { frame_data.camera *= (camera_velocity_left); }
+    if (global->action_right)
+    { frame_data.camera *= (camera_velocity_right); }
+    if (global->action_forward)
+    { frame_data.camera *= (camera_velocity_forward); }
+    if (global->action_backward)
+    { frame_data.camera *= (camera_velocity_backward); }
+    if (global->action_up)
+    { frame_data.camera *= (camera_velocity_up); }
+    if (global->action_down)
+    { frame_data.camera *= (camera_velocity_down); }
 
     uniform uniform_frame;
     uniform_frame.pack( frame_shader_globals.epoch,
