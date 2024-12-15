@@ -33,7 +33,7 @@ target( "tachyon_engine" )
     if is_mode( "release" ) then
        -- set_policy("build.optimization.lto", true)
        set_optimize("faster")
-    else
+    elseif is_mode ( "debug" ) then
        set_optimize( "none" )
     end
     -- Temporary cxxflags to safe the effort of full converting to xmake --

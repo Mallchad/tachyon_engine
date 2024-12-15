@@ -150,6 +150,8 @@ void main()
     mat4 viewport = identity;               // Clip-Space to Screen Space
     // cam = mat4(1);                          // Debug
 
+    // cam *= create_rotation( vec4(0., 0., 1., 0.) );
+
     rot.x = 0.0;
     rot.y = (0.0 + (time_since_epoch * rotation_speed)) * tau;
     // rot.y = 0.0;

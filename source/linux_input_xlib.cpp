@@ -104,6 +104,14 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
                 { global->action_up = true; }
                 if (XKeysymToKeycode( m_display, XK_Control_L ) == event.xkey.keycode)
                 { global->action_down = true; }
+                if (XKeysymToKeycode( m_display, XK_Up ) == event.xkey.keycode)
+                { global->action_turn_up = true; }
+                if (XKeysymToKeycode( m_display, XK_Down ) == event.xkey.keycode)
+                { global->action_turn_down = true; }
+                if (XKeysymToKeycode( m_display, XK_Left ) == event.xkey.keycode)
+                { global->action_turn_left = true; }
+                if (XKeysymToKeycode( m_display, XK_Right ) == event.xkey.keycode)
+                { global->action_turn_right = true; }
                 break;
             case ConfigureNotify:
                 global->window_requested.width = event.xconfigure.width;
@@ -124,6 +132,14 @@ FUNCTION impl::frame_update( ffloat epoch_elapsed )
                 { global->action_up = false; }
                 if (XKeysymToKeycode( m_display, XK_Control_L ) == event.xkey.keycode)
                 { global->action_down = false; }
+                if (XKeysymToKeycode( m_display, XK_Up ) == event.xkey.keycode)
+                { global->action_turn_up = false; }
+                if (XKeysymToKeycode( m_display, XK_Down ) == event.xkey.keycode)
+                { global->action_turn_down = false; }
+                if (XKeysymToKeycode( m_display, XK_Left ) == event.xkey.keycode)
+                { global->action_turn_left = false; }
+                if (XKeysymToKeycode( m_display, XK_Right ) == event.xkey.keycode)
+                { global->action_turn_right  = false; }
                 break;
             default: break;
         }

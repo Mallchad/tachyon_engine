@@ -14,9 +14,12 @@ FUNCTION drop( t_movable doomed )
     auto _ = std::move( doomed );
 }
 
+bool
+raw_zero( void* target, i64 bytes );
+
 template <typename t_ptr>
 bool
-raw_zero( t_ptr target, i64 count)
+typed_zero( t_ptr target, i64 count)
 {
     using t_any = decltype(*target);
     std::memset( target, 0x0, count * sizeof(t_any) );

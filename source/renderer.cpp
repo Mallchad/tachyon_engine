@@ -4,7 +4,6 @@
 #include "include_tracy.h"
 
 #include "code_helpers.h"
-#include "math.hpp"
 #include "file.hpp"
 #include "memory.hpp"
 #include "string.h"
@@ -70,7 +69,8 @@ CONSTRUCTOR renderer::renderer()
     mtest_triangle_mesh = platform.mesh_create( test_triangle );
 
     // Setup Scene Objects
-    camera = matrix::one;
+    v3f a = {1, 2, 3};
+    camera = matrix::one();
     frame_shader_globals.camera = camera;
 }
 
@@ -124,25 +124,38 @@ FUNCTION renderer::frame_update()
     // Random temporary stuff
     v3 left_vector = { -1., .0, .0 };
     f32 camera_speed = 45.0 * frame_data.delta_time;
-    matrix camera_velocity_left = matrix::create_translation( v4{ camera_speed, 0.0, 0.0, 0.0 } );
-    matrix camera_velocity_right = matrix::create_translation( v4{ -camera_speed, 0.0, 0.0, 0.0 } );
-    matrix camera_velocity_up = matrix::create_translation( v4{ 0., camera_speed, 0.0, 0.0 } );
-    matrix camera_velocity_down = matrix::create_translation( v4{ 0., -camera_speed, 0., 0. } );
-    matrix camera_velocity_forward = matrix::create_translation( v4{ 0., 0., -camera_speed, 0.0 } );
-    matrix camera_velocity_backward = matrix::create_translation( v4{ 0., 0., camera_speed, 0.0 } );
+
+    f32 tau = 6.283185307;
+    transform camera_transform;
+    typed_zero( &camera_transform, 1 );
+    camera_transform.rotation.x = tau * 0.25;
 
     if (global->action_left)
-    { frame_data.camera *= (camera_velocity_left); }
+    { camera_transform.translation += v4 {v3::left()} *
+                                         matrix::create_rotation( camera_transform.rotation ) *
+                                         camera_speed; }
     if (global->action_right)
-    { frame_data.camera *= (camera_velocity_right); }
+    { camera_transform.translation += v4(v3::right()) *
+                                         matrix::create_rotation( camera_transform.rotation ) *
+                                         camera_speed; }
     if (global->action_forward)
-    { frame_data.camera *= (camera_velocity_forward); }
+    { camera_transform.translation += v4(v3::forward()) *
+                                         matrix::create_rotation( camera_transform.rotation ) *
+                                         camera_speed; }
     if (global->action_backward)
-    { frame_data.camera *= (camera_velocity_backward); }
+    { camera_transform.translation += v4(v3::backward()) *
+                                         matrix::create_rotation( camera_transform.rotation ) *
+                                         camera_speed; }
     if (global->action_up)
-    { frame_data.camera *= (camera_velocity_up); }
+    { camera_transform.translation += v4(v3::up()) *
+                                         matrix::create_rotation( camera_transform.rotation ) *
+                                         camera_speed; }
     if (global->action_down)
-    { frame_data.camera *= (camera_velocity_down); }
+    { camera_transform.translation += v4(v3::down()) *
+                                         matrix::create_rotation( camera_transform.rotation ) *
+                                         camera_speed; }
+    v3 camera_rotation = { 0., tau, 0 };
+    frame_data.camera *= (camera_transform.translation_matrix() );
 
     uniform uniform_frame;
     uniform_frame.pack( frame_shader_globals.epoch,
@@ -153,7 +166,7 @@ FUNCTION renderer::frame_update()
                         frame_shader_globals.delta_time_begin,
                         frame_shader_globals.delta_time_end,
                         frame_shader_globals.screen_vh_aspect_ratio,
-                        frame_data.camera.transpose() );
+                        frame_data.camera.unreal_to_opengl().transpose() );
     platform.shader_globals_update( uniform_frame );
     platform.frame_start();
     ftransform stub_transform = {};

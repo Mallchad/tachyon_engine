@@ -1,6 +1,13 @@
 
 #include "memory.hpp"
 
+bool
+raw_zero( void* target, i64 bytes )
+{
+    std::memset( target, 0, bytes );
+    return true;
+}
+
 void
 FUNCTION raw_copy( void* dest, const void* src, u64 bytes)
 {

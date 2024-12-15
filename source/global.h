@@ -57,6 +57,10 @@ public:
     bool action_backward = false;
     bool action_up = false;
     bool action_down = false;
+    bool action_turn_up = false;
+    bool action_turn_down = false;
+    bool action_turn_left = false;
+    bool action_turn_right = false;
 
     static globals* get_primary();
 };

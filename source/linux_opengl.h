@@ -25,9 +25,6 @@ namespace std
 {
     template<class _t> class initializer_list;
 }
-using coord3 = vector3<GLfloat>;
-using srgba  = vector4<GLfloat>;
-using rgba   = vector4<GLfloat>;
 
 using PFNGLDRAWARRAYSPROC = void (APIENTRYP)(GLenum mode, GLint first, GLsizei count);
 
