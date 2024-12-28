@@ -30,10 +30,13 @@ int main()
         if (luaL_dofile( lua, "/mnt/tmp/repos/tachyon_engine/content/options.lua" ))
         { throw 1; };
 
-        // Testing lua stuff
-        table options;
+        // Test Lua Stuff
+        lua_table options;
         options.name = "options";
         options.lua = lua;
+        options["foo"] = 42002.f;
+        if (luaL_dofile( lua, "/mnt/tmp/repos/tachyon_engine/content/early_start.lua" ))
+        { throw 1; };
 
         while ( global.kill_program == false )
         {

@@ -41,6 +41,8 @@
 #define MOVE_CONSTRUCTOR
 // States a move constructor declaration or definition
 #define COPY_CONSTRUCTOR
+/// Defines a copy-assignment specific equals operator (=)
+#define COPY_ASSIGNMENT
 // States a conversion function, essentially typecasting
 #define CONVERSION
 // Member variable immediately evaluated at compile time
@@ -115,3 +117,6 @@ using fbyte = u8;
 // using fstring_view = std::basic_string_view<char>;
 using cstring = const char*;
 // using fpath = const char*;
+
+// -- More complex Stuff --
+#define INVOKE_MEMBER(object, function, ...) ((object).*(function))(__VA_ARGS__)

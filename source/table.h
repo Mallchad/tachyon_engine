@@ -10,24 +10,34 @@ extern "C"
 };
 #include "string.hpp"
 
-union lua_value
+FORWARD struct lua_value;
+FORWARD struct lua_table;
+
+/// Proxy object to allow easily writing to Lua tables
+struct lua_value_proxy
 {
-    struct GCObject *gc;    /* collectable objects */
-    void *p;         /* light userdata */
-    lua_CFunction lfunction; /* light C functions */
-    LUA_INTEGER lint;   /* integer numbers */
-    LUA_NUMBER lfloat;    /* float numbers */
-    /* not used, but may avoid warnings for uninitialized value */
-    fbyte lbyte;
+    lua_table* origin;
+    tyon::string key;
+    union
+    {
+        void* p;         /* light userdata */
+        lua_CFunction lfunction; /* light C functions */
+        lua_Integer lint;   /* integer numbers */
+        lua_Number lfloat;    /* float numbers */
+        /* not used, but may avoid warnings for uninitialized value */
+        fbyte lbyte;
 
 
+    };
+    void
+    COPY_ASSIGNMENT operator= (lua_Number rhs);
 };
 
-struct table
+struct lua_table
 {
     tyon::string name;
     lua_State* lua;
 
-    lua_value
+    lua_value_proxy
     FUNCTION operator[] ( tyon::string key );
 };
