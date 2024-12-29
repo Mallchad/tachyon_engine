@@ -44,7 +44,7 @@ enum class id_type
 };
 
 #ifndef CLING_INTERPRETER_H
-    #define print( message ) log( message, __FILE__ )
+    #define print( ... ) log(  __FILE__, __VA_ARGS__ )
 #endif
 template<typename... t_streamable>
 void
