@@ -26,8 +26,6 @@ struct lua_value_proxy
         lua_Number lfloat;    /* float numbers */
         /* not used, but may avoid warnings for uninitialized value */
         fbyte lbyte;
-
-
     };
     void
     COPY_ASSIGNMENT operator= (lua_Number rhs);
