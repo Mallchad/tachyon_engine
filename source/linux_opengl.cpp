@@ -557,7 +557,7 @@ FUNCTION def::shader_create( string name, shader_type request_type )
             shader_debug_name = "fs_"s + name.data;
             break;
         case shader_type::geometry :
-            shader_target = glCreateShader( GL_VERTEX_SHADER );
+            shader_target = glCreateShader( GL_GEOMETRY_SHADER );
             shader_debug_name = "gs_"s + name.data;
             break;
         case shader_type::compute :
