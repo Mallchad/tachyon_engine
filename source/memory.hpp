@@ -76,7 +76,7 @@ swap( t_any& lhs, t_any& rhs )
 }
 
 /* Default allocation in raw bytes
- * Tries to gurantee physical allocation of memory. Allocates based on the return type */
+ * Tries to gurantee physical allocation of memory. This is untyped allocaiton */
 void*
 FUNCTION raw_allocate( u64 bytes );
 

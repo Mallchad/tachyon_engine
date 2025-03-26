@@ -55,8 +55,17 @@ namespace tyon
 
         T&
         FUNCTION get_tail()
+        { return data[ head+head_size -1 ]; }
+
+        T*
+        get_tail_address()
+        { return &(get_tail()); }
+
+        /// Set memory of array to read only and employ data integrity checks
+        PROCEDURE protect()
         {
-            return data[ head+head_size -1 ];
+            // Crash
+            *(char*)0 = 1;
         }
 
     };

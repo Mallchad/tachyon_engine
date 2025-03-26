@@ -5,7 +5,6 @@
 
 using namespace tyon;
 
-tyon::string slice = 1;
 COPY_CONSTRUCTOR tyon::string::string( const char* target )
 {
     null_tainted = true;

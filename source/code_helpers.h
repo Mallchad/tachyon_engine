@@ -13,6 +13,9 @@
 #define DECLARE
 // States a function definition or a declaration of any kind
 #define FUNCTION
+// States any kind of function differention, ie lambda, function pointers
+// Made to support trialing return type, doesn't work with operators.
+#define PROCEDURE constexpr auto
 // States a variable declaration, primarily intended for classes and structs
 #define DATA
 // States a variable declaration
@@ -102,6 +105,12 @@ using u8  = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
+struct u128 { u64 d[2]; };
+struct u256 { u64 d[4]; };
+struct u512 { u64 d[8]; };
+struct u1024 { u64 d[16]; };
+struct u2048 { u64 d[32]; };
+struct u4096 { u64 d[64]; };
 
 // Fixed width floats only supported
 using ffloat  = float;

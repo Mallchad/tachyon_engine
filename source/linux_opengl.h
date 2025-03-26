@@ -12,6 +12,7 @@
 #include <memory>
 #include <vector>
 #include <array>
+#include <dynarray.hpp>
 
 #include "global.h"
 #include "error.hpp"

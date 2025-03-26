@@ -8,8 +8,9 @@ namespace tyon
     struct string
     {
         char* data = nullptr;
-        u32 size = 0;
-        u32 reserve = 0;
+        u64 size = 0;
+        u64 reserve = 0;
+        u128 hash = {};
         string* owner = nullptr;
         bool owning = false;
         bool null_terminated = true;

@@ -83,7 +83,7 @@ target( "tachyon_engine" )
                   "clang::-Wno-unused-private-field",
                   "clang::-Wno-abstract-final-class",
                   -- Only runs on extra semicolons that do nothing, pointless.
-                  "-Wno-extra-semi-stmt"
+                  "-Wno-extra-semi-stmt",
                   -- "-fsanitize=address",
                   -- "-fsanitize=thread",
                   -- "-fsanitize=memory",
@@ -92,7 +92,7 @@ target( "tachyon_engine" )
                   -- "-fsanitize=cfi",   -- Control Flow Integrity
                   -- "-fsanitize=kcfi",  -- Kernel Indirect Call Forward-Edge Control Flow Integrity
                   -- "-fsanitize=safe-stack",
-
+                  ""
                    )
 
 target( "tracy" )

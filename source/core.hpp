@@ -54,6 +54,8 @@ FUNCTION log( const char* category, t_streamable... messages )
     ((std::cout << messages  << " "), ...) << "\n";
 }
 
+#define log_flush() std::cout.flush()
+
 /// Object for handling locating ID's to references of objects
 // Default ID class, strongly reccomend against using it and creating your
 // own ttype with enums

@@ -66,8 +66,7 @@ void main()
 
     // This is current done entirely in NDC (Normalized Device Coordinates)
     vec4 camera_pos = vec4( 0.0, 0.0, 0.0, 0.0 );
-    vec3 point_light = (world_matrix * vec4( 2000.0, 50, -2000, 0.0 )).xyz;
-    // Haven't done falloff yet
+    vec3 point_light = (world_matrix * vec4( 2000.0, 200.0, -2000.0, 0.0 )).xyz;
     float lumen_constant = 8;
     float light_intensity = 4000000 * lumen_constant;
     vec3 light_color = vec3( 1.0, 1.0, 1.0 );
