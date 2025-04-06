@@ -177,6 +177,7 @@ FUNCTION renderer::frame_update()
     platform.refresh( frame_shader_globals );
 
     std::cout << std::flush;
+    // fflush( stdout );
 
     frame_shader_globals.delta_time_end =
         time_elapsed<ffloat>() - frame_shader_globals.last_end_epoch;

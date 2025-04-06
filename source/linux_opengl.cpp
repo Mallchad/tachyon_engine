@@ -105,6 +105,17 @@ FUNCTION gl_debug_callback( GLenum source,
         message << "  Type: " << type << "\n";
 }
 
+i32
+x11_error_handler( Display* server, XErrorEvent* event )
+{
+    printf( "[X11] X Error of failed request: %d \n\
+Major opcode of failed request: %d \n\
+Resource id in failed request: %x \n\
+Serial number of failed request: %d \n",
+            event->error_code, event->request_code, event->resourceid, event->serial );
+    return 0;
+}
+
 CONSTRUCTOR def::renderer_opengl()
 {
     this->initialize();
@@ -340,7 +351,6 @@ FUNCTION def::deinitialize()
 display_id
 FUNCTION def::display_context_create()
 {
-    // Setup X11 Window and OpenGL Context
     rx_display = XOpenDisplay(nullptr);
     vx_connection_number = XConnectionNumber(rx_display);
     vx_connection_string[0] = ':';
@@ -351,6 +361,7 @@ FUNCTION def::display_context_create()
         std::cout << "Could not open X display" << std::endl;
         return false;
     }
+    XSetErrorHandler( x11_error_handler );
     return true;
 }
 
@@ -404,7 +415,7 @@ FUNCTION def::window_create()
 
     // Set the window name
     XStoreName( rx_display, x_window_tmp, "Tachyon Engine" );
-    XMapWindow( rx_display, x_window_tmp);
+    XMapWindow( rx_display, x_window_tmp );
 
     // Instruct window manager to permit self-cleanup
     Atom test_atom = 0;
@@ -413,7 +424,7 @@ FUNCTION def::window_create()
     {
         vx_wm_delete_window = test_atom;
         vx_window_protocols.push_back(test_atom);
-        std::cout << "WM_DELETE_WINDOW protocol loaded \n";
+        print( "WM_DELETE_WINDOW protocol loaded" );
         XSetWMProtocols( rx_display, x_window_tmp, vx_window_protocols.data(), fuint32(vx_window_protocols.size()) );
     }
 
