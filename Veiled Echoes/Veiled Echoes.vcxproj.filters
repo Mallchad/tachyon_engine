@@ -77,6 +77,9 @@
     <ClInclude Include="Header Files\Collision.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ECS\TileComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\player.png">
@@ -91,5 +94,9 @@
     <Image Include="Assets\water.png">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SDL2.dll" />
+    <None Include="SDL2_image.dll" />
   </ItemGroup>
 </Project>

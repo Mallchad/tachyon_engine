@@ -1,5 +1,5 @@
 #pragma once
-#include "Game.h"
+#include <string>
 
 class TileMap
 {
@@ -10,15 +10,8 @@ public:
 	TileMap();
 	~TileMap();
 
-	void LoadTileMap(int arr[20][25]);
+	static void LoadTileMap(std::string path, int sizeX, int sizeY);
 	void DrawTileMap();
 
 private:
-
-	SDL_Rect srcRect, destRect; 
-	SDL_Texture* dirt;
-	SDL_Texture* grass;
-	SDL_Texture* water;
-
-	int tileMap[20][25];
 };

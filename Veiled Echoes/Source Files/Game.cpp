@@ -13,8 +13,11 @@ SDL_Renderer* Game::renderer = nullptr;
 SDL_Event Game::event;
 
 
+std::vector<ColliderComponent*> Game::colliders;
+
 auto& player(manager.addEntity());
-auto& wall(manager.addEntity());
+//auto& wall(manager.addEntity());
+
 
 Game::Game()
 {
@@ -70,14 +73,17 @@ void Game::init(const char* title, int xpos, int ypos, int width, int height, bo
 		tileMap = new TileMap();
 
 		//ECS Implementation
+
+		TileMap::LoadTileMap("Assets/p32.map", 32, 32);
+
 		player.addComponent<TransformComponent>(1);
 		player.addComponent<SpriteComponent>("Assets/player.png");
 		player.addComponent<ColliderComponent>("player");
 		player.addComponent<KeyboardController>();
 
-		wall.addComponent<TransformComponent>(200.0f, 200.0f, 32, 32, 1);
-		wall.addComponent<SpriteComponent>("Assets/dirt.png");
-		wall.addComponent<ColliderComponent>("wall");
+		//wall.addComponent<TransformComponent>(150.0f, 150.0f, 32, 32, 1);
+		//wall.addComponent<SpriteComponent>("Assets/dirt.png");
+		//wall.addComponent<ColliderComponent>("wall");
 	}
 	else { isRunning = false; }
 }
@@ -103,18 +109,16 @@ void Game::Update()
 	manager.refresh();
 	manager.update();
 
-	if (Collision::AABB(player.getComponent<ColliderComponent>().collider, 
-		wall.getComponent<ColliderComponent>().collider)) // Debug collision check
+	for (auto cc : colliders)
 	{
-		std::cout << "Wall Hit!" << std::endl;
-	} else { std::cout << "Not hitting wall!" << std::endl; }
+		Collision::AABB(player.getComponent<ColliderComponent>(), *cc); // Debug collision check
+	}
 }
 
 void Game::Render()
 {
 	SDL_RenderClear(renderer);
 	// Render shit here
-	tileMap->DrawTileMap();
 	manager.draw();
 	
 	SDL_RenderPresent(renderer);
@@ -126,4 +130,10 @@ void Game::Clean()
 	SDL_DestroyRenderer(renderer);
 	SDL_Quit();
 	std::cout << "Cleaned shit up" << std::endl;
+}
+
+void Game::AddTile(int id, int x, int y)
+{
+	auto& tile(manager.addEntity());
+	tile.addComponent<TileComponent>(x, y, 32, 32, id);
 }

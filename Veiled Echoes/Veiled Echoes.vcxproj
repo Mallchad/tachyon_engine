@@ -146,6 +146,7 @@
     <ClInclude Include="ECS\ColliderComponent.h" />
     <ClInclude Include="ECS\Components.h" />
     <ClInclude Include="ECS\ECS.h" />
+    <ClInclude Include="ECS\TileComponent.h" />
     <ClInclude Include="Header Files\Collision.h" />
     <ClInclude Include="Header Files\Game.h" />
     <ClInclude Include="Header Files\GameObject.h" />
@@ -161,6 +162,10 @@
     <Image Include="Assets\grass.png" />
     <Image Include="Assets\player.png" />
     <Image Include="Assets\water.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SDL2.dll" />
+    <None Include="SDL2_image.dll" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

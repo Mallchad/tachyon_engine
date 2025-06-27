@@ -2,7 +2,7 @@
 #include "../Header Files/TextureManager.h"
 
 GameObject::GameObject(const char* texturesheet)
-{;
+{
 	objTexture = TextureManager::LoadTexture(texturesheet);
 }
 

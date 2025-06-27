@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 
 	game = new Game();
 
-	game->init("Veiled Echoes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, false);
+	game->init("Veiled Echoes", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1920, 1080, false);
 
 	while (game->Running())
 	{
