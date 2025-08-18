@@ -44,6 +44,9 @@ target( "tachyon_engine" )
                   -- "-fuse-ld=lld",
                   "-fuse-ld=mold",
                   "-march=native",
+                  -- "-stdlib=libc++",
+                  -- "-std=c++20",
+                  -- "-fmodules-ts",
                   -- Generate a control flow graph
                   "gcc::-fdump-tree-all-graph",
 

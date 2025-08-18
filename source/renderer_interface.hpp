@@ -6,6 +6,8 @@
 #include "code_helpers.h"
 #include "error.hpp"
 #include "math.hpp"
+#include <array>
+
 
 /** To check for implimented functions place the INTERFACE_DEFINE_FUNCTION macro
  * at the bottom of the .h file. It will not work properly if it is put in a
