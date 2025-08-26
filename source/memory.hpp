@@ -1,14 +1,9 @@
 
 #pragma once
 
-#include <memory>
-
-#include "core.hpp"
-#include "error.hpp"
-
 // Removes an object from scope, essentially calling it's destructor if sensible
 template <typename t_movable>
-constexpr void
+void
 FUNCTION drop( t_movable doomed )
 {
     auto _ = std::move( doomed );
@@ -51,7 +46,7 @@ template <typename t_sizing>
 t_sizing*
 FUNCTION allocate( u64 count )
 {
-    static fbyte* stub = ptr_cast<fbyte*>( malloc( 1'073'741'824 ) );
+    static byte* stub = ptr_cast<fbyte*>( malloc( 1'073'741'824 ) );
     static u64 stub_bump = 0;
 
     u64 allocation = (sizeof(t_sizing) * count);

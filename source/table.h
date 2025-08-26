@@ -17,7 +17,7 @@ FORWARD struct lua_table;
 struct lua_value_proxy
 {
     lua_table* origin;
-    tyon::string key;
+    fstring key;
     union
     {
         void* p;         /* light userdata */
@@ -25,7 +25,7 @@ struct lua_value_proxy
         lua_Integer lint;   /* integer numbers */
         lua_Number lfloat;    /* float numbers */
         /* not used, but may avoid warnings for uninitialized value */
-        fbyte lbyte;
+        byte lbyte;
     };
     void
     COPY_ASSIGNMENT operator= (lua_Number rhs);
@@ -33,9 +33,9 @@ struct lua_value_proxy
 
 struct lua_table
 {
-    tyon::string name;
+    fstring name;
     lua_State* lua;
 
     lua_value_proxy
-    FUNCTION operator[] ( tyon::string key );
+    FUNCTION operator[] ( fstring key );
 };

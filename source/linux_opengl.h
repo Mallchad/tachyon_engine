@@ -1,26 +1,11 @@
 
 #pragma once
 
-#include "renderer_interface.hpp"
-#include "include_core.h"
-
-#include "extensions.hpp"
-
 #include <X11/Xlib.h>
 #include <GL/glx.h>
 
-#include <memory>
-#include <vector>
-#include <array>
-#include <dynarray.hpp>
-
-#include "global.h"
-#include "error.hpp"
-#include "string.hpp"
-
 using std::unique_ptr;
 using std::make_unique;
-using std::array;
 
 namespace std
 {
@@ -76,7 +61,7 @@ struct renderer_opengl final INTERFACE_RENDERER
     Display* rx_display = nullptr;
     fint32 rx_display_count = 0;
     // Multiple dispalys not yet supported
-    array<Display*, 1> rx_display_list;
+    std::array<Display*, 1> rx_display_list;
 
     /// Primary Window
     Window vx_window = 0;
@@ -129,10 +114,10 @@ struct renderer_opengl final INTERFACE_RENDERER
     static constexpr fuint32 mattribute_limit = 1000;
     static constexpr fuint32 mmesh_limit = 1000;
 
-    array<GLuint, mattribute_limit>     mattribute_names;
-    array<GLuint, mbuffer_limit>        mbuffer_names;
-    array<fmesh, mmesh_limit>           mmesh_list;
-    array<fmesh_metadata, mmesh_limit>  mmesh_metadata_list;
+    std::array<GLuint, mattribute_limit>     mattribute_names;
+    std::array<GLuint, mbuffer_limit>        mbuffer_names;
+    std::array<fmesh, mmesh_limit>           mmesh_list;
+    std::array<fmesh_metadata, mmesh_limit>  mmesh_metadata_list;
 
     fint32 mattribute_count = 0;
     fint32 mbuffer_count = 0;
@@ -161,31 +146,31 @@ struct renderer_opengl final INTERFACE_RENDERER
     }\0"s;                                                              \
 
     static constexpr fint32 shader_limit = 1000;
-    array<GLuint, shader_limit> shader_list;
-    array<char[30], shader_limit> shader_names;
+    std::array<GLuint, shader_limit> shader_list;
+    std::array<char[30], shader_limit> shader_names;
     fuint32 shader_count = 0;
 
     static constexpr fint32 shader_program_limt = 1000;
-    array<GLuint, shader_program_limt> shader_program_list;
-    array<fstring, shader_program_limt> shader_program_names;
+    std::array<GLuint, shader_program_limt> shader_program_list;
+    std::array<fstring, shader_program_limt> shader_program_names;
     fuint32 shader_program_count = 0;
 
     shader_program_id shader_program_test = 0;
     shader_id shader_fragment_test = 0;
     shader_id shader_vertex_test = 0;
 
-    ffloat dr = 1080.f/1920.f;  // 1080p clip space transformation
+    f32 dr = 1080.f/1920.f;  // 1080p clip space transformation
     unique_ptr<rgba[]> mbuffer = make_unique<rgba[]>( 1920*1080 );
 
     int progress_x = 0;
     int progress_y = 0;
 
 public:
-    ffloat4 mtriangle_color = { .2f, .9f, .2f, 1.f };
-    ffloat4 mrectangle_color = {.5f, .1f, .5f, 1.f};
-    ffloat4 mcircle_color = { .2f, .9f, .2f, 1.f };
-    ffloat4 msignfield_color = {1.f/255*98.f, 1.f/255*42.f, 1.f/255*125.f, 1.f};
-    ffloat4 gradient_approximation[10000] = {};
+    v4 mtriangle_color = { .2f, .9f, .2f, 1.f };
+    v4 mrectangle_color = {.5f, .1f, .5f, 1.f};
+    v4 mcircle_color = { .2f, .9f, .2f, 1.f };
+    v4 msignfield_color = {1.f/255*98.f, 1.f/255*42.f, 1.f/255*125.f, 1.f};
+    v4 gradient_approximation[10000] = {};
     int buffer_damage_size = 1920*1080;
 
     CONSTRUCTOR renderer_opengl();
@@ -193,90 +178,90 @@ public:
     GLXContext
     FUNCTION get_gl_context() const;
 
-    fhowdit
+    fresult
     FUNCTION initialize() INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION deinitialize() INTERFACE;
 
     display_id
     FUNCTION display_context_create() INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION display_context_destroy( display_id target ) INTERFACE;
 
     window_id
     FUNCTION window_create() INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION window_destroy( window_id target ) INTERFACE;
 
     context_id
     FUNCTION context_create() INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION context_destroy( context_id target ) INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION context_set_current( context_id target ) INTERFACE;
 
     /// \type_request The OpenGL shader type to create
     shader_id
-    FUNCTION shader_create( tyon::string name, shader_type type_request ) INTERFACE;
+    FUNCTION shader_create( fstring name, shader_type type_request ) INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION shader_load( shader_id target, fpath shader_file, bool binary = false ) INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION shader_compile( shader_id target, fstring code ) INTERFACE;
 
     shader_program_id
     FUNCTION shader_program_create( fstring name,
                                     std::initializer_list<shader_id> shaders_attach = {}) INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION shader_program_destroy( shader_program_id target );
 
-    fhowdit
+    fresult
     FUNCTION shader_program_compile( shader_program_id target ) INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION shader_program_attach( shader_program_id target, shader_id shader_attached ) INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION shader_program_detach( shader_program_id target, shader_id shader_detached ) INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION shader_program_run( shader_program_id target ) INTERFACE;
 
-    freport
+    fresult
     FUNCTION shader_globals_update( uniform& contents );
 
     /// Register a mesh object with the backend and copy buffer data
     mesh_id
     FUNCTION mesh_create( fmesh target ) INTERFACE;
 
-    fhowdit
+    fresult
     FUNCTION draw_mesh( mesh_id target,
                         ftransform target_transform,
                         shader_program_id target_shader ) INTERFACE;
 
-    freport
-    FUNCTION draw_test_triangle(ffloat4 p_color) INTERFACE;
+    fresult
+    FUNCTION draw_test_triangle(v4 p_color) INTERFACE;
 
-    fhowdit
-    FUNCTION draw_test_circle(ffloat4 p_color) INTERFACE;
+    fresult
+    FUNCTION draw_test_circle(v4 p_color) INTERFACE;
 
-    fhowdit
-    FUNCTION draw_test_rectangle(ffloat4 p_color) INTERFACE;
+    fresult
+    FUNCTION draw_test_rectangle(v4 p_color) INTERFACE;
 
-    fhowdit
-    FUNCTION draw_test_signfield(ffloat4 p_color) INTERFACE;
+    fresult
+    FUNCTION draw_test_signfield(v4 p_color) INTERFACE;
 
-    freport
+    fresult
     FUNCTION frame_start();
 
-    fhowdit
+    fresult
     FUNCTION refresh( frame_shader_global& frame ) INTERFACE;
 
     DESTRUCTOR ~renderer_opengl() INTERFACE;

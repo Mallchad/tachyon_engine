@@ -1,5 +1,5 @@
 
-#include "input.h"
+#include "include_core.h"
 
 using def = input;
 
@@ -8,8 +8,8 @@ CONSTRUCTOR def::input( renderer_backend& render_handle ) :
 {
 }
 
-freport
-FUNCTION def::frame_update( ffloat epoch_elapsed )
+fresult
+FUNCTION def::frame_update( f32 epoch_elapsed )
 {
     platform.frame_update( epoch_elapsed );
 

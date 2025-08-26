@@ -1,19 +1,12 @@
 
-#include "renderer.h"
-
-#include "include_tracy.h"
-
-#include "code_helpers.h"
-#include "file.hpp"
-#include "memory.hpp"
-#include "string.h"
+#include "include_core.h"
 
 CONSTRUCTOR renderer::renderer()
 {
     // Generic initialization
     global = globals::get_primary();
-    frame_shader_globals.last_begin_epoch = time_elapsed<ffloat>();
-    frame_shader_globals.last_end_epoch = time_elapsed<ffloat>();
+    frame_shader_globals.last_begin_epoch = time_elapsed<f32>();
+    frame_shader_globals.last_end_epoch = time_elapsed<f32>();
 
     utah_teapot_file = linux_search_file(
         "utah_teapot.stl", { std::filesystem::path( global->project_root ) / "assets" } );
@@ -25,7 +18,7 @@ CONSTRUCTOR renderer::renderer()
     test_utah_teapot.name = "test_utah_teapot";
 
     test_utah_teapot.vertex_color_buffer.resize( test_utah_teapot.vertex_count );
-    ffloat4 teapot_color =  { 0.3f, .7f, 0.3f , 1.f };
+    v4 teapot_color =  { 0.3f, .7f, 0.3f , 1.f };
     test_utah_teapot.vertex_color_buffer.assign( test_utah_teapot.vertex_count, teapot_color );
 
     test_utah_teapot.vertex_color_buffer = test_utah_teapot_colors;
@@ -81,10 +74,10 @@ FUNCTION renderer::frame_update()
     FrameMarkNamed( frame_label );
 
     // Update early data for the frame
-    frame_shader_globals.time_since_epoch = time_elapsed<ffloat>();
+    frame_shader_globals.time_since_epoch = time_elapsed<f32>();
     frame_shader_globals.delta_time_begin =
-        time_elapsed<ffloat>() - frame_shader_globals.last_begin_epoch;
-    frame_shader_globals.last_begin_epoch = time_elapsed<ffloat>();
+        time_elapsed<f32>() - frame_shader_globals.last_begin_epoch;
+    frame_shader_globals.last_begin_epoch = time_elapsed<f32>();
     frame_shader_globals.delta_time = frame_shader_globals.delta_time_begin;
 
     if (global->reload_shaders)
@@ -180,7 +173,7 @@ FUNCTION renderer::frame_update()
     // fflush( stdout );
 
     frame_shader_globals.delta_time_end =
-        time_elapsed<ffloat>() - frame_shader_globals.last_end_epoch;
-    frame_shader_globals.last_end_epoch = time_elapsed<ffloat>();
+        time_elapsed<f32>() - frame_shader_globals.last_end_epoch;
+    frame_shader_globals.last_end_epoch = time_elapsed<f32>();
     FrameMarkEnd( frame_label );
 }

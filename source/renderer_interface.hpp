@@ -1,13 +1,6 @@
 
 #pragma once
 
-#include "include_core.h"
-
-#include "code_helpers.h"
-#include "error.hpp"
-#include "math.hpp"
-#include <array>
-
 
 /** To check for implimented functions place the INTERFACE_DEFINE_FUNCTION macro
  * at the bottom of the .h file. It will not work properly if it is put in a
@@ -60,21 +53,21 @@ using program_id        = internal_id<id_type::shader_program>;
 struct frame_shader_global
 {
     // Timestamp of the very beginning of the program lifetime
-    ffloat epoch = 0;
+    f32 epoch = 0;
     // Time elapsed since program epoch
-    ffloat time_since_epoch = 0;
+    f32 time_since_epoch = 0;
     /// Time since epoch at the beginning of previous frame
-    ffloat last_begin_epoch = 0;
+    f32 last_begin_epoch = 0;
     /// Time since epoch at end of previous frame
-    ffloat last_end_epoch = 0;
+    f32 last_end_epoch = 0;
     /// Time between last frame and current frame measured at unspecified time during frame
-    ffloat delta_time = 0;
+    f32 delta_time = 0;
     /// Time between last frame and current frame measured at beginning of each frame
-    ffloat delta_time_begin = 0;
+    f32 delta_time_begin = 0;
     /// Time between last frame and current frame measured at beginning of each frame
-    ffloat delta_time_end = 0;
+    f32 delta_time_end = 0;
     // Screen aspect ratio given as vertical over horizontal
-    ffloat screen_vh_aspect_ratio = 1080.f/1920.f;
+    f32 screen_vh_aspect_ratio = 1080.f/1920.f;
     // Primary activate camera
     matrix camera;
 };
@@ -102,12 +95,12 @@ enum class e_vsync_mode
 
 /// All attributes are baked when copied to the graphiccs layer
 // be mindful of this
-struct mesh
+struct fmesh
 {
     fstring name;
-    std::vector<ffloat3> vertex_buffer;
+    std::vector<v3> vertex_buffer;
     std::vector<fuint32> vertex_index_buffer;
-    std::vector<ffloat4> vertex_color_buffer;
+    std::vector<v4> vertex_color_buffer;
     fuint32 face_count = 0;
     fuint32 vertex_count = 0;
     fuint32 index_count = 0;
@@ -116,7 +109,6 @@ struct mesh
 };
 
 using fshader_type = shader_type;
-using fmesh = mesh;
 
 #ifdef DEBUG_INTERFACE
 /// Interface for Platform Specific Renderer Layer
@@ -125,33 +117,33 @@ class i_renderer
 protected:
 
 public:
-    virtual fhowdit
+    virtual fresult
     FUNCTION initialize() PURE;
 
-    virtual fhowdit
+    virtual fresult
     FUNCTION deinitialize() PURE;
 
     virtual display_id
     FUNCTION display_context_create( ) PURE;
 
-    virtual fhowdit
+    virtual fresult
     FUNCTION display_context_destroy( display_id target ) PURE;
 
     virtual window_id
     FUNCTION window_create() PURE;
 
-    virtual fhowdit
+    virtual fresult
     FUNCTION window_destroy( window_id target ) PURE;
 
     /// Create the context for the relevant platform and return an id
     virtual context_id
     FUNCTION context_create() PURE;
 
-    virtual fhowdit
+    virtual fresult
     FUNCTION context_destroy( context_id target ) PURE;
 
     /// Set the context to the context ID
-    virtual fhowdit
+    virtual fresult
     FUNCTION context_set_current( context_id target ) PURE;
 
     /// Register a new shader object and return an ID
@@ -164,13 +156,13 @@ public:
      *
      * This is intentionally seperate to manage the performance penality of
      * loading things from disk */
-    virtual fhowdit
+    virtual fresult
     FUNCTION shader_load( shader_id target, fpath shader_file, bool binary = false ) PURE;
 
     /** Attempt to compile the provided shader to a native-loadable code.
      * This is intentionally seperate to management the performance penaltiy
      * of compiling shaders at runtime */
-    virtual fhowdit
+    virtual fresult
     FUNCTION shader_compile( shader_id target, fstring code ) PURE;
 
     /// \shaders_attach attach the listed shader ID's if presence
@@ -178,41 +170,41 @@ public:
     FUNCTION shader_program_create( fstring name,
                                     std::initializer_list<shader_id> shaders_attach ) PURE;
 
-    virtual fhowdit
+    virtual fresult
     FUNCTION shader_program_compile( shader_program_id target ) PURE;
 
-    virtual fhowdit
+    virtual fresult
     FUNCTION shader_program_attach( shader_program_id target, shader_id shader_attached ) PURE;
 
-    virtual fhowdit
+    virtual fresult
     FUNCTION shader_program_detach( shader_program_id target, shader_id shader_detached ) PURE;
 
-    virtual fhowdit
+    virtual fresult
     FUNCTION shader_program_run( shader_program_id target ) PURE;
 
     virtual mesh_id
     FUNCTION mesh_create( fmesh mesh ) PURE;
 
-    virtual fhowdit
+    virtual fresult
     FUNCTION draw_mesh( mesh_id target,
                         ftransform target_transform,
                         shader_program_id target_shader ) PURE;
 
-    virtual fhowdit
-    FUNCTION draw_test_triangle( ffloat4 p_color ) PURE;
+    virtual fresult
+    FUNCTION draw_test_triangle( v4 p_color ) PURE;
 
-    virtual fhowdit
-    FUNCTION draw_test_circle( ffloat4 p_color ) PURE;
+    virtual fresult
+    FUNCTION draw_test_circle( v4 p_color ) PURE;
 
-    virtual fhowdit
-    FUNCTION draw_test_rectangle( ffloat4 p_color ) PURE;
+    virtual fresult
+    FUNCTION draw_test_rectangle( v4 p_color ) PURE;
 
     /// Draw a a wide gradient that goes to opposing colour around a defined circle
-    virtual fhowdit
-    FUNCTION draw_test_signfield( ffloat4 p_color ) PURE;
+    virtual fresult
+    FUNCTION draw_test_signfield( v4 p_color ) PURE;
 
     /// Attempt to refresh the display and window contexts
-    virtual fhowdit
+    virtual fresult
     FUNCTION refresh() PURE;
 
     virtual
@@ -242,7 +234,7 @@ public:
 
     /// Packs data from a struct into a staging buffer ready to be copied into a uniform
     template<typename ...t_shaders>
-    constexpr freport
+    constexpr fresult
     FUNCTION pack( t_shaders... member_list )
     {
         fint32 argument_count = sizeof...(t_shaders);
@@ -256,7 +248,7 @@ public:
         }
         if ( argument_count != member_count )
         {
-            print( "Provided member count does not match previously provided pack definition" );
+            vmec_error( "Provided member count does not match previously provided pack definition" );
             return false;
         }
         member_count = argument_count;
@@ -272,8 +264,8 @@ public:
             using member_t = decltype(new_member);
             constexpr bool float_type = std::is_floating_point_v< member_t >;
             constexpr bool int_type = std::is_integral_v< member_t >;
-            constexpr bool vector_type = (std::is_same_v< member_t, ffloat3> ||
-                                          std::is_same_v< member_t, ffloat4>);
+            constexpr bool vector_type = (std::is_same_v< member_t, v3> ||
+                                          std::is_same_v< member_t, v4>);
             constexpr bool matrix_type = std::is_same_v< member_t, matrix >;
             static_assert( float_type || int_type || vector_type || matrix_type,
                            "Uniform can only contain shader types: float, int, vector, matrix" );

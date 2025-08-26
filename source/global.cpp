@@ -1,5 +1,5 @@
 
-#include "global.h"
+#include "include_core.h"
 
 using def = globals;
 

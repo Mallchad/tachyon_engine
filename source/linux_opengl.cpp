@@ -1,10 +1,5 @@
 
-#include "renderer_interface.hpp"
 #include "include_core.h"
-
-#include "linux_opengl.h"
-#include <Tracy.hpp>
-
 
 #include <GL/gl.h>
 #include <GL/glx.h>
@@ -15,14 +10,6 @@
 #include <GL/glcorearb.h>
 #include <GL/glext.h>
 #include <GL/glxext.h>
-
-#include <thread>
-#include <chrono>
-#include <cmath>
-#include <compare>
-#include <iostream>
-#include <csignal>
-#include <initializer_list>
 
 using namespace tyon;
 using namespace std::chrono_literals;
@@ -121,7 +108,7 @@ CONSTRUCTOR def::renderer_opengl()
     this->initialize();
 }
 
-fhowdit
+fresult
 FUNCTION def::initialize()
 {
     signal(SIGINT, sigterm_handler);
@@ -294,7 +281,7 @@ FUNCTION def::initialize()
         log( "OpenGL", "EXT swap control" );
     }
     else
-    { print( "No Gl swap_control extension detected, have no control over vsync" ); }
+    { vmec_error( "No Gl swap_control extension detected, have no control over vsync" ); }
     // Enable Z Buffering
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
@@ -322,7 +309,7 @@ FUNCTION def::initialize()
     return true;
 }
 
-fhowdit
+fresult
 FUNCTION def::deinitialize()
 {
     XFree( vx_buffer_config );
@@ -424,7 +411,7 @@ FUNCTION def::window_create()
     {
         vx_wm_delete_window = test_atom;
         vx_window_protocols.push_back(test_atom);
-        print( "WM_DELETE_WINDOW protocol loaded" );
+        vmec_log( "WM_DELETE_WINDOW protocol loaded" );
         XSetWMProtocols( rx_display, x_window_tmp, vx_window_protocols.data(), fuint32(vx_window_protocols.size()) );
     }
 
@@ -433,7 +420,7 @@ FUNCTION def::window_create()
     return window_new;
 }
 
-fhowdit def::window_destroy( window_id target )
+fresult def::window_destroy( window_id target )
 {
     Window target_window = vx_window_list[ target.cast() ];
     XUnmapWindow( rx_display, target_window );
@@ -441,7 +428,7 @@ fhowdit def::window_destroy( window_id target )
     return true;
 }
 
-fhowdit
+fresult
 FUNCTION def::display_context_destroy( display_id target )
 {
     (void)(target);
@@ -528,7 +515,7 @@ FUNCTION def::context_create()
     return context;
 }
 
-fhowdit
+fresult
 FUNCTION def::context_destroy(context_id target)
 {
     GLXContext target_context = vglx_context_list[ target.cast() ];
@@ -536,7 +523,7 @@ FUNCTION def::context_destroy(context_id target)
     return true;
 }
 
-fhowdit
+fresult
 FUNCTION def::context_set_current(context_id target)
 {
     GLXContext target_context = vglx_context_list[ target.cast() ];
@@ -545,7 +532,7 @@ FUNCTION def::context_set_current(context_id target)
 }
 
 shader_id
-FUNCTION def::shader_create( string name, shader_type request_type )
+FUNCTION def::shader_create( fstring name, shader_type request_type )
 {
     using namespace ld;
     shader_id out_id = -1;
@@ -561,27 +548,27 @@ FUNCTION def::shader_create( string name, shader_type request_type )
     {
         case shader_type::vertex :
             shader_target = glCreateShader( GL_VERTEX_SHADER );
-            shader_debug_name = "vs_"s + name.data;
+            shader_debug_name = "vs_"s + name.data();
             break;
         case shader_type::fragment :
             shader_target = glCreateShader( GL_FRAGMENT_SHADER );
-            shader_debug_name = "fs_"s + name.data;
+            shader_debug_name = "fs_"s + name.data();
             break;
         case shader_type::geometry :
             shader_target = glCreateShader( GL_GEOMETRY_SHADER );
-            shader_debug_name = "gs_"s + name.data;
+            shader_debug_name = "gs_"s + name.data();
             break;
         case shader_type::compute :
             shader_target = glCreateShader( GL_COMPUTE_SHADER );
-            shader_debug_name = "cs_"s + name.data;
+            shader_debug_name = "cs_"s + name.data();
             break;
         case shader_type::tesselation_control :
             shader_target = glCreateShader( GL_TESS_CONTROL_SHADER );
-            shader_debug_name = "tcs_"s + name.data;
+            shader_debug_name = "tcs_"s + name.data();
             break;
         case shader_type::tesselation_eval :
             shader_target = glCreateShader( GL_TESS_EVALUATION_SHADER );
-            shader_debug_name = "tes_"s + name.data;
+            shader_debug_name = "tes_"s + name.data();
             break;
 
         default:
@@ -633,7 +620,7 @@ FUNCTION def::shader_create( string name, shader_type request_type )
     return out_id;
 }
 
-fhowdit
+fresult
 FUNCTION def::shader_program_destroy( shader_program_id target )
 {
     if (target <= -1)
@@ -647,7 +634,7 @@ FUNCTION def::shader_program_destroy( shader_program_id target )
     return true;
 }
 
-fhowdit
+fresult
 FUNCTION def::shader_load( shader_id target, fpath shader_file, bool binary )
 {
     unimplimented( "To be completed in the near future" );
@@ -655,7 +642,7 @@ FUNCTION def::shader_load( shader_id target, fpath shader_file, bool binary )
     return false;
 }
 
-fhowdit
+fresult
 FUNCTION def::shader_compile( shader_id target, fstring code )
 {
     using namespace ld;
@@ -714,7 +701,7 @@ FUNCTION def::shader_program_create( fstring name, initializer_list<shader_id> s
     return out_id;
 }
 
-fhowdit
+fresult
 FUNCTION def::shader_program_compile( shader_program_id target )
 {
     using namespace ld;
@@ -742,7 +729,7 @@ FUNCTION def::shader_program_compile( shader_program_id target )
     return out_link_success;
 }
 
-fhowdit
+fresult
 FUNCTION def::shader_program_attach( shader_program_id target, shader_id shader_attached )
 {
     using namespace ld;
@@ -754,7 +741,7 @@ FUNCTION def::shader_program_attach( shader_program_id target, shader_id shader_
     return true;
 }
 
-fhowdit
+fresult
 FUNCTION def::shader_program_detach( shader_program_id target, shader_id shader_detatch )
 {
     using namespace ld;
@@ -765,7 +752,7 @@ FUNCTION def::shader_program_detach( shader_program_id target, shader_id shader_
     return true;
 }
 
-freport
+fresult
 FUNCTION def::shader_program_run( shader_program_id target )
 {
     using namespace ld;
@@ -781,7 +768,7 @@ FUNCTION def::shader_program_run( shader_program_id target )
     return true;
 }
 
-freport
+fresult
 FUNCTION def::shader_globals_update( uniform& contents )
 {
     // Update frame global uniforms
@@ -836,7 +823,7 @@ FUNCTION def::mesh_create( fmesh target )
     glBindVertexArray( attributes );
     // Vertecies and normals
     glBindBuffer( GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData( GL_ARRAY_BUFFER, target.vertex_buffer.size() * sizeof(ffloat3),
+    glBufferData( GL_ARRAY_BUFFER, target.vertex_buffer.size() * sizeof(v3),
                   target.vertex_buffer.data(), GL_STATIC_DRAW );
 
     // Accepts buffer with interleaved, normal, then vertex, repeated
@@ -887,7 +874,7 @@ FUNCTION def::mesh_create( fmesh target )
     return metadata.reference_id;
 }
 
-fhowdit
+fresult
 FUNCTION def::draw_mesh( mesh_id target, ftransform target_transform, shader_program_id target_shader )
 {
     using namespace ld;
@@ -922,8 +909,8 @@ GLXContext def::get_gl_context() const
     return vglx_context;
 }
 
-freport
-FUNCTION def::draw_test_triangle(ffloat4 color)
+fresult
+FUNCTION def::draw_test_triangle(v4 color)
 {
     ftransform stub_transform = {};
 
@@ -931,7 +918,7 @@ FUNCTION def::draw_test_triangle(ffloat4 color)
 }
 
 bool
-FUNCTION def::draw_test_circle(ffloat4 p_color)
+FUNCTION def::draw_test_circle(v4 p_color)
 {
     // (center anchored)
     GLfloat circle_x = 1920.f / 2.f;
@@ -966,7 +953,7 @@ FUNCTION def::draw_test_circle(ffloat4 p_color)
 }
 
 bool
-FUNCTION def::draw_test_rectangle(ffloat4 p_color)
+FUNCTION def::draw_test_rectangle(v4 p_color)
 {
     GLfloat square_width = 200;
     GLfloat square_height = 200;
@@ -987,7 +974,7 @@ FUNCTION def::draw_test_rectangle(ffloat4 p_color)
 }
 
 bool
-FUNCTION def::draw_test_signfield(ffloat4 p_color)
+FUNCTION def::draw_test_signfield(v4 p_color)
 {
     ZoneScopedN( "signfield" );
     // (center anchored)
@@ -1025,7 +1012,7 @@ FUNCTION def::draw_test_signfield(ffloat4 p_color)
     return true;
 }
 
-freport
+fresult
 FUNCTION def::frame_start()
 {
     // Rendering

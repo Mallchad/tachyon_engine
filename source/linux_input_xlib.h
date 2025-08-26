@@ -1,10 +1,5 @@
 #pragma once
 
-#include "linux_opengl.h"
-
-#include "code_helpers.h"
-#include "error.hpp"
-
 class input_xlib final
 {
     globals* global = nullptr;
@@ -21,9 +16,9 @@ public:
 
     /// Needs to get the XServer handle from the renderer because it combines
     /// display and input contexts
-    freport
+    fresult
     FUNCTION initialize( renderer_opengl& display_handle );
 
-    freport
-    FUNCTION frame_update( ffloat epoch_elapsed );
+    fresult
+    FUNCTION frame_update( f32 epoch_elapsed );
 };

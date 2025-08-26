@@ -15,9 +15,5 @@ extern "C"
     #include "lauxlib.h"
 };
 
-#include "global.h"
-#include "renderer.h"
-#include "input.h"
-#include "table.h"
-
 #include "include_tracy.h"
+#include "include_core.h"

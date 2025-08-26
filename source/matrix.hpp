@@ -1,8 +1,6 @@
 
 #pragma once
 
-#include "code_helpers.h"
-
 FORWARD struct v3f;
 FORWARD template <typename T> struct vector3_t;
 FORWARD template <typename T> struct vector4_t;

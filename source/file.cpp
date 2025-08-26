@@ -1,5 +1,5 @@
 
-#include "file.hpp"
+#include "include_core.h"
 
 fpath
 FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths )
@@ -39,7 +39,7 @@ FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths )
 }
 
 byte_buffer
-FUNCTION file_load_binary( const fpath target )
+FUNCTION compat_file_load_binary( const fpath target )
 {
     using namespace std::filesystem;
     byte_buffer out;
@@ -72,10 +72,7 @@ FUNCTION file_load_binary( const fpath target )
 
     return out;
 }
-byte_buffer
-FUNCTION intern_file( fpath target ) { return file_load_binary( target ); }
-
-fhowdit
+fresult
 FUNCTION test_little_endian()
 {
     fuint16 full_bits = 1;
@@ -105,31 +102,31 @@ FUNCTION read_stl_file( fpath target )
             50 Byte Stride from one Triangle to Next
     */
 
-    buffer file;
+    byte_buffer file;
     fmesh out;
-    std::vector<ffloat3>& vertex_buffer = out.vertex_buffer;
+    std::vector<v3>& vertex_buffer = out.vertex_buffer;
     fuint32 triangle_count;
     fbyte* triangle_count_ptr = nullptr;
     constexpr fint32 triangle_count_byte = 80;
     constexpr fint32 first_normal_byte = 84;
     constexpr fint32 first_vertex_byte = 96;
-    constexpr fint32 triangle_stride = (sizeof(ffloat) * 12) + sizeof(fuint16);
+    constexpr fint32 triangle_stride = (sizeof(f32) * 12) + sizeof(fuint16);
     constexpr fint32 triangle_stride_normal = 50;
 
-    ffloat3 normal;
-    ffloat3 vertex_1;
-    ffloat3 vertex_2;
-    ffloat3 vertex_3;
-    ffloat3 vertex_1c;
-    ffloat3 vertex_2c;
-    ffloat3 vertex_3c;
-    ffloat3 normal_calculated;
-    ffloat winding_alignment = 0.0f;
+    v3 normal;
+    v3 vertex_1;
+    v3 vertex_2;
+    v3 vertex_3;
+    v3 vertex_1c;
+    v3 vertex_2c;
+    v3 vertex_3c;
+    v3 normal_calculated;
+    f32 winding_alignment = 0.0f;
     bool flipped_winding = false;
     bool flipped_message_sent = false;
 
 
-    file = file_load_binary( target );
+    file = compat_file_load_binary( target );
     bool file_read_fail = file.size() <= 0;
     if ( file_read_fail ) { return out; }
 
@@ -144,7 +141,7 @@ FUNCTION read_stl_file( fpath target )
     out.face_count = triangle_count;
     out.vertex_count = triangle_count * 3; // Sized for 3 vertecies per face, 3 normals per face
     vertex_buffer.resize( (triangle_count * 6) );
-    first_triangle_write = (triangle_count * sizeof(ffloat3)) +
+    first_triangle_write = (triangle_count * sizeof(v3)) +
         reinterpret_cast<fbyte*>( vertex_buffer.data() );
 
     fbyte* x_readhead = nullptr;
@@ -159,9 +156,9 @@ FUNCTION read_stl_file( fpath target )
             x_writehead = (i_triangle * 72) +
             ptr_cast<fbyte*>( vertex_buffer.data() );
             // Give every vertex a copy of the same normal
-            std::memcpy(  0+ x_writehead, x_readhead, sizeof(ffloat3) );
-            std::memcpy( 24+ x_writehead, x_readhead, sizeof(ffloat3) );
-            std::memcpy( 48+ x_writehead , x_readhead, sizeof(ffloat3) );
+            std::memcpy(  0+ x_writehead, x_readhead, sizeof(v3) );
+            std::memcpy( 24+ x_writehead, x_readhead, sizeof(v3) );
+            std::memcpy( 48+ x_writehead , x_readhead, sizeof(v3) );
 
             // Copy Vertex
             std::memcpy( 12+ x_writehead, 12+ x_readhead, 12 );
@@ -212,7 +209,7 @@ FUNCTION read_stl_file( fpath target )
     return out;
 }
 
-std::vector<ffloat3>
+std::vector<v3>
 FUNCTION read_stl_file( fpath target, stl_format format )
 {
     /** STL Format
@@ -229,22 +226,22 @@ FUNCTION read_stl_file( fpath target, stl_format format )
             50 Byte Stride from one Triangle to Next
     */
 
-    assert( (format != stl_format::fullspec) && "[File] Fullspec STL format is not impliemnted" );
-    assert( (format != stl_format::vertex_and_normal) &&
+    ERROR_GUARD( (format != stl_format::fullspec), "[File] Fullspec STL format is not impliemnted" );
+    ERROR_GUARD( (format != stl_format::vertex_and_normal),
         "[File] Wrong overload for vertex_and_normal_" );
 
     byte_buffer file;
-    std::vector<ffloat3> out;
+    std::vector<v3> out;
     fuint32 triangle_count;
     fbyte* triangle_count_ptr = nullptr;
     constexpr fint32 triangle_count_byte = 80;
     constexpr fint32 first_normal_byte = 84;
     constexpr fint32 first_vertex_byte = 96;
-    constexpr fint32 triangle_stride = (sizeof(ffloat) * 12) + sizeof(fuint16);
+    constexpr fint32 triangle_stride = (sizeof(f32) * 12) + sizeof(fuint16);
     constexpr fint32 triangle_stride_normal = 50;
 
 
-    file = file_load_binary( target );
+    file = compat_file_load_binary( target );
     bool file_read_fail = file.size() <= 0;
     if ( file_read_fail ) { return out; }
 
@@ -254,7 +251,7 @@ FUNCTION read_stl_file( fpath target, stl_format format )
 
         out.resize( triangle_count * 3 );
 
-        ffloat3* x_memory = nullptr;
+        v3* x_memory = nullptr;
         for (fuint32 i_triangle=0; i_triangle < triangle_count; ++i_triangle)
         {
             if ( (2 + i_triangle * 3) > out.size() )
@@ -264,7 +261,7 @@ FUNCTION read_stl_file( fpath target, stl_format format )
                 return out;
             }
             // 96 is an offset to the first vertex data
-            x_memory = reinterpret_cast<ffloat3*>( first_vertex_byte + file.data() +
+            x_memory = reinterpret_cast<v3*>( first_vertex_byte + file.data() +
                                                    (i_triangle * triangle_stride) );
             out[ 0+ i_triangle *3 ] = *(0+ x_memory);
             out[ 1+ i_triangle *3 ] = *(1+ x_memory);
@@ -287,7 +284,7 @@ FUNCTION linux_load_text_file( fpath target, std::vector<fpath> search_paths )
     target_path = linux_search_file( target, search_paths );
     if (target_path.empty()) return "";
 
-    loaded_file = file_load_binary( target_path );
+    loaded_file = compat_file_load_binary( target_path );
     out.resize( loaded_file.size() );
     std::memcpy( out.data(), loaded_file.data(), loaded_file.size() );
 

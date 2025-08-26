@@ -15,18 +15,24 @@ target( "tachyon_engine" )
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
-    add_files( "source/*.cpp"
+    add_files( "source/*.cpp",
+               "external/tachyon_lib/source/*.cpp"
     )
     add_includedirs( "source",
                      "external/spdlog/include/",
                      "external/tracy/public/tracy/",
                      "external/tracy/",
-                     "external/lua" )
+                     "external/lua",
+                     "external/fmt/include",
+                     "external/tachyon_lib/source" )
 
     -- asan must be linked first
     -- add_links( "asan" )
     -- add_links( "ubsan" )
-    add_links( "dl", "X11", "GL" )
+
+    -- Linux --
+    add_links( "dl", "X11", "GL", "uuid" )
+
     add_defines( 'TRIANGULATE_PROJECT_ROOT="$(projectdir)"' )
     set_policy("check.auto_ignore_flags", false)
 
@@ -44,11 +50,13 @@ target( "tachyon_engine" )
                   -- "-fuse-ld=lld",
                   "-fuse-ld=mold",
                   "-march=native",
-                  -- "-stdlib=libc++",
+                  "-stdlib=libstdc++",
                   -- "-std=c++20",
                   -- "-fmodules-ts",
                   -- Generate a control flow graph
                   "gcc::-fdump-tree-all-graph",
+                  -- Preprocessor Only Output (have fun finding the source files in xmake)
+                  -- "-E",
 
                   -- Enable Tracy Profiler
                   "-DTRACY_ENABLE=1",
@@ -85,6 +93,8 @@ target( "tachyon_engine" )
                   "clang::-Wno-unused-variable",
                   "clang::-Wno-unused-private-field",
                   "clang::-Wno-abstract-final-class",
+                  -- Breaks fmtlib
+                  "clang::-Wno-invalid-constexpr",
                   -- Only runs on extra semicolons that do nothing, pointless.
                   "-Wno-extra-semi-stmt",
                   -- "-fsanitize=address",
@@ -128,7 +138,8 @@ target( "tachyon_libs" )
 
     add_includedirs( "external/tracy/public/tracy/",
                      "external/spdlog/include/",
-                     "source" )
+                     "source",
+                     "external/tachyon_lib/source" )
 
     -- asan must be linked first
     -- add_links( "asan" )

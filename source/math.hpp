@@ -1,14 +1,6 @@
 
 #pragma once
 
-#include "code_helpers.h"
-
-#include <cstdint>
-#include <initializer_list>
-#include <memory.hpp>
-
-#include <cmath>
-#include "matrix.hpp"
 
 // Gurantee vectors are packed tightly because of OpenGL functions
 #pragma pack(push, 1)
@@ -91,7 +83,7 @@ struct v3f final
     v3f
     FUNCTION normalize() const
     {
-        ffloat length = sqrtf( (x * x) + (y * y) + (z * z) );
+        f32 length = sqrtf( (x * x) + (y * y) + (z * z) );
         return *this/length;
     }
 
@@ -184,7 +176,7 @@ struct vector3_t final
     t_vector
     FUNCTION normalize() const
     {
-        ffloat length = sqrtf( (x * x) + (y * y) + (z * z) );
+        f32 length = sqrtf( (x * x) + (y * y) + (z * z) );
         return *this/length;
     }
 
@@ -281,10 +273,10 @@ struct transform
 
 struct stl_facet
 {
-    vector3_t<ffloat> normal;
-    vector3_t<ffloat> v1;
-    vector3_t<ffloat> v2;
-    vector3_t<ffloat> v3;
+    vector3_t<f32> normal;
+    vector3_t<f32> v1;
+    vector3_t<f32> v2;
+    vector3_t<f32> v3;
     fuint16 attribute_width = 0; // Never use, not common STL format
 };
 
@@ -314,18 +306,18 @@ struct stl_triangle
 
 
 
-using ffloat3 = vector3_t<ffloat>;
-using fint3   = vector3_t<fint32>;
-using flong3  = vector3_t<fint64>;
+using v3_f32 = vector3_t<f32>;
+using v3_i32 = vector3_t<fint32>;
+using v3_i64 = vector3_t<fint64>;
 
-using ffloat4 = vector4_t<ffloat>;
-using fint4   = vector4_t<fint32>;
-using flong4  = vector4_t<fint64>;
+using v4     = vector4_t<f32>;
+using v4_i32 = vector4_t<fint32>;
+using f4_i64 = vector4_t<fint64>;
 
 using v3 = v3f;
 using v4 = vector4_t<f32>;
 
-using rgba = v4;
+using rgba  = v4;
 using srgba = v4;
 
 using ftransform = transform;

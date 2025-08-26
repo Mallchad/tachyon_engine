@@ -42,7 +42,7 @@ int main()
         {
             auto epoch_elapsed = std::chrono::steady_clock::now() - global.program_epoch;
             float epoch_elapsed_float = std::chrono::duration_cast<
-                std::chrono::duration<ffloat>>( epoch_elapsed ).count();
+                std::chrono::duration<f32>>( epoch_elapsed ).count();
 
             main_renderer.frame_update( );
             main_input.frame_update( epoch_elapsed_float );

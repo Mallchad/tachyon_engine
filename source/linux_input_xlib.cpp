@@ -1,9 +1,6 @@
 
-#include "linux_input_xlib.h"
-
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
-#include <iostream>
 #include <include_core.h>
 
 using impl = input_xlib;
@@ -13,7 +10,7 @@ CONSTRUCTOR impl::input_xlib( renderer_opengl& render_handle )
 {
     this->initialize( render_handle );
 }
-freport
+fresult
 FUNCTION impl::initialize( renderer_opengl& render_handle )
 {
     global = globals::get_primary();
@@ -35,8 +32,8 @@ FUNCTION impl::initialize( renderer_opengl& render_handle )
     return true;
 }
 
-freport
-FUNCTION impl::frame_update( ffloat epoch_elapsed )
+fresult
+FUNCTION impl::frame_update( f32 epoch_elapsed )
 {
     ++m_tmp_frame_count;
     // XEvent processing

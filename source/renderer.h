@@ -1,9 +1,6 @@
 
 #pragma once
 
-#include "linux_opengl.h"
-#include "math.hpp"
-#include "global.h"
 using renderer_backend = renderer_opengl;
 
 class renderer final
@@ -41,8 +38,8 @@ class renderer final
     mesh_id test_utah_teapot_id = -1;
     fmesh test_utah_teapot;
     fpath utah_teapot_file;
-    std::vector<ffloat3> test_utah_teapot_vertecies;
-    std::vector<ffloat4> test_utah_teapot_colors;
+    std::vector<v3> test_utah_teapot_vertecies;
+    std::vector<v4> test_utah_teapot_colors;
 
     shader_program_id test_shader = -1;
     shader_id test_shader_frag = -1;

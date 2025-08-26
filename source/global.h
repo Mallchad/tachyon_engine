@@ -1,10 +1,6 @@
 
 #pragma once
 
-#include <vector>
-#include <filesystem>
-#include <chrono>
-
 extern "C"
 {
     #include "lua.h"

@@ -1,5 +1,5 @@
 
-#include "time.hpp"
+#include "include_core.h"
 
 monotonic_time
 FUNCTION get_time()

@@ -1,5 +1,5 @@
 
-#include "include_core.h"
+#pragma once
 
 enum class extension_family
 {

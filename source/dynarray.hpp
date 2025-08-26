@@ -1,9 +1,6 @@
 
 #pragma once
 
-#include <core.hpp>
-#include <memory.hpp>
-
 namespace tyon
 {
     template <typename T>

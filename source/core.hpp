@@ -1,29 +1,15 @@
 #pragma once
 
-// Passthrough Includes
-#include "code_helpers.h"
-#include "time.hpp"
-
-#include <compare>
-#include <string>
-#include <string_view>
-#include <vector>
-#include <filesystem>
-#include <iostream>
-#include <iomanip>
-#include <type_traits>
-
-#include <csignal>
-
 // Project Specific Includes
 // Silence warnings in external projects
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 
+// Replaced for custom logger
 // For faster compile times
-#define SPDLOG_COMPILED_LIB 1
-#include <spdlog/spdlog.h>
-#include <spdlog/fwd.h>
+// #define SPDLOG_COMPILED_LIB 1
+// #include <spdlog/spdlog.h>
+// #include <spdlog/fwd.h>
 using namespace std::string_literals;
 
 #pragma clang diagnostic pop
@@ -42,19 +28,6 @@ enum class id_type
     shader,
     shader_program
 };
-
-#ifndef CLING_INTERPRETER_H
-    #define print( ... ) log(  __FILE__, __VA_ARGS__ )
-#endif
-template<typename... t_streamable>
-void
-FUNCTION log( const char* category, t_streamable... messages )
-{
-    std::cout << "[" << category << "]" << std::setfill(' ') << std::setw(6) << " ";
-    ((std::cout << messages  << " "), ...) << "\n";
-}
-
-#define log_flush() std::cout.flush()
 
 /// Object for handling locating ID's to references of objects
 // Default ID class, strongly reccomend against using it and creating your
@@ -163,9 +136,7 @@ using fpath = std::filesystem::path;
 /// effect of introducing lots of reinterpret_casts everywhere which is really
 /// nasty and risky. An alternative would be a thin templated wrapper type with
 /// an explicit cast which auto-disallows arithmatic operations
-using byte_buffer = std::vector<fbyte>;
-// An untyped byte buffer
-using buffer = std::vector<fbyte>;
+using byte_buffer = std::vector<byte>;
 
 /// Object for handling locating ID's to references of objects
 // Default ID class is untyped, strongly reccomend against using it and creating your
