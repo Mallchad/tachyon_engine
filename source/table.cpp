@@ -1,7 +1,5 @@
 
 #include "include_core.h"
-#include "table.h"
-#include "memory.hpp"
 
 void
 COPY_ASSIGNMENT lua_value_proxy::operator= (lua_Number rhs)

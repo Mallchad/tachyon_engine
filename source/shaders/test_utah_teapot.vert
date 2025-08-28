@@ -153,9 +153,10 @@ void main()
     // cam *= create_rotation( vec4(0., 0., 1., 0.) );
 
     rot.x = 0.0;
-    rot.y = (0.0 + (time_since_epoch * rotation_speed)) * tau;
-    // rot.y = 0.0;
-    rot.z = 0.0;
+    rot.z = -0.5;
+    // rot.y = (0.0 + (time_since_epoch * rotation_speed)) * tau;
+    // rot.y = 0.0;    // rot.z = (0.0 + (time_since_epoch * rotation_speed)) * tau;
+    // rot.z = 0.0;
     rot.w = 0.0;
 
     vec4 vertex = vec4( vert.x, vert.y, vert.z, 1.0 );
@@ -187,4 +188,5 @@ void main()
 
     // Debug Coloring
     // v_color = vec4( 1.0 );
+    // gl_Position = vec4( vert/100, 1.0 );
 }

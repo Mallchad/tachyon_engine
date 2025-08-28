@@ -10,6 +10,7 @@ CONSTRUCTOR renderer::renderer()
 
     utah_teapot_file = linux_search_file(
         "utah_teapot.stl", { std::filesystem::path( global->project_root ) / "assets" } );
+        // "articulated_whale_shark.stl", { std::filesystem::path( global->project_root ) / "assets" } );
     test_utah_teapot = read_stl_file( utah_teapot_file );
 
     bool file_read_fail = test_utah_teapot.vertex_count <= 0;
@@ -164,7 +165,7 @@ FUNCTION renderer::frame_update()
     platform.frame_start();
     ftransform stub_transform = {};
     platform.draw_mesh( test_utah_teapot_id, stub_transform, test_shader );
-    // platform.draw_mesh( mtest_triangle_mesh, stub_transform, shader_program_triangle );
+    platform.draw_mesh( mtest_triangle_mesh, stub_transform, shader_program_triangle );
     // platform.draw_test_signfield( platform.msignfield_color );
 
     platform.refresh( frame_shader_globals );

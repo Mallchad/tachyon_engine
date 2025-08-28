@@ -264,7 +264,7 @@ public:
             using member_t = decltype(new_member);
             constexpr bool float_type = std::is_floating_point_v< member_t >;
             constexpr bool int_type = std::is_integral_v< member_t >;
-            constexpr bool vector_type = (std::is_same_v< member_t, v3> ||
+            constexpr bool vector_type = (std::is_same_v< member_t, v3 > ||
                                           std::is_same_v< member_t, v4>);
             constexpr bool matrix_type = std::is_same_v< member_t, matrix >;
             static_assert( float_type || int_type || vector_type || matrix_type,
@@ -273,7 +273,7 @@ public:
             // Each data type has a specific alignment associated with it
             constexpr fint32 alignment_size = ((float_type || int_type) ? 4 :
                                                vector_type || matrix_type ? 16 :
-                                               -1);
+                                               -1000);
             const i32 next_boundry = (alignment_size - (out_size % alignment_size));
             fint32 alignment_location = (out_size % alignment_size) ?
                 (out_size + next_boundry) :
@@ -283,6 +283,9 @@ public:
             const fint32 offset = out_format[ i_member ];
             out_size = alignment_location + member_size;
             out_copy_buffer.resize( out_size );
+
+            // vmec_variable( alignment_location );
+            // vmec_variable( out_size );
 
             std::memcpy( offset+ out_copy_buffer.data(), &new_member, member_size );
             ++i_member;

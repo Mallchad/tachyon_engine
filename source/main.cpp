@@ -10,6 +10,8 @@ int main()
     globals::primary_database = &global;
     global.kill_program = false;
 
+    vmec_log( "Running executable: ", file_self_filename() );
+
     #ifdef TRACY_ENABLE
     std::cout << "Tracy Client has been enabled for profiling \n";
     #endif

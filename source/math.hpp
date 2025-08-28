@@ -32,7 +32,8 @@ struct v3f final
     static v3f
     FUNCTION left();
 
-    CONSTRUCTOR v3f() = default;
+    CONSTRUCTOR v3f()
+    { x = 0; y = 0; z = 0; }
     explicit
     CONSTRUCTOR v3f(f32 all) :
         x(all), y(all), z(all) {}

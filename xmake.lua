@@ -18,6 +18,7 @@ target( "tachyon_engine" )
     add_files( "source/*.cpp",
                "external/tachyon_lib/source/*.cpp"
     )
+
     add_includedirs( "source",
                      "external/spdlog/include/",
                      "external/tracy/public/tracy/",
@@ -25,6 +26,11 @@ target( "tachyon_engine" )
                      "external/lua",
                      "external/fmt/include",
                      "external/tachyon_lib/source" )
+
+-- Speed up compilation with pre-compiled headers
+    set_pcxxheader( "include_core.h" )
+    set_pcxxheader( "include_pch.h" )
+    set_pcxxheader( "external/tachyon_lib/source/include_tachyon_lib_core.h" )
 
     -- asan must be linked first
     -- add_links( "asan" )

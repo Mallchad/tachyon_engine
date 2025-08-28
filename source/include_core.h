@@ -3,22 +3,18 @@
 
 // -- stdlib / stl --
 #include <array>
-#include <vector>
-#include <filesystem>
+#include <compare>
+#include <csignal>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <iomanip>
+#include <iostream>
 #include <mutex>
-
-#include <compare>
 #include <string>
 #include <string_view>
-#include <vector>
-#include <filesystem>
-#include <iostream>
-#include <iomanip>
 #include <type_traits>
-
-#include <csignal>
+#include <vector>
 
 /** --Vendored Dependencies-- */
 #include "include_tracy.h"
@@ -29,6 +25,7 @@ struct fmesh;
 #include "core.hpp"
 
 #include "include_tachyon_lib_core.h"
+
 using namespace vmec;
 #include "global.h"
 #include "table.h"

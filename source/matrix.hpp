@@ -34,7 +34,25 @@ struct matrix
 
     CONSTRUCTOR matrix()
         : data() {}
-    COPY_CONSTRUCTOR matrix(matrix& rhs) {}
+    COPY_CONSTRUCTOR matrix(matrix& rhs)
+    {
+        this->d[0] = rhs.d[0];
+        this->d[1] = rhs.d[1];
+        this->d[2] = rhs.d[2];
+        this->d[3] = rhs.d[3];
+        this->d[4] = rhs.d[4];
+        this->d[5] = rhs.d[5];
+        this->d[6] = rhs.d[6];
+        this->d[7] = rhs.d[7];
+        this->d[8] = rhs.d[8];
+        this->d[9] = rhs.d[9];
+        this->d[10] = rhs.d[10];
+        this->d[11] = rhs.d[11];
+        this->d[12] = rhs.d[12];
+        this->d[13] = rhs.d[13];
+        this->d[14] = rhs.d[14];
+        this->d[15] = rhs.d[15];
+    }
     CONSTRUCTOR matrix( std::initializer_list<f32> list );
 
     f32

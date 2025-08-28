@@ -31,4 +31,7 @@ void main()
                        vert.z,
                        1.f) * 1.0;
     vertex_color = col;
+
+    // Debug
+    // gl_Position = vec4(0.0);
 }
