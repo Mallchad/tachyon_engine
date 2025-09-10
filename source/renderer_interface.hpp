@@ -248,7 +248,7 @@ public:
         }
         if ( argument_count != member_count )
         {
-            vmec_error( "Provided member count does not match previously provided pack definition" );
+            tyon_error( "Provided member count does not match previously provided pack definition" );
             return false;
         }
         member_count = argument_count;

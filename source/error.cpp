@@ -7,13 +7,13 @@
 void
 FUNCTION assertion( bool expression, cstring message )
 {
-    vmec_error( message );
+    tyon_error( message );
     std::raise( SIGABRT );
 }
 
 void
 FUNCTION unimplimented( cstring reason )
 {
-    vmec_error( "This code path is unimplimented, reasoning is as follows " );
+    tyon_error( "This code path is unimplimented, reasoning is as follows " );
     assertion( true, reason );
 }

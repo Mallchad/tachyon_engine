@@ -72,18 +72,6 @@ FUNCTION compat_file_load_binary( const fpath target )
 
     return out;
 }
-fresult
-FUNCTION test_little_endian()
-{
-    fuint16 full_bits = 1;
-    fuint8 first_bits = *reinterpret_cast<fuint8*>( &full_bits );
-    bool little_endian = static_cast<bool>( first_bits );
-
-    std::cout << "[File] " <<
-    (little_endian ? "Platform tested for endianess, came back as little endian" :
-     "Platform tested for endianess, came back as big endian") << "\n";
-    return little_endian;
-}
 
 fmesh
 FUNCTION read_stl_file( fpath target )

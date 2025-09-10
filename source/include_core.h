@@ -25,8 +25,8 @@ struct fmesh;
 #include "core.hpp"
 
 #include "include_tachyon_lib_core.h"
+using namespace tyon;
 
-using namespace vmec;
 #include "global.h"
 #include "table.h"
 #include "memory.hpp"
@@ -39,6 +39,7 @@ using namespace vmec;
 #include "file.hpp"
 
 #include "renderer_interface.hpp"
+#include "platform_linux_x11.h"
 #include "linux_opengl.h"
 #include "linux_input_xlib.h"
 #include "renderer.h"

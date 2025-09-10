@@ -281,7 +281,7 @@ FUNCTION def::initialize()
         log( "OpenGL", "EXT swap control" );
     }
     else
-    { vmec_error( "No Gl swap_control extension detected, have no control over vsync" ); }
+    { tyon_error( "No Gl swap_control extension detected, have no control over vsync" ); }
     // Enable Z Buffering
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
@@ -411,7 +411,7 @@ FUNCTION def::window_create()
     {
         vx_wm_delete_window = test_atom;
         vx_window_protocols.push_back(test_atom);
-        vmec_log( "WM_DELETE_WINDOW protocol loaded" );
+        tyon_log( "WM_DELETE_WINDOW protocol loaded" );
         XSetWMProtocols( rx_display, x_window_tmp, vx_window_protocols.data(), fuint32(vx_window_protocols.size()) );
     }
 

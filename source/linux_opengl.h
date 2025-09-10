@@ -164,7 +164,6 @@ struct renderer_opengl final INTERFACE_RENDERER
 
     int progress_x = 0;
     int progress_y = 0;
-
 public:
     v4 mtriangle_color = { .2f, .9f, .2f, 1.f };
     v4 mrectangle_color = {.5f, .1f, .5f, 1.f};

@@ -19,11 +19,6 @@ FUNCTION compat_file_load_binary( const fpath target );
 byte_buffer
 FUNCTION intern_file( fpath target );
 
-/// Tests the memory layout to see if it is little endian or big endian
-// Returns true if little endian
-fresult
-FUNCTION test_little_endian();
-
 /// vertex_only - Basic normal_less layout
 // vertex_and_normal - Include a full set of triangle vertecies and its assocaited normal
 // fullspec - UNIMPLIMENTED triangles, normals, and random variable length embeddable

@@ -60,3 +60,5 @@ public:
 
     static globals* get_primary();
 };
+
+extern globals* global;
