@@ -23,10 +23,11 @@ int main()
     {
         lua = luaL_newstate();
         global->lua_state = lua;
-        renderer main_renderer;
-        input main_input( main_renderer.platform );
+        // renderer main_renderer;
+        // input main_input( main_renderer.platform );
 
         x11_init();
+        x11_window_open();
 
         // Initialize lua related things
         // Make C libraries available to Lua

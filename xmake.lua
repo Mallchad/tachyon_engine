@@ -28,8 +28,8 @@ target( "tachyon_engine" )
                      "external/tachyon_lib/source" )
 
 -- Speed up compilation with pre-compiled headers
-    set_pcxxheader( "include_core.h" )
-    set_pcxxheader( "include_pch.h" )
+    set_pcxxheader( "source/include_core.h" )
+    set_pcxxheader( "source/include_stl.h" )
     set_pcxxheader( "external/tachyon_lib/source/include_tachyon_lib_core.h" )
 
     -- asan must be linked first

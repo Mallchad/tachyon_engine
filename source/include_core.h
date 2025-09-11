@@ -1,20 +1,12 @@
 
 #pragma once
 
+// Platform Dependencies
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+
 // -- stdlib / stl --
-#include <array>
-#include <compare>
-#include <csignal>
-#include <cstdlib>
-#include <cstring>
-#include <filesystem>
-#include <iomanip>
-#include <iostream>
-#include <mutex>
-#include <string>
-#include <string_view>
-#include <type_traits>
-#include <vector>
+#include "include_stl.h"
 
 /** --Vendored Dependencies-- */
 #include "include_tracy.h"

@@ -144,3 +144,4 @@ using byte_buffer = std::vector<byte>;
 using fid = internal_id<>;
 
 // Project Specific
+#define PROC auto
