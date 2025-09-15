@@ -37,7 +37,7 @@ target( "tachyon_engine" )
     -- add_links( "ubsan" )
 
     -- Linux --
-    add_links( "dl", "X11", "GL", "uuid" )
+    add_links( "dl", "X11", "GL", "uuid", "vulkan" )
 
     add_defines( 'TRIANGULATE_PROJECT_ROOT="$(projectdir)"' )
     set_policy("check.auto_ignore_flags", false)

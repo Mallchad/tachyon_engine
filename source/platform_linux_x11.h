@@ -36,3 +36,5 @@ x11_destroy();
 
 window_id
 x11_window_open();
+
+extern x11_context* g_x11;

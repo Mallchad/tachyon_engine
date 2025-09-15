@@ -28,6 +28,7 @@ int main()
 
         x11_init();
         x11_window_open();
+        vulkan_init();
 
         // Initialize lua related things
         // Make C libraries available to Lua

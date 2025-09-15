@@ -1,7 +1,7 @@
 
 #include "include_core.h"
 
-x11_context* g_x11;
+x11_context* g_x11 = nullptr;
 
 PROC x11_input_init() -> void
 {
@@ -60,6 +60,8 @@ FUNCTION x11_window_open()
         CWBorderPixel|CWColormap|CWEventMask,
         &window_attributes
     );
+    // New window becomes active window
+    g_x11->window = x_window_tmp;
 
     // Fullscreen the window if allowed
     g_x11->wm_state      = XInternAtom( g_x11->server, "_NET_WM_STATE", true );

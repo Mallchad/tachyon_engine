@@ -5,6 +5,9 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_xlib.h>
+
 // -- stdlib / stl --
 #include "include_stl.h"
 
@@ -32,6 +35,7 @@ using namespace tyon;
 
 #include "renderer_interface.hpp"
 #include "platform_linux_x11.h"
+#include "platform_vulkan.h"
 #include "linux_opengl.h"
 #include "linux_input_xlib.h"
 #include "renderer.h"
