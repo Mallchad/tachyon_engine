@@ -1,7 +1,7 @@
 
 #include "main_include.h"
 
-int main()
+int main( int argc, char** argv )
 {
     using namespace std::chrono_literals;
     library_context _library; library_context_init( &_library); g_library = &_library;
@@ -10,6 +10,16 @@ int main()
 
     globals::primary_database = &_global;
     global->kill_program = false;
+
+    // Argument processing
+    for (int i=0; i < argc; ++i)
+    {
+        fstring x_arg = argv[i];
+        tyon_logf( "arg {}: '{}'", i, x_arg );
+        if (argc > 1 && x_arg == "--no-main-loop"s )
+        { global->kill_program = true; }
+    }
+
 
     tyon_log( "Running executable: ", file_self_filename() );
 
@@ -73,6 +83,7 @@ int main()
     }
 
     // Cleanup
+    vulkan_destroy();
     lua_close( lua );
     std::cout << "Exiting gracefully" << std::endl;
 

@@ -16,13 +16,16 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
     return result;
 }
 
-fresult vulkan_init()
+PROC vulkan_init() -> fresult
 {
     fresult result = true;
     g_vulkan = memory_allocate<vulkan_context>( 1 );
+    auto& instance = g_vulkan->instance;
     VkInstanceCreateInfo instance_args = {};
     VkApplicationInfo app_info = {};
     VkXlibSurfaceCreateInfoKHR surface_args = {};
+    i32 selected_queue_family = -1;
+    i32 present_queue_index = -1;
 
     // Enumerate intance layers
     u32 n_layers = 0;
@@ -32,7 +35,7 @@ fresult vulkan_init()
     layers.change_allocation( n_layers );
     VkResult enumerate_layer_ok = vkEnumerateInstanceLayerProperties( &n_layers, layers.data );
 
-    // Setup extensions and layers
+    // -- Setup extensions and layers --
     array<cstring> enabled_layers = {
         "VK_LAYER_KHRONOS_validation", // debug validaiton layer
     };
@@ -58,7 +61,13 @@ fresult vulkan_init()
         vulkan_error( "Failed to create Vulkan instance" );
         return false;
     }
+    g_vulkan->resources.push_cleanup( []{
+        vulkan_log( "Destroying Vulkan instance" );
+        vkDestroyInstance( g_vulkan->instance, nullptr);
+        g_vulkan->instance = VK_NULL_HANDLE;
+    });
 
+    // -- Setup default window surfaces --
     if (g_x11->server && g_x11->window)
     {
         surface_args.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
@@ -75,10 +84,146 @@ fresult vulkan_init()
         );
         ERROR_GUARD( surface_ok == VK_SUCCESS, "Vulkan/xlib Surface creation error" );
         vulkan_log( "Tachyon Vulkan", "Vulkan Instance created" );
+        g_vulkan->resources.push_cleanup( [] {
+            vulkan_logf( "Destroying surface 0x{:x}", u64(g_vulkan->surface) );
+            vkDestroySurfaceKHR( g_vulkan->instance, g_vulkan->surface, nullptr );
+        });
     }
     else
     { vulkan_log( "Vulkan surface could not be created for platform Xlib" ); }
 
+    // -- Device Enumeration and Selection --
+    array<VkPhysicalDevice> devices;
+    u32 n_devices = 0;
+    vkEnumeratePhysicalDevices( instance, &n_devices, nullptr );
+    devices.resize( n_devices );
+    vkEnumeratePhysicalDevices( instance, &n_devices, devices.data );
+
+    if (n_devices <= 0)
+    {
+        vulkan_error( "No physical devices found. Bailing Vulkan initialization" );
+        return false;
+    }
+    for (i32 i=0; i < devices.size(); ++i)
+    {
+        VkPhysicalDevice x_device = devices[i];
+        VkPhysicalDeviceProperties props;
+        bool suitible = true;
+        bool dedicated_graphics = false;
+        vkGetPhysicalDeviceProperties( x_device, &props );
+        vulkan_logf( "Enumerated physical device: {} | {:x}:{:x}",
+                     props.deviceName, props.vendorID, props.deviceID );
+        /* The driver version is literally trash. It's a vendor specific bitmask
+         * so you could never hope to get it a coherent number without a complex
+         * codepath figuring out which bitmask to use for each card and also
+         * somehow finding all the different vendor bitmasks in history. */
+        vulkan_logf(
+            "    Vulkan API version: {}.{}.{}", VK_VERSION_MAJOR(props.apiVersion),
+            VK_VERSION_MINOR(props.apiVersion), VK_VERSION_PATCH(props.apiVersion) );
+        if (props.deviceType = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+        {
+            dedicated_graphics = true;
+            vulkan_log( "    Device Type: Discrete GPU");
+        }
+
+        array<VkQueueFamilyProperties> families;
+        u32 n_families = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties( x_device, &n_families, nullptr );
+        families.resize( n_families );
+        vkGetPhysicalDeviceQueueFamilyProperties( x_device, &n_families, families.data );
+        vulkan_log( "Queue Family Count: ", n_families );
+
+        /* Seriously... Why. you have to reference the queue family by an
+         * arbitrary index. you get whilst looping through */
+        i32 ideal_queue_family = -1;
+        for (int i_queue=0; i_queue < families.size(); ++i_queue)
+        {
+            VkBool32 present_support = false;
+            bool graphics_queue = (families[ i_queue ].queueFlags & VK_QUEUE_GRAPHICS_BIT);
+            vkGetPhysicalDeviceSurfaceSupportKHR(
+                x_device, i_queue, g_vulkan->surface, &present_support );
+            if (graphics_queue && ideal_queue_family < 0)
+            {   suitible &= true;
+                ideal_queue_family = i_queue;
+            }
+            else if (present_support && present_queue_index < 0)
+            {   suitible &= true;
+                present_queue_index = i_queue;
+            }
+        }
+        if (ideal_queue_family < 0)
+        {   vulkan_error( "Failed to find suitible queue family for device"
+                          "Vulkan initialized failed" );
+            return false;
+        }
+
+        bool select_device =
+            (suitible && (dedicated_graphics || g_vulkan->device == VK_NULL_HANDLE));
+        if (select_device)
+        {
+            g_vulkan->device = x_device;
+            // Set queue family index only when a new device is selected
+            selected_queue_family = ideal_queue_family;
+            vulkan_log( "Changed primary graphics device to", props.deviceName );
+        }
+        vulkan_log( "" );
+    }
+    if (g_vulkan->device == VK_NULL_HANDLE)
+    {   vulkan_error( "Could not find a suitible graphics device for some reason."
+                      "Vulkan initialization failed. " );
+        return false;
+    }
+
+    // -- Create Device and Device Queue --
+
+    // Create some 'queue arg' structs and then pass it to the 'logical device' creation struct
+    VkQueue graphics_queue {};
+    VkQueue present_queue {};
+    f32 queue_priority = 1.0f;
+    array<VkDeviceQueueCreateInfo> queues;
+
+    VkDeviceQueueCreateInfo graphics_queue_args{};
+    graphics_queue_args.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    graphics_queue_args.queueFamilyIndex = selected_queue_family;
+    graphics_queue_args.queueCount = 1;
+    graphics_queue_args.pQueuePriorities = &queue_priority;
+    queues.push_tail( graphics_queue_args );
+
+    VkDeviceQueueCreateInfo present_queue_args{};
+    present_queue_args.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    present_queue_args.queueFamilyIndex = present_queue_index;
+    present_queue_args.queueCount = 1;
+    present_queue_args.pQueuePriorities = &queue_priority;
+    queues.push_tail( present_queue_args );
+
+    // Set all features to false for now
+    VkPhysicalDeviceFeatures device_features = {};
+    // Setup the final logical device args struct
+    VkDeviceCreateInfo device_args = {};
+    device_args.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    device_args.pQueueCreateInfos = queues.data;
+    device_args.queueCreateInfoCount = queues.size();
+    device_args.pEnabledFeatures = &device_features;
+    device_args.ppEnabledLayerNames = enabled_layers.data;
+    device_args.enabledLayerCount = enabled_layers.size();
+
+    // Actually create logical device
+    vkCreateDevice( g_vulkan->device, &device_args, nullptr, &g_vulkan->logical_device );
+
+    g_vulkan->resources.push_cleanup( []{
+        vulkan_logf( "Destroy Logical Device 0x{:x}", u64(g_vulkan->logical_device) );
+        vkDestroyDevice( g_vulkan->logical_device, nullptr );
+        g_vulkan->logical_device =  VK_NULL_HANDLE;
+    } );
+    vkGetDeviceQueue( g_vulkan->logical_device, selected_queue_family, 0, &graphics_queue );
+    vkGetDeviceQueue( g_vulkan->logical_device, selected_queue_family, 0, &present_queue );
+
     vulkan_log( "Tachyon Vulkan", "Vulkan Initialized" );
+    TYON_BREAK();
     return true;
+}
+
+PROC vulkan_destroy() -> void
+{
+    g_vulkan->~vulkan_context();
 }
