@@ -12,6 +12,8 @@ struct vulkan_context
     // Primary Window surface to draw to
     VkSurfaceKHR surface;
     VkSwapchainKHR swapchain;
+    VkCommandBuffer commands;
+
     // Top level resource manager for vulkan
     resource_arena resources;
 };

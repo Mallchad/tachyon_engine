@@ -27,6 +27,17 @@ PROC vulkan_init() -> fresult
     i32 selected_queue_family = -1;
     i32 present_queue_index = -1;
 
+    defer_procedure _exit = [&result] {
+       if (result)
+       { vulkan_log( "Vulkan Initialized" ); }
+       else
+       {
+           vulkan_error( "Vulkan initialization failure, cleaning up resources." );
+           g_vulkan->resources.~resource_arena();
+       }
+    };
+
+
     // Enumerate intance layers
     u32 n_layers = 0;
     vkEnumerateInstanceLayerProperties( &n_layers, nullptr );
@@ -323,6 +334,11 @@ PROC vulkan_init() -> fresult
     pool_args.queueFamilyIndex = selected_queue_family;
     VkResult pool_ok = vkCreateCommandPool(
         g_vulkan->logical_device, &pool_args, nullptr, &command_pool );
+    if (pool_ok)
+    {
+        vulkan_error( "Failed to create command pool" );
+        return false;
+    }
 
     // Create a command buffer
     VkCommandBufferAllocateInfo command_args{};
@@ -356,10 +372,9 @@ PROC vulkan_init() -> fresult
     { tyon_error( "Failed to wait on frame start fence for some reason" ); }
     vkQueueSubmit( graphics_queue, 1, &submit_args, frame_end_fence );
 
-
-    vulkan_log( "Tachyon Vulkan", "Vulkan Initialized" );
     TYON_BREAK();
-    return true;
+    result = true;
+    return result;
 }
 
 PROC vulkan_destroy() -> void
