@@ -40,8 +40,8 @@ PROC vulkan_init() -> fresult
         "VK_LAYER_KHRONOS_validation", // debug validaiton layer
     };
     array<cstring> enabled_extensions = {
-        "VK_KHR_surface", // Surface for common window and compositing tasks
-        "VK_KHR_xlib_surface" // xlib windowing extension
+        VK_KHR_SURFACE_EXTENSION_NAME, // Surface for common window and compositing tasks
+        VK_KHR_XLIB_SURFACE_EXTENSION_NAME, // xlib windowing extension
     };
     app_info.pApplicationName = "Tachyon Engine";
     app_info.applicationVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
@@ -204,11 +204,23 @@ PROC vulkan_init() -> fresult
     device_args.pQueueCreateInfos = queues.data;
     device_args.queueCreateInfoCount = queues.size();
     device_args.pEnabledFeatures = &device_features;
+
+    array<cstring> device_extensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME, // Presentation swapchain extension
+    };
     device_args.ppEnabledLayerNames = enabled_layers.data;
     device_args.enabledLayerCount = enabled_layers.size();
+    device_args.ppEnabledExtensionNames = device_extensions.data;
+    device_args.enabledExtensionCount = device_extensions.size();
 
     // Actually create logical device
-    vkCreateDevice( g_vulkan->device, &device_args, nullptr, &g_vulkan->logical_device );
+    auto device_ok = vkCreateDevice(
+        g_vulkan->device,
+        &device_args,
+        nullptr,
+        &g_vulkan->logical_device
+    );
+    if (device_ok) { tyon_error( "Device creation error" ); }
 
     g_vulkan->resources.push_cleanup( []{
         vulkan_logf( "Destroy Logical Device 0x{:x}", u64(g_vulkan->logical_device) );
@@ -218,6 +230,73 @@ PROC vulkan_init() -> fresult
     vkGetDeviceQueue( g_vulkan->logical_device, selected_queue_family, 0, &graphics_queue );
     vkGetDeviceQueue( g_vulkan->logical_device, selected_queue_family, 0, &present_queue );
 
+    // Create swapchan for presentation of images to windows
+    VkSwapchainCreateInfoKHR swapchain_args {};
+    swapchain_args.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapchain_args.minImageCount = 2;
+    swapchain_args.surface = g_vulkan->surface;
+    swapchain_args.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    swapchain_args.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    swapchain_args.imageExtent = VkExtent2D { UINT32_MAX, UINT32_MAX };
+    swapchain_args.imageArrayLayers = 1; // More than 1 if a stereoscopic application
+    swapchain_args.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    swapchain_args.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    swapchain_args.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    swapchain_args.queueFamilyIndexCount = 2;
+    u32 family_indexes[] = { u32(selected_queue_family), u32(present_queue_index) };
+    swapchain_args.pQueueFamilyIndices = family_indexes;
+    swapchain_args.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    swapchain_args.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+
+    auto swapchain_ok = vkCreateSwapchainKHR(
+        g_vulkan->logical_device,
+        &swapchain_args,
+        nullptr,
+        &g_vulkan->swapchain
+    );
+    if (swapchain_ok != VK_SUCCESS)
+    {
+        vulkan_error( "Failed to initialize swapchain" );
+        return false;
+    }
+    vulkan_log( "Initialized presentation swapchain" );
+    g_vulkan->resources.push_cleanup( [] {
+        vkDestroySwapchainKHR( g_vulkan->logical_device, g_vulkan->swapchain, nullptr );
+        vulkan_log( "Destroy swapchain" );
+    } );
+
+    array<VkImage> swapchain_images {};
+    u32 n_swapchain_images = 0;
+    vkGetSwapchainImagesKHR( g_vulkan->logical_device, g_vulkan->swapchain,
+                             &n_swapchain_images, nullptr);
+    swapchain_images.resize( n_swapchain_images );
+    vkGetSwapchainImagesKHR( g_vulkan->logical_device, g_vulkan->swapchain,
+                             &n_swapchain_images, swapchain_images.data );
+
+    VkFenceCreateInfo fence_args {};
+    VkFence frame_begin_fence;
+    VkFence frame_end_fence;
+    fence_args.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    vkCreateFence( g_vulkan->logical_device, &fence_args, nullptr, &frame_end_fence );
+    // Signal the begin fence to prevent it hanging
+    fence_args.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    vkCreateFence( g_vulkan->logical_device, &fence_args, nullptr, &frame_begin_fence );
+
+    VkSubmitInfo submit_args {};
+    submit_args.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkResult sync_ok = vkWaitForFences(
+        g_vulkan->logical_device,
+        1,
+        &frame_begin_fence,
+        true,
+        16'666'666
+    );
+    if (sync_ok != VK_SUCCESS)
+    { tyon_error( "Failed to wait on frame start fence for some reason" ); }
+    vkQueueSubmit( graphics_queue, 1, &submit_args, frame_end_fence );
+
+
     vulkan_log( "Tachyon Vulkan", "Vulkan Initialized" );
     TYON_BREAK();
     return true;
@@ -226,4 +305,5 @@ PROC vulkan_init() -> fresult
 PROC vulkan_destroy() -> void
 {
     g_vulkan->~vulkan_context();
+
 }

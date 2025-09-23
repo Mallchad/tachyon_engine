@@ -11,6 +11,7 @@ struct vulkan_context
     VkDevice logical_device;
     // Primary Window surface to draw to
     VkSurfaceKHR surface;
+    VkSwapchainKHR swapchain;
     // Top level resource manager for vulkan
     resource_arena resources;
 };

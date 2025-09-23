@@ -231,6 +231,7 @@ target( "tachyon_tests" )
     set_kind( "binary" )
     set_languages( "c++20" )
     add_deps( "tachyon_libs" )
+    set_default( false )
 
     add_tests( "catch2" )
     add_links( "external/catch2/build/src/catch2/libCatch2.a" )
