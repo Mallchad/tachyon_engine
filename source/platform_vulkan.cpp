@@ -70,6 +70,7 @@ PROC vulkan_init() -> fresult
     // -- Setup default window surfaces --
     if (g_x11->server && g_x11->window)
     {
+        // TODO: Need to chain a present struct to try scaling options
         surface_args.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
         surface_args.dpy = g_x11->server;
         surface_args.flags = 0x0;
@@ -230,14 +231,31 @@ PROC vulkan_init() -> fresult
     vkGetDeviceQueue( g_vulkan->logical_device, selected_queue_family, 0, &graphics_queue );
     vkGetDeviceQueue( g_vulkan->logical_device, selected_queue_family, 0, &present_queue );
 
+
+    /* We need to know the capabilities of the surface associated with the physical device
+       So we retreive those capabilities */
+    VkSurfaceCapabilitiesKHR surface_capabilities {};
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        g_vulkan->device, g_vulkan->surface, &surface_capabilities );
+
+    // Also diagnostics for device formats
+    array<VkSurfaceFormatKHR> surface_formats;
+    u32 n_surfaces {};
+    vkGetPhysicalDeviceSurfaceFormatsKHR(
+        g_vulkan->device, g_vulkan->surface, &n_surfaces, nullptr );
+    surface_formats.resize( n_surfaces );
+    vkGetPhysicalDeviceSurfaceFormatsKHR(
+        g_vulkan->device, g_vulkan->surface, &n_surfaces, surface_formats.data );
+
     // Create swapchan for presentation of images to windows
     VkSwapchainCreateInfoKHR swapchain_args {};
     swapchain_args.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapchain_args.minImageCount = 2;
     swapchain_args.surface = g_vulkan->surface;
     swapchain_args.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    swapchain_args.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-    swapchain_args.imageExtent = VkExtent2D { UINT32_MAX, UINT32_MAX };
+    // The format must match the physical surface formats
+    swapchain_args.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+    swapchain_args.imageExtent = VkExtent2D { 1920, 1080 };
     swapchain_args.imageArrayLayers = 1; // More than 1 if a stereoscopic application
     swapchain_args.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     swapchain_args.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -276,13 +294,54 @@ PROC vulkan_init() -> fresult
 
     VkFenceCreateInfo fence_args {};
     VkFence frame_begin_fence;
+    VkFence frame_aquire_fence;
     VkFence frame_end_fence;
     fence_args.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     vkCreateFence( g_vulkan->logical_device, &fence_args, nullptr, &frame_end_fence );
+    vkCreateFence( g_vulkan->logical_device, &fence_args, nullptr, &frame_aquire_fence );
     // Signal the begin fence to prevent it hanging
     fence_args.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     vkCreateFence( g_vulkan->logical_device, &fence_args, nullptr, &frame_begin_fence );
 
+    // Set draw commands
+    u32 image_index {};
+    vkAcquireNextImageKHR(
+        g_vulkan->logical_device,
+        g_vulkan->swapchain,
+        UINT64_MAX,
+        VK_NULL_HANDLE,
+        frame_aquire_fence,
+        &image_index
+    );
+    vkWaitForFences( g_vulkan->logical_device, 1, &frame_aquire_fence, true, 16'666'666 );
+    vkResetFences( g_vulkan->logical_device, 1, &frame_aquire_fence );
+
+    VkCommandPool command_pool;
+    VkCommandPoolCreateInfo pool_args {};
+    pool_args.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    pool_args.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    pool_args.queueFamilyIndex = selected_queue_family;
+    VkResult pool_ok = vkCreateCommandPool(
+        g_vulkan->logical_device, &pool_args, nullptr, &command_pool );
+
+    // Create a command buffer
+    VkCommandBufferAllocateInfo command_args{};
+    command_args.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    command_args.commandPool = command_pool;
+    command_args.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    command_args.commandBufferCount = 1;
+    VkResult command_buffer_ok = vkAllocateCommandBuffers(
+        g_vulkan->logical_device, &command_args, &g_vulkan->commands );
+
+    // Start writing draw commands
+    VkCommandBufferBeginInfo begin_args {};
+    begin_args.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_args.flags = 0; // Optional
+    begin_args.pInheritanceInfo = nullptr; // Optional
+
+    VkResult command_ok = vkBeginCommandBuffer( g_vulkan->commands, &begin_args );
+
+    // Finalize frame and submit all commands
     VkSubmitInfo submit_args {};
     submit_args.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     VkResult sync_ok = vkWaitForFences(
@@ -292,6 +351,7 @@ PROC vulkan_init() -> fresult
         true,
         16'666'666
     );
+    vkResetFences( g_vulkan->logical_device, 1, &frame_begin_fence );
     if (sync_ok != VK_SUCCESS)
     { tyon_error( "Failed to wait on frame start fence for some reason" ); }
     vkQueueSubmit( graphics_queue, 1, &submit_args, frame_end_fence );
