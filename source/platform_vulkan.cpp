@@ -547,7 +547,7 @@ PROC vulkan_init() -> fresult
     multisample_args.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisample_args.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT;
     multisample_args.sampleShadingEnable = true;
-    multisample_args.minSampleShading = 1.0;
+    multisample_args.minSampleShading = 0.2f;
     // wut is this
     multisample_args.pSampleMask = nullptr;
     multisample_args.alphaToCoverageEnable = false;
@@ -583,7 +583,7 @@ PROC vulkan_init() -> fresult
     pipeline_args.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipeline_args.pStages = stages.data;
     pipeline_args.stageCount = stages.size();
-    // pipeline_args.pVertexInputState = &vertexInputInfo;
+    pipeline_args.pVertexInputState = &vertex_args;
     pipeline_args.pInputAssemblyState = &input_args;
     pipeline_args.pViewportState = &viewport_args;
     pipeline_args.pRasterizationState = &raster_args;
@@ -606,11 +606,53 @@ PROC vulkan_init() -> fresult
         nullptr,
         &g_vulkan->pipeline );
 
-    // what the fuck is even happening.
+    /** Views describe how to interpret VkImage's, VkImages are related to
+        textures and framebuffers */
     array<VkImageView> swapchain_image_views;
     array<VkFramebuffer> swapchain_buffers;
-    swapchain_image_views.resize( 10 );
-    swapchain_buffers.resize( 10 );
+    array<VkResult> view_errors;
+    swapchain_image_views.resize( swapchain_images.size() );
+    swapchain_buffers.resize( swapchain_images.size() );
+    view_errors.resize( swapchain_images.size() );
+
+
+    for (i32 i = 0; i < swapchain_image_views.size(); i++)
+    {
+        VkImageView attachments[] = {
+            swapchain_image_views[i]
+        };
+
+        VkImageViewCreateInfo view_args{};
+        view_args.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        view_args.image = swapchain_images[i];
+        view_args.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        view_args.format = swapchain_args.imageFormat;
+        view_args.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_args.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_args.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_args.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_args.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        view_args.subresourceRange.baseMipLevel = 0;
+        view_args.subresourceRange.levelCount = 1;
+        view_args.subresourceRange.baseArrayLayer = 0;
+        view_args.subresourceRange.layerCount = 1;
+        auto view_ok = vkCreateImageView(
+            g_vulkan->logical_device, &view_args, nullptr, &swapchain_image_views[i] );
+        view_errors[i] = view_ok;
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = render_pass;
+        framebufferInfo.attachmentCount = 0;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = 1920;
+        framebufferInfo.height = 1080;
+        framebufferInfo.layers = 1;
+
+        VkResult framebuffer_ok = vkCreateFramebuffer(
+            g_vulkan->logical_device, &framebufferInfo, nullptr, &swapchain_buffers[i] );
+    }
+
 
     // Set render pass start information
     VkClearValue clear_value {};
@@ -627,25 +669,6 @@ PROC vulkan_init() -> fresult
     vkCmdBeginRenderPass( g_vulkan->commands, &render_pass_args, VK_SUBPASS_CONTENTS_INLINE );
     vkCmdBindPipeline(
         g_vulkan->commands, VK_PIPELINE_BIND_POINT_GRAPHICS, g_vulkan->pipeline );
-
-    for (i32 i = 0; i < swapchain_image_views.size(); i++)
-    {
-    VkImageView attachments[] = {
-        swapchain_image_views[i]
-    };
-
-    VkFramebufferCreateInfo framebufferInfo{};
-    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.renderPass = render_pass;
-    framebufferInfo.attachmentCount = 0;
-    framebufferInfo.pAttachments = nullptr;
-    framebufferInfo.width = 1920;
-    framebufferInfo.height = 1080;
-    framebufferInfo.layers = 1;
-
-    VkResult framebuffer_ok = vkCreateFramebuffer(
-        g_vulkan->logical_device, &framebufferInfo, nullptr, &swapchain_buffers[i] );
-    }
 
     // Finalize frame and submit all commands
     VkSubmitInfo submit_args {};
