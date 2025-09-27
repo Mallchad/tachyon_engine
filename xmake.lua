@@ -15,9 +15,15 @@ target( "tachyon_engine" )
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
-    add_files( "source/*.cpp",
-               "external/tachyon_lib/source/*.cpp"
-    )
+
+    local unity_build_enabled = true
+    if (unity_build_enabled) then
+       add_files( "source/build_control/unity.cpp" )
+    else
+       add_files( "source/*.cpp",
+                  "external/tachyon_lib/source/*.cpp"
+       )
+    end
 
     add_includedirs( "source",
                      "external/spdlog/include/",

@@ -28,7 +28,6 @@ struct vulkan_shader
     bool code_binary = false;
     VkShaderModule module = VK_NULL_HANDLE;
     VkShaderStageFlagBits stage_flag {};
-
 };
 
 struct vulkan_pipeline
