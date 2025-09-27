@@ -6,6 +6,8 @@ set_allowedmodes( "release",
                   {default = "debug"})
 -- add_requires("glslang", {configs = {binaryonly = true}})
 
+option("unity_build_enabled", { default = true, description =
+                    "Enable Unity build - single module cpp file compilation" })
 target( "tachyon_engine" )
     set_kind( "binary" )
     set_languages( "c++20" )
@@ -16,12 +18,12 @@ target( "tachyon_engine" )
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
 
-    local unity_build_enabled = true
-    if (unity_build_enabled) then
+    if has_config( "unity_build_enabled" ) then
        add_files( "source/build_control/unity.cpp" )
     else
-       add_files( "source/*.cpp",
-                  "external/tachyon_lib/source/*.cpp"
+       add_files(
+          "source/*.cpp",
+          "external/tachyon_lib/source/*.cpp"
        )
     end
 
