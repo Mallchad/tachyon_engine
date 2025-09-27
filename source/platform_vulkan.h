@@ -13,9 +13,28 @@ struct vulkan_context
     VkSurfaceKHR surface;
     VkSwapchainKHR swapchain;
     VkCommandBuffer commands;
+    // Primary graphics pipeline
+    VkPipeline pipeline;
 
     // Top level resource manager for vulkan
     resource_arena resources;
+};
+
+struct vulkan_shader
+{
+    fstring name = "unnamed";
+    fstring entry_point = "main";
+    file code;
+    bool code_binary = false;
+    VkShaderModule module = VK_NULL_HANDLE;
+    VkShaderStageFlagBits stage_flag {};
+
+};
+
+struct vulkan_pipeline
+{
+    fstring name = "unnamed";
+    array<vulkan_shader> shaders;
 };
 
 PROC vulkan_allocator_create_callbacks( i_allocator* allocator );

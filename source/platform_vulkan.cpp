@@ -4,9 +4,23 @@
 vulkan_context* g_vulkan = nullptr;
 
 #define vulkan_log( ... ) log( "Tachyon Vulkan", __VA_ARGS__ );
-#define vulkan_error( ... ) TYON_LOG_ERROR( "Tachyon Vulkan", __VA_ARGS__ );
-#define vulkan_logf( FORMAT_, ... ) log_format( "Tachyon Vulkan", (FORMAT_), __VA_ARGS__);
-#define vulkan_errorf( FORMAT_, ... ) log_format_error( "Tachyon Vulkan", (FORMAT_),  __VA_ARGS__ );
+#define vulkan_error( ... ) TYON_LOG_ERROR( "Tachyon Vulkan Error", __VA_ARGS__ );
+#define vulkan_logf( FORMAT_, ... ) log_format( "Tachyon Vulkan Error", (FORMAT_), __VA_ARGS__);
+#define vulkan_errorf( FORMAT_, ... ) log_error_format_impl( \
+        "Tachyon Vulkan Error", fmt::format((FORMAT_),  __VA_ARGS__) );
+
+VKAPI_ATTR VKAPI_CALL
+PROC vulkan_debug_callback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+    VkDebugUtilsMessageTypeFlagsEXT message_type,
+    const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
+    void* user_data ) -> VkBool32
+{
+
+    log_format( "Vulkan Validation", "{}", callback_data->pMessage );
+
+    return VK_FALSE;
+}
 
 PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
 {
@@ -14,6 +28,38 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
 
     TYON_TODO( "Unimplimented" );
     return result;
+}
+
+PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
+{
+    ERROR_GUARD( arg->code_binary, "Code provided must be binary SPIR-V currently" );
+    arg->code = file_load_binary( arg->code.filename );
+    ERROR_GUARD( arg->code.file_loaded, "Failed to load file" );
+
+    VkShaderModuleCreateInfo shader_args{};
+    shader_args.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    shader_args.codeSize = arg->code.memory.size;
+    shader_args.pCode = arg->code.memory.data;
+
+    VkShaderModule& module = arg->module;
+    auto module_ok = vkCreateShaderModule(
+        g_vulkan->logical_device, &shader_args, nullptr, &module );
+    if (module_ok != VK_SUCCESS)
+    {
+        vulkan_errorf( "Failed to create shader module: {}", arg->name );
+        return false;
+    }
+    g_vulkan->resources.push_cleanup( [=]{
+        vulkan_log( "Dstroying shader module:", arg->name )
+        vkDestroyShaderModule( g_vulkan->logical_device, module, nullptr ); } );
+
+    VkPipelineShaderStageCreateInfo shader_stage_args{};
+    shader_stage_args.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    shader_stage_args.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    shader_stage_args.module = module;
+    shader_stage_args.pName = "main";
+    vulkan_logf( "Created shader module: {}", arg->name );
+    return true;
 }
 
 PROC vulkan_init() -> fresult
@@ -53,18 +99,27 @@ PROC vulkan_init() -> fresult
     array<cstring> enabled_extensions = {
         VK_KHR_SURFACE_EXTENSION_NAME, // Surface for common window and compositing tasks
         VK_KHR_XLIB_SURFACE_EXTENSION_NAME, // xlib windowing extension
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME, // message callback and debug stuff
     };
     app_info.pApplicationName = "Tachyon Engine";
     app_info.applicationVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
     app_info.pEngineName = "Tachyon Engine";
     app_info.engineVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
     app_info.apiVersion = 0;
+
+    VkDebugUtilsMessengerCreateInfoEXT messenger_args {};
+    messenger_args.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    messenger_args.messageSeverity = ~u32(0);
+    messenger_args.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    messenger_args.pfnUserCallback = vulkan_debug_callback;
+
     instance_args.pApplicationInfo = &app_info;
     instance_args.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instance_args.enabledLayerCount = enabled_layers.size();
     instance_args.ppEnabledLayerNames = enabled_layers.data;
     instance_args.enabledExtensionCount = enabled_extensions.size();
     instance_args.ppEnabledExtensionNames = enabled_extensions.data;
+    instance_args.pNext = &messenger_args;
 
     VkResult instance_ok = vkCreateInstance( &instance_args, nullptr, &g_vulkan->instance );
     if (instance_ok != VK_SUCCESS)
@@ -77,6 +132,12 @@ PROC vulkan_init() -> fresult
         vkDestroyInstance( g_vulkan->instance, nullptr);
         g_vulkan->instance = VK_NULL_HANDLE;
     });
+
+    // need to do this to get validation layer callbacks aparently?
+    auto dyn_vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)
+        vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );
+    VkDebugUtilsMessengerEXT debug_messenger {};
+    dyn_vkCreateDebugUtilsMessengerEXT(instance, &messenger_args, nullptr, &debug_messenger );
 
     // -- Setup default window surfaces --
     if (g_x11->server && g_x11->window)
@@ -208,8 +269,11 @@ PROC vulkan_init() -> fresult
     present_queue_args.pQueuePriorities = &queue_priority;
     queues.push_tail( present_queue_args );
 
-    // Set all features to false for now
-    VkPhysicalDeviceFeatures device_features = {};
+    VkPhysicalDeviceFeatures device_features {
+        // for multisampling support
+        .sampleRateShading = true,
+    };
+
     // Setup the final logical device args struct
     VkDeviceCreateInfo device_args = {};
     device_args.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -219,6 +283,7 @@ PROC vulkan_init() -> fresult
 
     array<cstring> device_extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME, // Presentation swapchain extension
+        VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
     };
     device_args.ppEnabledLayerNames = enabled_layers.data;
     device_args.enabledLayerCount = enabled_layers.size();
@@ -354,8 +419,233 @@ PROC vulkan_init() -> fresult
     begin_args.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_args.flags = 0; // Optional
     begin_args.pInheritanceInfo = nullptr; // Optional
-
     VkResult command_ok = vkBeginCommandBuffer( g_vulkan->commands, &begin_args );
+
+    // -- Create graphics pipeline --
+    // Create shaders of pipeline
+    vulkan_shader vertex_shader;
+    vulkan_shader fragment_shader;
+
+    vertex_shader.name = "test_triangle";
+    vertex_shader.code.filename = "shaders/test_triangle.vert.spv";
+    vertex_shader.code_binary = true;
+    vertex_shader.stage_flag = VK_SHADER_STAGE_VERTEX_BIT;
+    fragment_shader.name = "test_triangle";
+    fragment_shader.code.filename = "shaders/test_triangle.frag.spv";
+    fragment_shader.code_binary = true;
+    fragment_shader.stage_flag = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    vulkan_shader_init( &vertex_shader );
+    vulkan_shader_init( &fragment_shader );
+
+    vulkan_pipeline pipeline {};
+    pipeline.shaders.push_tail( vertex_shader );
+    pipeline.shaders.push_tail( fragment_shader );
+
+    array<VkPipelineShaderStageCreateInfo> stages;
+    stages.change_allocation( pipeline.shaders.size() );
+    for (i64 i=0; i < pipeline.shaders.size(); ++i)
+    {
+        auto& x_shader = pipeline.shaders[i];
+        stages.push_tail( VkPipelineShaderStageCreateInfo {
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                .stage = x_shader.stage_flag,
+                .module = x_shader.module,
+                .pName = x_shader.entry_point.c_str()
+        });
+    }
+
+    VkFormatProperties format_props {};
+    vkGetPhysicalDeviceFormatProperties(
+        g_vulkan->device, VK_FORMAT_B8G8R8A8_UNORM, &format_props );
+    // Mandated by the spec when setting vertex bindings
+    bool vertex_buffer_ok = format_props.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
+    if (!vertex_buffer_ok)
+    { vulkan_error( "Format feature vertex buffer not supported for specified format" ); }
+
+    // Create a render pass, will be passed to pipeline
+    // sub-pass first
+    VkSubpassDescription sub_pass {};
+    sub_pass.pColorAttachments = nullptr; // TODO: Add colour attachment
+    sub_pass.colorAttachmentCount = 0;
+
+    VkRenderPass render_pass {};
+    VkRenderPassCreateInfo pass_args{};
+    pass_args.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    pass_args.attachmentCount = 0; // TODO: Fill in attachments
+    pass_args.pAttachments = nullptr;
+    pass_args.subpassCount = 1;
+    pass_args.pSubpasses = &sub_pass;
+
+    auto pass_ok = vkCreateRenderPass(
+        g_vulkan->logical_device, &pass_args, nullptr, &render_pass );
+
+    VkVertexInputBindingDescription binding {};
+    binding.binding = 0; // vertex attribute binding/slot. leave as 0
+    binding.stride = 4 * 3;
+    // Not sure what this is. think it means pulling from instance wide stuffs?
+    binding.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+
+    VkVertexInputAttributeDescription vertex_attributes {};
+    vertex_attributes.location = 0; // shader specific binding location
+    vertex_attributes.binding = 0;
+    vertex_attributes.format = VK_FORMAT_B8G8R8A8_UNORM;
+
+
+    // Mesh vertex input args
+    VkPipelineVertexInputStateCreateInfo vertex_args {};
+    vertex_args.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertex_args.pVertexBindingDescriptions =  &binding;
+    vertex_args.vertexBindingDescriptionCount = 1;
+    vertex_args.pVertexAttributeDescriptions = &vertex_attributes;
+    vertex_args.vertexAttributeDescriptionCount = 1;
+
+    // Mesh rendering settings
+    VkPipelineInputAssemblyStateCreateInfo input_args {};
+    input_args.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_args.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_args.primitiveRestartEnable = VK_FALSE;
+
+    // Rasterizer settings
+    VkPipelineRasterizationStateCreateInfo raster_args {};
+    raster_args.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    raster_args.polygonMode = VK_POLYGON_MODE_FILL;
+    raster_args.lineWidth = 1.0f;
+    raster_args.cullMode = VK_CULL_MODE_BACK_BIT;
+    raster_args.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    raster_args.depthBiasEnable = VK_FALSE;
+    raster_args.depthBiasConstantFactor = 0.0f;         // Optional
+    raster_args.depthBiasClamp = 0.0f;                  // Optional
+    raster_args.depthBiasSlopeFactor = 0.0f;            // Optional
+
+    VkViewport viewport_config {
+        // Upper left coordinates
+        .x = 0,
+        .y = 0,
+        .width = 1920,
+        .height = 1080,
+        // Configurable viewport depth, can configurable but usually between 0 and 1
+        .minDepth = 0.0,
+        .maxDepth = 1.0
+    };
+
+    // Only render into a certain portion of the viewport with scissors
+    VkRect2D scissor_config {
+        VkOffset2D { 0, 0 },
+        VkExtent2D { 1920, 1080 }
+    };
+
+    VkPipelineViewportStateCreateInfo viewport_args {};
+    viewport_args.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_args.pViewports = &viewport_config;
+    // viewportCount and scissorCount must be the same
+    viewport_args.viewportCount = 1;
+    viewport_args.pScissors = &scissor_config;
+    viewport_args.scissorCount = 1;
+
+    VkPipelineMultisampleStateCreateInfo multisample_args {};
+    multisample_args.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisample_args.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT;
+    multisample_args.sampleShadingEnable = true;
+    multisample_args.minSampleShading = 1.0;
+    // wut is this
+    multisample_args.pSampleMask = nullptr;
+    multisample_args.alphaToCoverageEnable = false;
+    multisample_args.alphaToOneEnable = false;
+
+    VkPipelineLayout layout {};
+    VkDescriptorSetLayout descriptor_layout {};
+
+    // Set pipeline bindings here
+    VkDescriptorSetLayoutCreateInfo descriptor_layout_args {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .flags = 0x0,
+        .pBindings = nullptr,
+        .bindingCount = 0,
+    };
+
+    VkPipelineLayoutCreateInfo layout_args {};
+    layout_args.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layout_args.pSetLayouts = &descriptor_layout;
+    layout_args.setLayoutCount = 1;
+    layout_args.pushConstantRangeCount = 0;
+    layout_args.pPushConstantRanges = nullptr;
+
+    auto descriptor_layout_ok = vkCreateDescriptorSetLayout(
+        g_vulkan->logical_device, &descriptor_layout_args, nullptr, &descriptor_layout );
+
+    auto layout_ok = vkCreatePipelineLayout(
+        g_vulkan->logical_device, &layout_args, nullptr, &layout );
+    ERROR_GUARD( !descriptor_layout_ok && !layout_ok, "Failed to pipeline layout" );
+
+    // Pipeline creation args
+    VkGraphicsPipelineCreateInfo pipeline_args {};
+    pipeline_args.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipeline_args.pStages = stages.data;
+    pipeline_args.stageCount = stages.size();
+    // pipeline_args.pVertexInputState = &vertexInputInfo;
+    pipeline_args.pInputAssemblyState = &input_args;
+    pipeline_args.pViewportState = &viewport_args;
+    pipeline_args.pRasterizationState = &raster_args;
+    pipeline_args.pMultisampleState = &multisample_args;
+    // pipeline_args.pDepthStencilState = nullptr; // Optional
+    // pipeline_args.pColorBlendState = &colorBlending;
+    // pipeline_args.pDynamicState = &dynamicState;
+    pipeline_args.layout = layout;
+    pipeline_args.renderPass = render_pass;
+    pipeline_args.subpass = 0;
+    // pipeline_args.basePipelineHandle = VK_NULL_HANDLE; // Optional
+    // pipeline_args.basePipelineIndex = -1; // Optional
+
+    // Provide pipeline cache here if relevant
+    vkCreateGraphicsPipelines(
+        g_vulkan->logical_device,
+        VK_NULL_HANDLE,
+        1,
+        &pipeline_args,
+        nullptr,
+        &g_vulkan->pipeline );
+
+    // what the fuck is even happening.
+    array<VkImageView> swapchain_image_views;
+    array<VkFramebuffer> swapchain_buffers;
+    swapchain_image_views.resize( 10 );
+    swapchain_buffers.resize( 10 );
+
+    // Set render pass start information
+    VkClearValue clear_value {};
+    clear_value.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
+    VkRenderPassBeginInfo render_pass_args{};
+    render_pass_args.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    render_pass_args.renderPass = render_pass;
+    render_pass_args.framebuffer = swapchain_buffers[0];
+    render_pass_args.renderArea.offset = {0, 0};
+    render_pass_args.renderArea.extent = VkExtent2D { 1920, 1080 };
+    render_pass_args.clearValueCount = 1;
+    render_pass_args.pClearValues = &clear_value;
+
+    vkCmdBeginRenderPass( g_vulkan->commands, &render_pass_args, VK_SUBPASS_CONTENTS_INLINE );
+    vkCmdBindPipeline(
+        g_vulkan->commands, VK_PIPELINE_BIND_POINT_GRAPHICS, g_vulkan->pipeline );
+
+    for (i32 i = 0; i < swapchain_image_views.size(); i++)
+    {
+    VkImageView attachments[] = {
+        swapchain_image_views[i]
+    };
+
+    VkFramebufferCreateInfo framebufferInfo{};
+    framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebufferInfo.renderPass = render_pass;
+    framebufferInfo.attachmentCount = 0;
+    framebufferInfo.pAttachments = nullptr;
+    framebufferInfo.width = 1920;
+    framebufferInfo.height = 1080;
+    framebufferInfo.layers = 1;
+
+    VkResult framebuffer_ok = vkCreateFramebuffer(
+        g_vulkan->logical_device, &framebufferInfo, nullptr, &swapchain_buffers[i] );
+    }
 
     // Finalize frame and submit all commands
     VkSubmitInfo submit_args {};
@@ -380,5 +670,4 @@ PROC vulkan_init() -> fresult
 PROC vulkan_destroy() -> void
 {
     g_vulkan->~vulkan_context();
-
 }

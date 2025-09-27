@@ -52,6 +52,7 @@ target( "tachyon_engine" )
     -- Using lld linker instead of mold for now for error messages
     -- Reconsider if the build gets slow
     add_cxxflags( "clang::-g",
+                  "-g",
                   -- "-analyze",
                   -- "-fuse-ld=lld",
                   "-fuse-ld=mold",
@@ -111,7 +112,7 @@ target( "tachyon_engine" )
                   -- "-fsanitize=cfi",   -- Control Flow Integrity
                   -- "-fsanitize=kcfi",  -- Kernel Indirect Call Forward-Edge Control Flow Integrity
                   -- "-fsanitize=safe-stack",
-                  ""
+                  {tools = "clang" }
                    )
 
 target( "tracy" )
@@ -223,9 +224,23 @@ target( "tachyon_libs" )
 target( "tachyon_shaders" )
     set_kind( "object" )
     add_packages("glslang")
-    add_rules("utils.glsl2spv", {outputdir = "build"})
+
+    add_rules("utils.glsl2spv", {outputdir = "build/shaders"} )
+    -- set_targetdir("$(builddir)/shaders")
     add_files("source/shaders/*.vert",
               "source/shaders/*.frag")
+
+    add_installfiles( "build/shaders/*spv", {prefixdir = "share/tachyon_engine/shaders"} )
+
+    before_build( function( target )
+          import("core.project.config")
+          build_dir = target:targetdir()
+          build_root = config.get("buildir")
+          print( build_root )
+          -- Copy shaders into build directory so it can find them more easily per-build mode
+          os.cp( config.get("buildir").."/shaders/", build_dir )
+    end )
+
 
 target( "tachyon_tests" )
     set_kind( "binary" )

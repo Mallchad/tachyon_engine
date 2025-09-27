@@ -8,6 +8,8 @@ int main( int argc, char** argv )
     globals _global = {}; global = &_global;
     global->program_epoch = get_time();
 
+    tyon_logf( "Current working directory: {}",  std::filesystem::current_path() );
+
     globals::primary_database = &_global;
     global->kill_program = false;
 

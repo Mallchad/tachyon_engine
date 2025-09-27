@@ -5,7 +5,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <vulkan/vulkan_xlib.h>
 
 // -- stdlib / stl --
