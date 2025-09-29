@@ -64,8 +64,9 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
 
 PROC vulkan_init() -> fresult
 {
-    fresult result = true;
+    fresult result = false;
     g_vulkan = memory_allocate<vulkan_context>( 1 );
+    auto self = g_vulkan;
     auto& instance = g_vulkan->instance;
     VkInstanceCreateInfo instance_args = {};
     VkApplicationInfo app_info = {};
@@ -250,8 +251,8 @@ PROC vulkan_init() -> fresult
     // -- Create Device and Device Queue --
 
     // Create some 'queue arg' structs and then pass it to the 'logical device' creation struct
-    VkQueue graphics_queue {};
-    VkQueue present_queue {};
+    VkQueue& graphics_queue = g_vulkan->graphics_queue;
+    VkQueue& present_queue = g_vulkan->present_queue;
     f32 queue_priority = 1.0f;
     array<VkDeviceQueueCreateInfo> queues;
 
@@ -330,7 +331,7 @@ PROC vulkan_init() -> fresult
     swapchain_args.surface = g_vulkan->surface;
     swapchain_args.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     // The format must match the physical surface formats
-    swapchain_args.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+    swapchain_args.imageFormat = self->swapchain_image_format;
     swapchain_args.imageExtent = VkExtent2D { 1920, 1080 };
     swapchain_args.imageArrayLayers = 1; // More than 1 if a stereoscopic application
     swapchain_args.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -360,7 +361,7 @@ PROC vulkan_init() -> fresult
         vulkan_log( "Destroy swapchain" );
     } );
 
-    array<VkImage> swapchain_images {};
+    array<VkImage>& swapchain_images = g_vulkan->swapchain_images;
     u32 n_swapchain_images = 0;
     vkGetSwapchainImagesKHR( g_vulkan->logical_device, g_vulkan->swapchain,
                              &n_swapchain_images, nullptr);
@@ -368,29 +369,28 @@ PROC vulkan_init() -> fresult
     vkGetSwapchainImagesKHR( g_vulkan->logical_device, g_vulkan->swapchain,
                              &n_swapchain_images, swapchain_images.data );
 
+    // Create Threading Primitives
     VkFenceCreateInfo fence_args {};
-    VkFence frame_begin_fence;
-    VkFence frame_aquire_fence;
-    VkFence frame_end_fence;
     fence_args.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    vkCreateFence( g_vulkan->logical_device, &fence_args, nullptr, &frame_end_fence );
-    vkCreateFence( g_vulkan->logical_device, &fence_args, nullptr, &frame_aquire_fence );
+    bool fence_ok = true;
+    fence_ok &= VK_SUCCESS == vkCreateFence(
+        g_vulkan->logical_device, &fence_args, nullptr, &g_vulkan->frame_end_fence );
+    fence_ok &= VK_SUCCESS == vkCreateFence(
+        g_vulkan->logical_device, &fence_args, nullptr, &g_vulkan->frame_aquire_fence );
     // Signal the begin fence to prevent it hanging
     fence_args.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    vkCreateFence( g_vulkan->logical_device, &fence_args, nullptr, &frame_begin_fence );
+    fence_ok &= VK_SUCCESS == vkCreateFence(
+        g_vulkan->logical_device, &fence_args, nullptr, &g_vulkan->frame_begin_fence );
+    if (fence_ok == false) { return false; }
 
-    // Set draw commands
-    u32 image_index {};
-    vkAcquireNextImageKHR(
-        g_vulkan->logical_device,
-        g_vulkan->swapchain,
-        UINT64_MAX,
-        VK_NULL_HANDLE,
-        frame_aquire_fence,
-        &image_index
-    );
-    vkWaitForFences( g_vulkan->logical_device, 1, &frame_aquire_fence, true, 16'666'666 );
-    vkResetFences( g_vulkan->logical_device, 1, &frame_aquire_fence );
+    VkSemaphoreCreateInfo semaphore_args {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    };
+    bool semaphore_ok = true;
+    semaphore_ok &= VK_SUCCESS == vkCreateSemaphore(
+        self->logical_device, &semaphore_args, nullptr, &self->frame_end_semaphore );
+    semaphore_ok &= VK_SUCCESS == vkCreateSemaphore(
+        self->logical_device, &semaphore_args, nullptr, &self->queue_submit_semaphore );
 
     VkCommandPool command_pool;
     VkCommandPoolCreateInfo pool_args {};
@@ -413,13 +413,6 @@ PROC vulkan_init() -> fresult
     command_args.commandBufferCount = 1;
     VkResult command_buffer_ok = vkAllocateCommandBuffers(
         g_vulkan->logical_device, &command_args, &g_vulkan->commands );
-
-    // Start writing draw commands
-    VkCommandBufferBeginInfo begin_args {};
-    begin_args.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_args.flags = 0; // Optional
-    begin_args.pInheritanceInfo = nullptr; // Optional
-    VkResult command_ok = vkBeginCommandBuffer( g_vulkan->commands, &begin_args );
 
     // -- Create graphics pipeline --
     // Create shaders of pipeline
@@ -464,16 +457,30 @@ PROC vulkan_init() -> fresult
     { vulkan_error( "Format feature vertex buffer not supported for specified format" ); }
 
     // Create a render pass, will be passed to pipeline
+    VkAttachmentDescription color_attachment {};
+    color_attachment.format = self->swapchain_image_format;
+    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference color_attachment_ref{};
+    color_attachment_ref.attachment = 0;
+    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
     // sub-pass first
     VkSubpassDescription sub_pass {};
-    sub_pass.pColorAttachments = nullptr; // TODO: Add colour attachment
-    sub_pass.colorAttachmentCount = 0;
+    sub_pass.pColorAttachments = &color_attachment_ref;
+    sub_pass.colorAttachmentCount = 1;
 
-    VkRenderPass render_pass {};
+    VkRenderPass& render_pass = g_vulkan->render_pass;
     VkRenderPassCreateInfo pass_args{};
     pass_args.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    pass_args.attachmentCount = 0; // TODO: Fill in attachments
-    pass_args.pAttachments = nullptr;
+    pass_args.attachmentCount = 1;
+    pass_args.pAttachments = &color_attachment;
     pass_args.subpassCount = 1;
     pass_args.pSubpasses = &sub_pass;
 
@@ -553,6 +560,29 @@ PROC vulkan_init() -> fresult
     multisample_args.alphaToCoverageEnable = false;
     multisample_args.alphaToOneEnable = false;
 
+    VkPipelineColorBlendAttachmentState color_blend_attachment{};
+    color_blend_attachment.colorWriteMask = (
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    color_blend_attachment.blendEnable = VK_TRUE;
+    color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+    color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
+    VkPipelineColorBlendStateCreateInfo color_blend_args{};
+    color_blend_args.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color_blend_args.logicOpEnable = VK_FALSE;
+    color_blend_args.logicOp = VK_LOGIC_OP_COPY; // Optional
+    color_blend_args.attachmentCount = 1;
+    color_blend_args.pAttachments = &color_blend_attachment;
+    color_blend_args.blendConstants[0] = 0.0f; // Optional
+    color_blend_args.blendConstants[1] = 0.0f; // Optional
+    color_blend_args.blendConstants[2] = 0.0f; // Optional
+    color_blend_args.blendConstants[3] = 0.0f; // Optional
+
     VkPipelineLayout layout {};
     VkDescriptorSetLayout descriptor_layout {};
 
@@ -560,8 +590,8 @@ PROC vulkan_init() -> fresult
     VkDescriptorSetLayoutCreateInfo descriptor_layout_args {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .flags = 0x0,
-        .pBindings = nullptr,
         .bindingCount = 0,
+        .pBindings = nullptr,
     };
 
     VkPipelineLayoutCreateInfo layout_args {};
@@ -589,7 +619,7 @@ PROC vulkan_init() -> fresult
     pipeline_args.pRasterizationState = &raster_args;
     pipeline_args.pMultisampleState = &multisample_args;
     // pipeline_args.pDepthStencilState = nullptr; // Optional
-    // pipeline_args.pColorBlendState = &colorBlending;
+    pipeline_args.pColorBlendState = &color_blend_args;
     // pipeline_args.pDynamicState = &dynamicState;
     pipeline_args.layout = layout;
     pipeline_args.renderPass = render_pass;
@@ -608,8 +638,8 @@ PROC vulkan_init() -> fresult
 
     /** Views describe how to interpret VkImage's, VkImages are related to
         textures and framebuffers */
-    array<VkImageView> swapchain_image_views;
-    array<VkFramebuffer> swapchain_buffers;
+    array<VkImageView>& swapchain_image_views = g_vulkan->swapchain_image_views;
+    array<VkFramebuffer>& swapchain_buffers = g_vulkan->swapchain_framebuffers;
     array<VkResult> view_errors;
     swapchain_image_views.resize( swapchain_images.size() );
     swapchain_buffers.resize( swapchain_images.size() );
@@ -618,10 +648,6 @@ PROC vulkan_init() -> fresult
 
     for (i32 i = 0; i < swapchain_image_views.size(); i++)
     {
-        VkImageView attachments[] = {
-            swapchain_image_views[i]
-        };
-
         VkImageViewCreateInfo view_args{};
         view_args.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         view_args.image = swapchain_images[i];
@@ -640,57 +666,124 @@ PROC vulkan_init() -> fresult
             g_vulkan->logical_device, &view_args, nullptr, &swapchain_image_views[i] );
         view_errors[i] = view_ok;
 
-        VkFramebufferCreateInfo framebufferInfo{};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = render_pass;
-        framebufferInfo.attachmentCount = 0;
-        framebufferInfo.pAttachments = attachments;
-        framebufferInfo.width = 1920;
-        framebufferInfo.height = 1080;
-        framebufferInfo.layers = 1;
+        VkImageView attachments[] = {
+            swapchain_image_views[i]
+        };
+
+        VkFramebufferCreateInfo framebuffer_args{};
+        framebuffer_args.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebuffer_args.renderPass = render_pass;
+        framebuffer_args.attachmentCount = 1;
+        framebuffer_args.pAttachments = attachments;
+        framebuffer_args.width = 1920;
+        framebuffer_args.height = 1080;
+        framebuffer_args.layers = 1;
 
         VkResult framebuffer_ok = vkCreateFramebuffer(
-            g_vulkan->logical_device, &framebufferInfo, nullptr, &swapchain_buffers[i] );
+            g_vulkan->logical_device, &framebuffer_args, nullptr, &swapchain_buffers[i] );
     }
 
+    TYON_BREAK();
+    result = true;
+    g_vulkan->initialized = true;
+    return result;
+}
+
+PROC vulkan_destroy() -> void
+{
+    // Wait for device before attempting to cleanup
+    vkDeviceWaitIdle( g_vulkan->logical_device );
+    g_vulkan->~vulkan_context();
+}
+
+PROC vulkan_tick() -> void
+{
+    vulkan_draw();
+}
+
+PROC vulkan_draw() -> void
+{
+    // -- Function Setup
+    auto self = g_vulkan;
+    if (g_vulkan->initialized == false) { return; }
+
+    // -- Pre-Draw Start Setup and Reset Tasks
+    vkResetCommandBuffer( self->commands, 0x0 );
+
+    // Set draw commands
+    u32 image_index {};
+    vkAcquireNextImageKHR(
+        g_vulkan->logical_device,
+        g_vulkan->swapchain,
+        UINT64_MAX,
+        VK_NULL_HANDLE,
+        g_vulkan->frame_aquire_fence,
+        &image_index
+    );
+    vkWaitForFences( g_vulkan->logical_device, 1, &self->frame_aquire_fence, true, 16'666'666 );
+    vkResetFences( g_vulkan->logical_device, 1, &self->frame_aquire_fence );
+
+    // Start writing draw commands
+    VkCommandBufferBeginInfo begin_args {};
+    begin_args.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_args.flags = 0; // Optional
+    begin_args.pInheritanceInfo = nullptr; // Optional
+    VkResult command_ok = vkBeginCommandBuffer( g_vulkan->commands, &begin_args );
 
     // Set render pass start information
     VkClearValue clear_value {};
     clear_value.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
     VkRenderPassBeginInfo render_pass_args{};
     render_pass_args.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_args.renderPass = render_pass;
-    render_pass_args.framebuffer = swapchain_buffers[0];
+    render_pass_args.renderPass = self->render_pass;
+    render_pass_args.framebuffer = self->swapchain_framebuffers[0];
     render_pass_args.renderArea.offset = {0, 0};
     render_pass_args.renderArea.extent = VkExtent2D { 1920, 1080 };
     render_pass_args.clearValueCount = 1;
     render_pass_args.pClearValues = &clear_value;
 
-    vkCmdBeginRenderPass( g_vulkan->commands, &render_pass_args, VK_SUBPASS_CONTENTS_INLINE );
+    vkCmdBeginRenderPass( self->commands, &render_pass_args, VK_SUBPASS_CONTENTS_INLINE );
     vkCmdBindPipeline(
-        g_vulkan->commands, VK_PIPELINE_BIND_POINT_GRAPHICS, g_vulkan->pipeline );
+        self->commands, VK_PIPELINE_BIND_POINT_GRAPHICS, self->pipeline );
 
     // Finalize frame and submit all commands
-    VkSubmitInfo submit_args {};
-    submit_args.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSubmitInfo submit_args {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        // No semaphores to wait on yet
+        .waitSemaphoreCount = 0,
+        .pWaitSemaphores = nullptr,
+        .pWaitDstStageMask = 0x0,
+        // Just the one command buffer for now
+        .commandBufferCount = 1,
+        .pCommandBuffers = &self->commands,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &self->queue_submit_semaphore
+    };
+
     VkResult sync_ok = vkWaitForFences(
-        g_vulkan->logical_device,
+        self->logical_device,
         1,
-        &frame_begin_fence,
+        &self->frame_begin_fence,
         true,
         16'666'666
     );
-    vkResetFences( g_vulkan->logical_device, 1, &frame_begin_fence );
-    if (sync_ok != VK_SUCCESS)
-    { tyon_error( "Failed to wait on frame start fence for some reason" ); }
-    vkQueueSubmit( graphics_queue, 1, &submit_args, frame_end_fence );
+    vkResetFences( self->logical_device, 1, &self->frame_begin_fence );
+    vkEndCommandBuffer( self->commands );
 
-    TYON_BREAK();
-    result = true;
-    return result;
-}
+    // if (sync_ok != VK_SUCCESS)
+    // { tyon_error( "Failed to wait on frame start fence for some reason" ); }
+    // vkQueueSubmit( self->graphics_queue, 1, &submit_args, self->frame_end_fence );
 
-PROC vulkan_destroy() -> void
-{
-    g_vulkan->~vulkan_context();
+    VkSwapchainKHR present_swapchains[] = { self->swapchain };
+    VkPresentInfoKHR present_args {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &self->queue_submit_semaphore,
+        .swapchainCount = 1,
+        .pSwapchains = present_swapchains,
+        .pImageIndices = &image_index,
+    };
+    VkResult present_bad = vkQueuePresentKHR( self->present_queue, &present_args );
+    if (present_bad)
+    { vulkan_error( "Fatal error with drawing and presentation 'VkQueuePresent'" ); }
 }

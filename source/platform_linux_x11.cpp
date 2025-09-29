@@ -53,7 +53,7 @@ FUNCTION x11_window_open()
     Window x_window_tmp = XCreateWindow(
         g_x11->server,
         RootWindow( g_x11->server, g_x11->screen ),
-        500, 500, 500, 500, 0,
+        0, 0, 1920, 1080, 0,
         CopyFromParent,
         InputOutput,
         CopyFromParent,

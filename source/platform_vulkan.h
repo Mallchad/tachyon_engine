@@ -1,5 +1,4 @@
 
-#pragma once
 
 struct vulkan_context
 {
@@ -13,11 +12,33 @@ struct vulkan_context
     VkSurfaceKHR surface;
     VkSwapchainKHR swapchain;
     VkCommandBuffer commands;
-    // Primary graphics pipeline
+    /** Views describe how to interpret VkImage's, VkImages are related to
+        textures and framebuffers */
+    array<VkImageView> swapchain_image_views;
+    array<VkFramebuffer> swapchain_framebuffers;
+    array<VkImage> swapchain_images;
+    VkQueue graphics_queue;
+    VkQueue present_queue;
+
+    VkRenderPass render_pass;
+    // Primary graphics pipeline, associated with render pass
     VkPipeline pipeline;
+
+    // Ungrouped threading primitives
+    VkFence frame_begin_fence;
+    VkFence frame_aquire_fence;
+    VkFence frame_end_fence;
+
+    VkSemaphore queue_submit_semaphore;
+    VkSemaphore frame_end_semaphore;
+
+    // Configurables
+    VkFormat swapchain_image_format = VK_FORMAT_B8G8R8A8_UNORM;
 
     // Top level resource manager for vulkan
     resource_arena resources;
+
+    bool initialized = false;
 };
 
 struct vulkan_shader
@@ -41,5 +62,10 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator );
 PROC vulkan_init() -> fresult;
 
 PROC vulkan_destroy() -> void;
+
+PROC vulkan_tick() -> void;
+
+PROC vulkan_draw() -> void;
+
 
 extern vulkan_context* g_vulkan;
