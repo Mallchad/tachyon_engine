@@ -5,7 +5,7 @@ vulkan_context* g_vulkan = nullptr;
 
 #define vulkan_log( ... ) log( "Tachyon Vulkan", __VA_ARGS__ );
 #define vulkan_error( ... ) TYON_LOG_ERROR( "Tachyon Vulkan Error", __VA_ARGS__ );
-#define vulkan_logf( FORMAT_, ... ) log_format( "Tachyon Vulkan Error", (FORMAT_), __VA_ARGS__);
+#define vulkan_logf( FORMAT_, ... ) log_format( "Tachyon Vulkan", (FORMAT_), __VA_ARGS__);
 #define vulkan_errorf( FORMAT_, ... ) log_error_format_impl( \
         "Tachyon Vulkan Error", fmt::format((FORMAT_),  __VA_ARGS__) );
 
@@ -763,13 +763,15 @@ PROC vulkan_draw() -> void
     vkCmdBindPipeline(
         self->commands, VK_PIPELINE_BIND_POINT_GRAPHICS, self->pipeline );
 
+    auto wait_stages = (VkPipelineStageFlags[]){VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
     // Finalize frame and submit all commands
     VkSubmitInfo submit_args {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         // No semaphores to wait on yet
         .waitSemaphoreCount = 0,
         .pWaitSemaphores = nullptr,
-        .pWaitDstStageMask = (VkPipelineStageFlags[]){VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+        .pWaitDstStageMask = wait_stages,
         // Just the one command buffer for now
         .commandBufferCount = 1,
         .pCommandBuffers = &self->commands,
@@ -777,14 +779,14 @@ PROC vulkan_draw() -> void
         .pSignalSemaphores = &self->queue_submit_semaphore
     };
 
-    VkResult sync_ok = vkWaitForFences(
-        self->logical_device,
-        1,
-        &self->frame_begin_fence,
-        true,
-        16'666'666
-    );
-    vkResetFences( self->logical_device, 1, &self->frame_begin_fence );
+    // VkResult sync_ok = vkWaitForFences(
+    //     self->logical_device,
+    //     1,
+    //     &self->frame_begin_fence,
+    //     true,
+    //     16'666'666
+    // );
+    // vkResetFences( self->logical_device, 1, &self->frame_begin_fence );
     vkCmdEndRenderPass( self->commands );
     vkEndCommandBuffer( self->commands );
 
