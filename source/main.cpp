@@ -8,6 +8,8 @@ int main( int argc, char** argv )
     globals _global = {}; global = &_global;
     global->program_epoch = get_time();
 
+    // Change directory to binary
+    std::filesystem::current_path( file_self_directory() );
     tyon_logf( "Current working directory: {}",  std::filesystem::current_path() );
 
     globals::primary_database = &_global;
@@ -63,6 +65,8 @@ int main( int argc, char** argv )
             float epoch_elapsed_float = std::chrono::duration_cast<
                 std::chrono::duration<f32>>( epoch_elapsed ).count();
 
+            // Draw tick last
+            x11_tick();
             vulkan_tick();
             // main_renderer.frame_update( );
             // main_input.frame_update( epoch_elapsed_float );

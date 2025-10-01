@@ -38,7 +38,10 @@ struct vulkan_context
     // Top level resource manager for vulkan
     resource_arena resources;
 
+    // Platform Independant State
     bool initialized = false;
+    i64 frames_started = 0;
+    i64 frames_completed = 0;
 };
 
 struct vulkan_shader

@@ -49,15 +49,11 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
         vulkan_errorf( "Failed to create shader module: {}", arg->name );
         return false;
     }
-    g_vulkan->resources.push_cleanup( [=]{
-        vulkan_log( "Dstroying shader module:", arg->name )
+    fstring name = arg->name;
+    g_vulkan->resources.push_cleanup( [name, module]{
+        vulkan_log( "Destroying shader module:", name );
         vkDestroyShaderModule( g_vulkan->logical_device, module, nullptr ); } );
 
-    VkPipelineShaderStageCreateInfo shader_stage_args{};
-    shader_stage_args.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shader_stage_args.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    shader_stage_args.module = module;
-    shader_stage_args.pName = "main";
     vulkan_logf( "Created shader module: {}", arg->name );
     return true;
 }
@@ -284,7 +280,8 @@ PROC vulkan_init() -> fresult
 
     array<cstring> device_extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME, // Presentation swapchain extension
-        VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME,
+        // Interferes with debugging
+        // VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, // Multiple pixels per fragment
     };
     device_args.ppEnabledLayerNames = enabled_layers.data;
     device_args.enabledLayerCount = enabled_layers.size();
@@ -416,8 +413,8 @@ PROC vulkan_init() -> fresult
 
     // -- Create graphics pipeline --
     // Create shaders of pipeline
-    vulkan_shader vertex_shader;
-    vulkan_shader fragment_shader;
+    vulkan_shader vertex_shader {};
+    vulkan_shader fragment_shader {};
 
     vertex_shader.name = "test_triangle";
     vertex_shader.code.filename = "shaders/test_triangle.vert.spv";
@@ -467,13 +464,17 @@ PROC vulkan_init() -> fresult
     color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    VkAttachmentReference color_attachment_ref{};
-    color_attachment_ref.attachment = 0;
-    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    // Only need one color attachment?
+    array<VkAttachmentReference> color_attachment_refs {
+        VkAttachmentReference {
+            .attachment = 0,
+            .layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        },
+    };
 
     // sub-pass first
     VkSubpassDescription sub_pass {};
-    sub_pass.pColorAttachments = &color_attachment_ref;
+    sub_pass.pColorAttachments = color_attachment_refs.data;
     sub_pass.colorAttachmentCount = 1;
 
     VkRenderPass& render_pass = g_vulkan->render_pass;
@@ -552,7 +553,7 @@ PROC vulkan_init() -> fresult
 
     VkPipelineMultisampleStateCreateInfo multisample_args {};
     multisample_args.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisample_args.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT;
+    multisample_args.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     multisample_args.sampleShadingEnable = true;
     multisample_args.minSampleShading = 0.2f;
     // wut is this
@@ -582,6 +583,20 @@ PROC vulkan_init() -> fresult
     color_blend_args.blendConstants[1] = 0.0f; // Optional
     color_blend_args.blendConstants[2] = 0.0f; // Optional
     color_blend_args.blendConstants[3] = 0.0f; // Optional
+
+    /* NOTE: A pipeline can be set to have some of it's state become dynamic
+       after creation.  Which may be a performance benefit for tasks its
+       relevant to. This setion describes what state can be dynamic instead of
+       static.*/
+    array<VkDynamicState> dynamic_states_selected = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+    };
+    VkPipelineDynamicStateCreateInfo dynamic_state_args {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .dynamicStateCount = cast<u32>(dynamic_states_selected.size()),
+        .pDynamicStates = dynamic_states_selected.data
+    };
 
     VkPipelineLayout layout {};
     VkDescriptorSetLayout descriptor_layout {};
@@ -620,7 +635,7 @@ PROC vulkan_init() -> fresult
     pipeline_args.pMultisampleState = &multisample_args;
     // pipeline_args.pDepthStencilState = nullptr; // Optional
     pipeline_args.pColorBlendState = &color_blend_args;
-    // pipeline_args.pDynamicState = &dynamicState;
+    pipeline_args.pDynamicState = &dynamic_state_args;
     pipeline_args.layout = layout;
     pipeline_args.renderPass = render_pass;
     pipeline_args.subpass = 0;
@@ -683,7 +698,6 @@ PROC vulkan_init() -> fresult
             g_vulkan->logical_device, &framebuffer_args, nullptr, &swapchain_buffers[i] );
     }
 
-    TYON_BREAK();
     result = true;
     g_vulkan->initialized = true;
     return result;
@@ -706,6 +720,8 @@ PROC vulkan_draw() -> void
     // -- Function Setup
     auto self = g_vulkan;
     if (g_vulkan->initialized == false) { return; }
+    i64 current_frame = g_vulkan->frames_started;
+    ++g_vulkan->frames_started;
 
     // -- Pre-Draw Start Setup and Reset Tasks
     vkResetCommandBuffer( self->commands, 0x0 );
@@ -732,11 +748,12 @@ PROC vulkan_draw() -> void
 
     // Set render pass start information
     VkClearValue clear_value {};
-    clear_value.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
+    clear_value.color = {{ 0.2f, 0.0f, 0.2f, 1.0f }};
+    // VkClearValue clear_values[] = { clear_value, clear_value };
     VkRenderPassBeginInfo render_pass_args{};
     render_pass_args.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     render_pass_args.renderPass = self->render_pass;
-    render_pass_args.framebuffer = self->swapchain_framebuffers[0];
+    render_pass_args.framebuffer = self->swapchain_framebuffers[ image_index ];
     render_pass_args.renderArea.offset = {0, 0};
     render_pass_args.renderArea.extent = VkExtent2D { 1920, 1080 };
     render_pass_args.clearValueCount = 1;
@@ -752,7 +769,7 @@ PROC vulkan_draw() -> void
         // No semaphores to wait on yet
         .waitSemaphoreCount = 0,
         .pWaitSemaphores = nullptr,
-        .pWaitDstStageMask = 0x0,
+        .pWaitDstStageMask = (VkPipelineStageFlags[]){VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
         // Just the one command buffer for now
         .commandBufferCount = 1,
         .pCommandBuffers = &self->commands,
@@ -768,11 +785,12 @@ PROC vulkan_draw() -> void
         16'666'666
     );
     vkResetFences( self->logical_device, 1, &self->frame_begin_fence );
+    vkCmdEndRenderPass( self->commands );
     vkEndCommandBuffer( self->commands );
 
     // if (sync_ok != VK_SUCCESS)
     // { tyon_error( "Failed to wait on frame start fence for some reason" ); }
-    // vkQueueSubmit( self->graphics_queue, 1, &submit_args, self->frame_end_fence );
+    vkQueueSubmit( self->graphics_queue, 1, &submit_args, self->frame_end_fence );
 
     VkSwapchainKHR present_swapchains[] = { self->swapchain };
     VkPresentInfoKHR present_args {
@@ -782,8 +800,19 @@ PROC vulkan_draw() -> void
         .swapchainCount = 1,
         .pSwapchains = present_swapchains,
         .pImageIndices = &image_index,
+        // This can be used for storing results from each individual swapchain
+        .pResults = nullptr
     };
     VkResult present_bad = vkQueuePresentKHR( self->present_queue, &present_args );
     if (present_bad)
     { vulkan_error( "Fatal error with drawing and presentation 'VkQueuePresent'" ); }
+
+    auto frame_timeout = vkWaitForFences(
+        self->logical_device, 1, &self->frame_end_fence, true, 1'000'000'000 );
+    vkResetFences( self->logical_device, 1, &self->frame_end_fence );
+
+    if (frame_timeout == VK_TIMEOUT)
+    { vulkan_errorf( "Frame Number: [{}] | Missed frame!", current_frame ); }
+    else if (frame_timeout == VK_SUCCESS)
+    { vulkan_logf( "Frame Number: [{}] | Completed Frame.", current_frame ); }
 }
