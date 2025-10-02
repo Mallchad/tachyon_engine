@@ -9,6 +9,11 @@ vulkan_context* g_vulkan = nullptr;
 #define vulkan_errorf( FORMAT_, ... ) log_error_format_impl( \
         "Tachyon Vulkan Error", fmt::format((FORMAT_),  __VA_ARGS__) );
 
+namespace dyn
+{
+    PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
+}
+
 VKAPI_ATTR VKAPI_CALL
 PROC vulkan_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
@@ -30,6 +35,22 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
     return result;
 }
 
+PROC vulkan_label_object( u64 handle, VkObjectType type, fstring name ) -> void
+{
+    // NOTE: This is the depreceated version of the struct/function, this crashed when I used it.
+    // VkDebugMarkerObjectNameInfoEXT name_args {};
+    char* s = memory_allocate_raw( name.size() );
+    name.copy( s, name.size(), 0 );
+    VkDebugUtilsObjectNameInfoEXT name_args {
+        .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        .objectType = type,
+        .objectHandle = handle,
+        .pObjectName = s,
+    };
+    dyn::vkSetDebugUtilsObjectNameEXT( g_vulkan->logical_device, &name_args );
+}
+
+
 PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
 {
     ERROR_GUARD( arg->code_binary, "Code provided must be binary SPIR-V currently" );
@@ -49,6 +70,8 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
         vulkan_errorf( "Failed to create shader module: {}", arg->name );
         return false;
     }
+    vulkan_label_object(
+        (u64)module, VK_OBJECT_TYPE_SHADER_MODULE, arg->name + "_shader" );
     fstring name = arg->name;
     g_vulkan->resources.push_cleanup( [name, module]{
         vulkan_log( "Destroying shader module:", name );
@@ -94,9 +117,16 @@ PROC vulkan_init() -> fresult
         "VK_LAYER_KHRONOS_validation", // debug validaiton layer
     };
     array<cstring> enabled_extensions = {
-        VK_KHR_SURFACE_EXTENSION_NAME, // Surface for common window and compositing tasks
-        VK_KHR_XLIB_SURFACE_EXTENSION_NAME, // xlib windowing extension
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME, // message callback and debug stuff
+        // Surface for common window and compositing tasks
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        // xlib windowing extension
+        VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+        // message callback and debug stuff
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+        // Dependency for 'vkDebugMarkerSetObjectNameEXT'
+        VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+        // Promoted to debug_utils, might still required for older versions, but not modern nvidia
+        // VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
     };
     app_info.pApplicationName = "Tachyon Engine";
     app_info.applicationVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
@@ -135,6 +165,10 @@ PROC vulkan_init() -> fresult
         vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );
     VkDebugUtilsMessengerEXT debug_messenger {};
     dyn_vkCreateDebugUtilsMessengerEXT(instance, &messenger_args, nullptr, &debug_messenger );
+
+    // For debug naming
+    dyn::vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)
+        vkGetInstanceProcAddr( g_vulkan->instance, "vkSetDebugUtilsObjectNameEXT" );
 
     // -- Setup default window surfaces --
     if (g_x11->server && g_x11->window)
@@ -379,6 +413,12 @@ PROC vulkan_init() -> fresult
     fence_ok &= VK_SUCCESS == vkCreateFence(
         g_vulkan->logical_device, &fence_args, nullptr, &g_vulkan->frame_begin_fence );
     if (fence_ok == false) { return false; }
+    vulkan_label_object(
+        (u64)self->frame_begin_fence, VK_OBJECT_TYPE_FENCE, "frame_begin_fence" );
+    vulkan_label_object(
+        (u64)self->frame_aquire_fence, VK_OBJECT_TYPE_FENCE, "frame_begin_fence" );
+    vulkan_label_object(
+        (u64)self->frame_end_fence, VK_OBJECT_TYPE_FENCE, "frame_begin_fence" );
 
     VkSemaphoreCreateInfo semaphore_args {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -388,6 +428,10 @@ PROC vulkan_init() -> fresult
         self->logical_device, &semaphore_args, nullptr, &self->frame_end_semaphore );
     semaphore_ok &= VK_SUCCESS == vkCreateSemaphore(
         self->logical_device, &semaphore_args, nullptr, &self->queue_submit_semaphore );
+    vulkan_label_object(
+        (u64)self->frame_end_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "frame_end_semaphore" );
+    vulkan_label_object(
+        (u64)self->queue_submit_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "queue_submit_semaphore" );
 
     VkCommandPool command_pool;
     VkCommandPoolCreateInfo pool_args {};
@@ -464,6 +508,9 @@ PROC vulkan_init() -> fresult
     if (vkCreateBuffer( self->logical_device, &buffer_args, nullptr, &self->test_triangle_buffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to create vertex buffer!");
     }
+    vulkan_label_object(
+        (u64)self->test_triangle_buffer, VK_OBJECT_TYPE_BUFFER, "test_triangle_buffer" );
+
 
     VkMemoryRequirements memory_requirements;
     vkGetBufferMemoryRequirements( self->logical_device, self->test_triangle_buffer, &memory_requirements);

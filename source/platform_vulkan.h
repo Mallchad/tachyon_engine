@@ -74,6 +74,8 @@ struct vulkan_pipeline
 
 PROC vulkan_allocator_create_callbacks( i_allocator* allocator );
 
+PROC vulkan_label_object( u64 handle, VkObjectType type, fstring name ) -> void;
+
 PROC vulkan_init() -> fresult;
 
 PROC vulkan_destroy() -> void;
@@ -81,6 +83,5 @@ PROC vulkan_destroy() -> void;
 PROC vulkan_tick() -> void;
 
 PROC vulkan_draw() -> void;
-
 
 extern vulkan_context* g_vulkan;
