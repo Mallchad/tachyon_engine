@@ -26,10 +26,11 @@ layout(std140, binding = 0) uniform frame_data
 
 void main()
 {
-    gl_Position = vec4(vert.x*screen_vh_aspect_ratio,
-                       vert.y,
+    float aspect_ratio = 0.5625;
+    gl_Position = vec4(vert.x * aspect_ratio,
+                       -vert.y,
                        vert.z,
-                       1.f) * 1.0;
+                       1.f);
     vertex_color = col;
 
     // Debug

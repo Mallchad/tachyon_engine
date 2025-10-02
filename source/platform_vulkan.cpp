@@ -453,6 +453,67 @@ PROC vulkan_init() -> fresult
     if (!vertex_buffer_ok)
     { vulkan_error( "Format feature vertex buffer not supported for specified format" ); }
 
+    // Create vertex buffer for describing a mesh
+    VkDeviceMemory vertex_memory {};
+    VkBufferCreateInfo buffer_args {};
+    buffer_args.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_args.size = sizeof(f32) * self->test_triangle_data.size();
+    buffer_args.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    buffer_args.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer( self->logical_device, &buffer_args, nullptr, &self->test_triangle_buffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create vertex buffer!");
+    }
+
+    VkMemoryRequirements memory_requirements;
+    vkGetBufferMemoryRequirements( self->logical_device, self->test_triangle_buffer, &memory_requirements);
+
+    VkPhysicalDeviceMemoryProperties memory_props {};
+    vkGetPhysicalDeviceMemoryProperties( self->device, &memory_props );
+
+    VkMemoryPropertyFlags memory_filter = (
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    bool match = false;
+    i32 memory_type = 0;
+    for (i32 i=0; i < memory_props.memoryTypeCount; ++i)
+    {
+        // TYON_BREAK();
+        match = false;
+        bool requirement_fulfilled = memory_requirements.memoryTypeBits & (1 << i);
+        bool filter_match = (memory_props.memoryTypes[i].propertyFlags & memory_filter);
+        match = (requirement_fulfilled && filter_match);
+        if (match) { memory_type = i; }
+    }
+    if (match == false)
+    { vulkan_error( "Couldn't find suitible memory type" ); }
+
+    VkMemoryAllocateInfo memory_args {};
+    memory_args.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory_args.allocationSize = memory_requirements.size;
+    memory_args.memoryTypeIndex = memory_type;
+    if (vkAllocateMemory( self->logical_device, &memory_args, nullptr, &vertex_memory) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate vertex buffer memory!");
+    }
+    vkBindBufferMemory( self->logical_device, self->test_triangle_buffer, vertex_memory, 0 );
+
+    void* data;
+    vkMapMemory( self->logical_device, vertex_memory, 0, buffer_args.size, 0, &data );
+    memcpy( data, self->test_triangle_data.data, size_t(buffer_args.size) );
+    // self->resources.push_cleanup([=] {
+    vkUnmapMemory( self->logical_device, vertex_memory );
+    // });
+
+    // Flush memory to make sure its used
+    VkMappedMemoryRange range {
+        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = vertex_memory,
+        .offset = 0,
+        .size = buffer_args.size,
+    };
+    // TODO: remove before flight
+    // vkFlushMappedMemoryRanges( self->logical_device, 1, range );
+
     // Create a render pass, will be passed to pipeline
     VkAttachmentDescription color_attachment {};
     color_attachment.format = self->swapchain_image_format;
@@ -468,7 +529,7 @@ PROC vulkan_init() -> fresult
     array<VkAttachmentReference> color_attachment_refs {
         VkAttachmentReference {
             .attachment = 0,
-            .layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         },
     };
 
@@ -488,25 +549,45 @@ PROC vulkan_init() -> fresult
     auto pass_ok = vkCreateRenderPass(
         g_vulkan->logical_device, &pass_args, nullptr, &render_pass );
 
-    VkVertexInputBindingDescription binding {};
-    binding.binding = 0; // vertex attribute binding/slot. leave as 0
-    binding.stride = 4 * 3;
-    // Not sure what this is. think it means pulling from instance wide stuffs?
-    binding.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+    array<VkVertexInputBindingDescription> bindings {
+        // {   // Normal binding
+        //     .binding = 0, // vertex attribute binding/slot. leave as 0
+        //     .stride = 4 * 6, // 3 32-bit vertexes + 3 colours 32-bit
+        //     // Not sure what this is. think it means pulling from instance wide stuffs?
+        //     .inputRate = VK_VERTEX_INPUT_RATE_INSTANCE,
+        // },
+        {   // Vertex Binding
+            .binding = 0, // vertex attribute binding/slot. leave as 0
+            .stride = 4 * 6, // 3 32-bit vertexes + 3 colours 32-bit
+            // Not sure what this is. think it means pulling from instance wide stuffs?
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+        }
+    };
 
-    VkVertexInputAttributeDescription vertex_attributes {};
-    vertex_attributes.location = 0; // shader specific binding location
-    vertex_attributes.binding = 0;
-    vertex_attributes.format = VK_FORMAT_B8G8R8A8_UNORM;
-
+    array<VkVertexInputAttributeDescription> vertex_attributes {
+        {
+            .location = 2, // shader specific binding location
+            .binding = 0,
+            // This uses the color format for some strange reason. This is a 32-bit vec3
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset = 0, // 3 32-bit normals to vertex data
+        },
+        {
+            .location = 1, // shader specific binding location
+            .binding = 0,
+            // This uses the color format for some strange reason. This is a 32-bit vec3
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset = 4 * 3, // 3 32-bit normals to vertex data
+        }
+    };
 
     // Mesh vertex input args
     VkPipelineVertexInputStateCreateInfo vertex_args {};
     vertex_args.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_args.pVertexBindingDescriptions =  &binding;
-    vertex_args.vertexBindingDescriptionCount = 1;
-    vertex_args.pVertexAttributeDescriptions = &vertex_attributes;
-    vertex_args.vertexAttributeDescriptionCount = 1;
+    vertex_args.pVertexBindingDescriptions =  bindings.data;
+    vertex_args.vertexBindingDescriptionCount = bindings.size();
+    vertex_args.pVertexAttributeDescriptions = vertex_attributes.data;
+    vertex_args.vertexAttributeDescriptionCount = vertex_attributes.size();
 
     // Mesh rendering settings
     VkPipelineInputAssemblyStateCreateInfo input_args {};
@@ -518,9 +599,9 @@ PROC vulkan_init() -> fresult
     VkPipelineRasterizationStateCreateInfo raster_args {};
     raster_args.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     raster_args.polygonMode = VK_POLYGON_MODE_FILL;
-    raster_args.lineWidth = 1.0f;
+    raster_args.lineWidth = 20.0f;
     raster_args.cullMode = VK_CULL_MODE_BACK_BIT;
-    raster_args.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    raster_args.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     raster_args.depthBiasEnable = VK_FALSE;
     raster_args.depthBiasConstantFactor = 0.0f;         // Optional
     raster_args.depthBiasClamp = 0.0f;                  // Optional
@@ -744,8 +825,12 @@ PROC vulkan_draw() -> void
     begin_args.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_args.flags = 0; // Optional
     begin_args.pInheritanceInfo = nullptr; // Optional
+        // Start recording commands into the command buffer
+
     VkResult command_ok = vkBeginCommandBuffer( g_vulkan->commands, &begin_args );
 
+    // -- Start recording into first subpass.--
+    // This is started after beginning a command buffer.
     // Set render pass start information
     VkClearValue clear_value {};
     clear_value.color = {{ 0.2f, 0.0f, 0.2f, 1.0f }};
@@ -758,10 +843,37 @@ PROC vulkan_draw() -> void
     render_pass_args.renderArea.extent = VkExtent2D { 1920, 1080 };
     render_pass_args.clearValueCount = 1;
     render_pass_args.pClearValues = &clear_value;
-
     vkCmdBeginRenderPass( self->commands, &render_pass_args, VK_SUBPASS_CONTENTS_INLINE );
+    // Must bind pipeline before using it
     vkCmdBindPipeline(
         self->commands, VK_PIPELINE_BIND_POINT_GRAPHICS, self->pipeline );
+
+    // Resize viewport and scissor
+    VkViewport viewport_config {
+        // Upper left coordinates
+        .x = 0,
+        .y = 0,
+        .width = 1920,
+        .height = 1080,
+        // Configurable viewport depth, can configurable but usually between 0 and 1
+        .minDepth = 0.0,
+        .maxDepth = 1.0
+    };
+
+    // Only render into a certain portion of the viewport with scissors
+    VkRect2D scissor_config {
+        VkOffset2D { 0, 0 },
+        VkExtent2D { 1920, 1080 }
+    };
+    vkCmdSetViewport( self->commands, 0, 1, &viewport_config );
+    vkCmdSetScissor( self->commands, 0, 1, &scissor_config );
+
+    // Bind vertex data to pipeline data slots
+    VkBuffer vertex_buffers[] = { self->test_triangle_buffer };
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers( self->commands, 0, 1, vertex_buffers, offsets );
+    // Draw an actual mesh
+    vkCmdDraw( self->commands, 3, 1, 0, 0 );
 
     auto wait_stages = (VkPipelineStageFlags[]){VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
@@ -814,7 +926,7 @@ PROC vulkan_draw() -> void
     vkResetFences( self->logical_device, 1, &self->frame_end_fence );
 
     if (frame_timeout == VK_TIMEOUT)
-    { vulkan_errorf( "Frame Number: [{}] | Missed frame!", current_frame ); }
+    { vulkan_errorf( "Frame: {}] | Missed frame!", current_frame ); }
     else if (frame_timeout == VK_SUCCESS)
-    { vulkan_logf( "Frame Number: [{}] | Completed Frame.", current_frame ); }
+    { vulkan_logf( "Frame: {} | Completed Frame.", current_frame ); }
 }

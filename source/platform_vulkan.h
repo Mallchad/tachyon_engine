@@ -32,6 +32,18 @@ struct vulkan_context
     VkSemaphore queue_submit_semaphore;
     VkSemaphore frame_end_semaphore;
 
+    // Test Data
+    VkBuffer test_triangle_buffer {};
+    array<f32> test_triangle_data = {
+        0.f, 0.f, 1.f, // TODO: Remove temporary colour
+        -0.5f, -0.4330127019f, 0.0f,
+        0.f, 1.f, 0.f,
+        0.5f, -0.4330127019f, 0.0f,
+        1.f, 0.f, 0.f,
+        0.0f,  0.4330127019f, 0.0f
+    };
+
+
     // Configurables
     VkFormat swapchain_image_format = VK_FORMAT_B8G8R8A8_UNORM;
 
