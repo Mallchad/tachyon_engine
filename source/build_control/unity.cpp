@@ -31,6 +31,7 @@
 
     #include "../platform_vulkan.cpp"
 
+    #include "../tachyon_render.cpp"
 
     #include "../renderer.cpp"
 

@@ -39,7 +39,7 @@ target( "tachyon_engine" )
                      "external/fmt/include",
                      "external/tachyon_lib/source" )
 
-    on_load( function( target )
+    before_build( function( target )
           for _, batch in pairs(target:sourcebatches()) do
              print( batch )
           end

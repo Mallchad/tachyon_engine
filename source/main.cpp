@@ -20,8 +20,12 @@ int main( int argc, char** argv )
     {
         fstring x_arg = argv[i];
         tyon_logf( "arg {}: '{}'", i, x_arg );
-        if (argc > 1 && x_arg == "--no-main-loop"s )
+        if (x_arg == "--no-main-loop"s )
         { global->kill_program = true; }
+        if (x_arg == "--vulkan")
+        { global->render_backend = e_render_backend::vulkan; }
+        if (x_arg == "--opengl")
+        { global->render_backend = e_render_backend::opengl; }
     }
 
 
@@ -37,12 +41,10 @@ int main( int argc, char** argv )
     {
         lua = luaL_newstate();
         global->lua_state = lua;
-        // renderer main_renderer;
-        // input main_input( main_renderer.platform );
 
         x11_init();
         x11_window_open();
-        vulkan_init();
+        render_init();
 
         // Initialize lua related things
         // Make C libraries available to Lua
@@ -67,7 +69,7 @@ int main( int argc, char** argv )
 
             // Draw tick last
             x11_tick();
-            vulkan_tick();
+            render_tick();
             // main_renderer.frame_update( );
             // main_input.frame_update( epoch_elapsed_float );
 

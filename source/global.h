@@ -20,6 +20,15 @@ namespace tyon
         int height;
     };
 }
+
+enum class e_render_backend : i32
+{
+    none = 0,
+    any = 1,
+    opengl = 2,
+    vulkan = 3,
+};
+
 struct globals
 {
     using fpath = std::filesystem::path;
@@ -33,6 +42,9 @@ public:
     /// Search paths which serve as a root for a file reference
     std::vector<fstring> search_paths;
     fpath project_root = TRIANGULATE_PROJECT_ROOT;
+
+    //
+    e_render_backend render_backend = e_render_backend::vulkan;
 
     /// Try to gracefully quit the program
     bool kill_program = false;

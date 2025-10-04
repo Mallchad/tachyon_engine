@@ -40,6 +40,7 @@ using namespace tyon;
 #include "platform_vulkan.h"
 #include "linux_opengl.h"
 #include "linux_input_xlib.h"
+#include "tachyon_render.h"
 #include "renderer.h"
 #include "input.h"
 
