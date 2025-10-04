@@ -62,20 +62,20 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
     shader_args.codeSize = arg->code.memory.size;
     shader_args.pCode = arg->code.memory.data;
 
-    VkShaderModule& module = arg->module;
+    VkShaderModule& platform_module = arg->platform_module;
     auto module_ok = vkCreateShaderModule(
-        g_vulkan->logical_device, &shader_args, nullptr, &module );
+        g_vulkan->logical_device, &shader_args, nullptr, &platform_module );
     if (module_ok != VK_SUCCESS)
     {
         vulkan_errorf( "Failed to create shader module: {}", arg->name );
         return false;
     }
     vulkan_label_object(
-        (u64)module, VK_OBJECT_TYPE_SHADER_MODULE, arg->name + "_shader" );
+        (u64)platform_module, VK_OBJECT_TYPE_SHADER_MODULE, arg->name + "_shader" );
     fstring name = arg->name;
-    g_vulkan->resources.push_cleanup( [name, module]{
+    g_vulkan->resources.push_cleanup( [name, platform_module]{
         vulkan_log( "Destroying shader module:", name );
-        vkDestroyShaderModule( g_vulkan->logical_device, module, nullptr ); } );
+        vkDestroyShaderModule( g_vulkan->logical_device, platform_module, nullptr ); } );
 
     vulkan_logf( "Created shader module: {}", arg->name );
     return true;
@@ -484,7 +484,7 @@ PROC vulkan_init() -> fresult
         stages.push_tail( VkPipelineShaderStageCreateInfo {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = x_shader.stage_flag,
-                .module = x_shader.module,
+                .module_ = x_shader.platform_module,
                 .pName = x_shader.entry_point.c_str()
         });
     }

@@ -5,8 +5,10 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
+#define module module_
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_xlib.h>
+#undef module
 
 // -- stdlib / stl --
 #include "include_stl.h"
@@ -40,3 +42,6 @@ using namespace tyon;
 #include "linux_input_xlib.h"
 #include "renderer.h"
 #include "input.h"
+
+// Experimental module support
+// import platform_vulkan;

@@ -1,4 +1,5 @@
 
+#pragma once
 
 struct vulkan_context
 {
@@ -62,7 +63,7 @@ struct vulkan_shader
     fstring entry_point = "main";
     file code;
     bool code_binary = false;
-    VkShaderModule module = VK_NULL_HANDLE;
+    VkShaderModule platform_module = VK_NULL_HANDLE;
     VkShaderStageFlagBits stage_flag {};
 };
 

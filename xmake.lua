@@ -19,10 +19,14 @@ target( "tachyon_engine" )
     set_policy("build.ccache", true)
 
     if has_config( "unity_build_enabled" ) then
-       add_files( "source/build_control/unity.cpp" )
+       add_files(
+          "source/build_control/unity.cpp"
+          -- "source/modules/*.mpp"
+       )
     else
        add_files(
           "source/*.cpp",
+          "source/modules/*.mpp",
           "external/tachyon_lib/source/*.cpp"
        )
     end
@@ -34,6 +38,12 @@ target( "tachyon_engine" )
                      "external/lua",
                      "external/fmt/include",
                      "external/tachyon_lib/source" )
+
+    on_load( function( target )
+          for _, batch in pairs(target:sourcebatches()) do
+             print( batch )
+          end
+    end)
 
 -- Speed up compilation with pre-compiled headers
     set_pcxxheader( "source/include_core.h" )
@@ -67,7 +77,7 @@ target( "tachyon_engine" )
                   "-march=native",
                   "-stdlib=libstdc++",
                   -- "-std=c++20",
-                  -- "-fmodules-ts",
+                  "-fmodules-ts",
                   -- Generate a control flow graph
                   "gcc::-fdump-tree-all-graph",
                   -- Preprocessor Only Output (have fun finding the source files in xmake)

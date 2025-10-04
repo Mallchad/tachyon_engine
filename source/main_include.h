@@ -1,4 +1,6 @@
 
+#pragma once
+
 // Standard Lirary
 #include <iostream>
 #include <memory>
