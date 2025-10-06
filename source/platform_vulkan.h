@@ -1,6 +1,38 @@
 
 #pragma once
 
+struct vulkan_shader
+{
+    uid id;
+    fstring name = "unnamed";
+    fstring entry_point = "main";
+    file code;
+    bool code_binary = false;
+    VkShaderModule platform_module = VK_NULL_HANDLE;
+    VkShaderStageFlagBits stage_flag {};
+};
+
+struct vulkan_pipeline
+{
+    uid id;
+    fstring name = "unnamed";
+    array<vulkan_shader> shaders;
+};
+
+struct vulkan_swapchain
+{
+    uid id;
+    fstring name = "unnamed";
+    VkSwapchainKHR platform_swapchain;
+    VkFramebuffer platform_framebuffer;
+    array<VkFence> frame_end_fences;
+    /** Vulkan dependant size of presentable surface, often close to window size.
+    ultra pedantic about timing and exact size on most platforms. */
+    VkExtent2D present_size;
+    bool initialized = false;
+    resource_arena resources;
+};
+
 struct vulkan_context
 {
     // Primary Vulkan instance of to interface with
@@ -11,13 +43,14 @@ struct vulkan_context
     VkDevice logical_device;
     // Primary Window surface to draw to
     VkSurfaceKHR surface;
-    VkSwapchainKHR swapchain;
-    VkCommandBuffer commands;
+    array<VkCommandBuffer> commands;
     /** Views describe how to interpret VkImage's, VkImages are related to
         textures and framebuffers */
     array<VkImageView> swapchain_image_views;
     array<VkFramebuffer> swapchain_framebuffers;
     array<VkImage> swapchain_images;
+    i32 graphics_queue_family = -1;
+    i32 present_queue_family = -1;
     VkQueue graphics_queue;
     VkQueue present_queue;
 
@@ -28,10 +61,13 @@ struct vulkan_context
     // Ungrouped threading primitives
     VkFence frame_begin_fence;
     VkFence frame_aquire_fence;
-    VkFence frame_end_fence;
+    /* VkFence frame_end_fence; */
 
     VkSemaphore queue_submit_semaphore;
     VkSemaphore frame_end_semaphore;
+
+    i32 frame_max_inflight = 2;
+    vulkan_swapchain swapchain;
 
     // Test Data
     VkBuffer test_triangle_buffer {};
@@ -57,25 +93,11 @@ struct vulkan_context
     i64 frames_completed = 0;
 };
 
-struct vulkan_shader
-{
-    fstring name = "unnamed";
-    fstring entry_point = "main";
-    file code;
-    bool code_binary = false;
-    VkShaderModule platform_module = VK_NULL_HANDLE;
-    VkShaderStageFlagBits stage_flag {};
-};
-
-struct vulkan_pipeline
-{
-    fstring name = "unnamed";
-    array<vulkan_shader> shaders;
-};
-
 PROC vulkan_allocator_create_callbacks( i_allocator* allocator );
 
 PROC vulkan_label_object( u64 handle, VkObjectType type, fstring name ) -> void;
+
+PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult;
 
 PROC vulkan_init() -> fresult;
 

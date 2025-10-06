@@ -35,6 +35,8 @@ FUNCTION impl::initialize( renderer_opengl& render_handle )
 fresult
 FUNCTION impl::frame_update( f32 epoch_elapsed )
 {
+    PROFILE_SCOPE_FUNCTION();
+
     ++m_tmp_frame_count;
     // XEvent processing
     fint32 pending_events = 0;

@@ -8,6 +8,12 @@ int main( int argc, char** argv )
     globals _global = {}; global = &_global;
     global->program_epoch = get_time();
 
+    uid id = uuid_generate();
+    tyon_logf( "Generated UUID as presented {}", id );
+    char str[16];
+    platform::uuid_unparse( raw_pointer(&id.uuid), str );
+    tyon_logf( "Expected {}", str );
+
     // Change directory to binary
     std::filesystem::current_path( file_self_directory() );
     tyon_logf( "Current working directory: {}",  std::filesystem::current_path() );
@@ -42,8 +48,6 @@ int main( int argc, char** argv )
         lua = luaL_newstate();
         global->lua_state = lua;
 
-        x11_init();
-        x11_window_open();
         render_init();
 
         // Initialize lua related things

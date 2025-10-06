@@ -53,7 +53,7 @@ FUNCTION x11_window_open()
     Window x_window_tmp = XCreateWindow(
         g_x11->server,
         RootWindow( g_x11->server, g_x11->screen ),
-        0, 0, 1920, 1080, 0,
+        0, 0, g_render->window_size.x, g_render->window_size.y, 0,
         CopyFromParent,
         InputOutput,
         CopyFromParent,
@@ -108,9 +108,11 @@ FUNCTION x11_window_open()
 
     // Start Handling X11 events
     // Buttons are pointer/mouse numbers
-    u32 event_mask = ClientMessage  |
-    KeyPressMask | KeyReleaseMask |
-    ButtonPressMask | PointerMotionMask | StructureNotifyMask;
+    u32 event_mask = (
+        ClientMessage | StructureNotifyMask |
+        KeyPressMask | KeyReleaseMask |
+        ButtonPressMask | PointerMotionMask | StructureNotifyMask
+    );
     XSelectInput( g_x11->server, g_x11->window, event_mask );
 
     // Fix auto repeat smashing simeltaneous key input
@@ -166,6 +168,13 @@ PROC x11_event_process()
                     return false;
                 }
                 break;
+            case ConfigureNotify:
+            {
+                XConfigureEvent configure = event.xconfigure;
+                g_render->window_size = v2 { configure.width, configure.height };
+                log_format( "X11", "X11 window size: {}", g_render->window_size );
+                break;
+            }
             case DestroyNotify:
                 // throw(1);
                 break;
@@ -202,10 +211,7 @@ PROC x11_event_process()
                 if (XKeysymToKeycode( g_x11->server, XK_Right ) == event.xkey.keycode)
                 { global->action_turn_right = true; }
                 break;
-            case ConfigureNotify:
-                global->window_requested.width = event.xconfigure.width;
-                global->window_requested.height = event.xconfigure.height;
-                break;
+
             case KeyRelease:
                 if ( XKeysymToKeycode( g_x11->server, XK_R ) == event.xkey.keycode )
                 { global->reload_released = true; }
@@ -239,5 +245,6 @@ PROC x11_event_process()
 
 PROC x11_tick()
 {
+    if (g_x11 == nullptr) { return; }
     x11_event_process();
 }

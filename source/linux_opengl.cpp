@@ -111,6 +111,7 @@ CONSTRUCTOR def::renderer_opengl()
 fresult
 FUNCTION def::initialize()
 {
+    TIME_SCOPED_FUNCTION();
     signal(SIGINT, sigterm_handler);
     global = globals::get_primary();
     if (global == nullptr)
@@ -355,6 +356,8 @@ FUNCTION def::display_context_create()
 window_id
 FUNCTION def::window_create()
 {
+    PROFILE_SCOPE_FUNCTION();
+
     window_id window_new = 0;
 
     vx_window_attributes.colormap = XCreateColormap( rx_display,
@@ -442,6 +445,8 @@ FUNCTION def::display_context_destroy( display_id target )
 context_id
 FUNCTION def::context_create()
 {
+    PROFILE_SCOPE_FUNCTION();
+
     using namespace ld;
     GLXContext context_tmp = nullptr;
     context_id context = 0;
@@ -534,6 +539,8 @@ FUNCTION def::context_set_current(context_id target)
 shader_id
 FUNCTION def::shader_create( fstring name, shader_type request_type )
 {
+    PROFILE_SCOPE_FUNCTION();
+
     using namespace ld;
     shader_id out_id = -1;
     GLint shader_target = 0;
@@ -786,6 +793,8 @@ FUNCTION def::shader_globals_update( uniform& contents )
 mesh_id
 FUNCTION def::mesh_create( fmesh target )
 {
+    PROFILE_SCOPE_FUNCTION();
+
     using namespace ld;
 
     fmesh_metadata metadata;
@@ -877,6 +886,8 @@ FUNCTION def::mesh_create( fmesh target )
 fresult
 FUNCTION def::draw_mesh( mesh_id target, ftransform target_transform, shader_program_id target_shader )
 {
+    PROFILE_SCOPE_FUNCTION();
+
     using namespace ld;
     if (target < 0)
     {

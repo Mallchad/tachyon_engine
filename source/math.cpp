@@ -1,6 +1,92 @@
 
 #include "include_core.h"
 
+vec2 operator+(const vec2& v1, const vec2& v2) {
+    vec2 result;
+    result.x = v1.x + v2.x;
+    result.y = v1.y + v2.y;
+    return result;
+}
+
+vec2 operator+(const vec2& v1, const f32& c) {
+    vec2 result;
+    result.x = v1.x + c;
+    result.y = v1.y + c;
+    return result;
+}
+
+vec2 operator+(const f32& c, const vec2& v1) {
+    vec2 result;
+    result.x = v1.x + c;
+    result.y = v1.y + c;
+    return result;
+}
+
+
+vec2 operator-(vec2 v1)
+{
+    return { -v1.x, -v1.y };
+}
+
+vec2 operator-(const vec2& v1, const vec2& v2) {
+    vec2 result;
+    result.x = v1.x - v2.x;
+    result.y = v1.y - v2.y;
+    return result;
+}
+
+vec2 operator-(const vec2& v1, const f32& c) {
+    vec2 result;
+    result.x = v1.x - c;
+    result.y = v1.y - c;
+    return result;
+}
+
+vec2 operator*(const vec2& v1, const f32& c) {
+    vec2 result;
+    result.x = v1.x * c;
+    result.y = v1.y * c;
+    return result;
+}
+
+vec2 operator*(const f32& c, const vec2& v1) {
+    vec2 result;
+    result.x = v1.x * c;
+    result.y = v1.y * c;
+    return result;
+}
+
+vec2 operator/(const vec2& v1, const f32& c) {
+    vec2 result;
+    result.x = v1.x / c;
+    result.y = v1.y / c;
+    return result;
+}
+
+f32 dot_product(const vec2& v1, const vec2& v2) {
+    return v1.x * v2.x + v1.y * v2.y;
+}
+
+f32 vector_length(const vec2& v1) {
+    return std::sqrt((v1.x * v1.x) + (v1.y * v1.y));
+}
+
+vec2
+pairwise_multiply( vec2 lhs, vec2 rhs )
+{ return { lhs.x * rhs.x, lhs.y * rhs.y }; }
+
+vec2
+pairwise_divide( vec2 lhs, vec2 rhs )
+{ return { lhs.x / rhs.x, lhs.y / rhs.y }; }
+
+vec2 abs( vec2 arg )
+{ return vec2 { abs(arg.x), abs(arg.y) }; }
+
+fstring
+format_as( vec2 arg )
+{ return fmt::format( "[{0:.5} {1:.5}]", arg.x, arg.y ); }
+
+
 v3f
 FUNCTION v3f::up()
 { return { 0., 0., 1. }; }

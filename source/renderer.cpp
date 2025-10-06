@@ -71,6 +71,8 @@ CONSTRUCTOR renderer::renderer()
 void
 FUNCTION renderer::frame_update()
 {
+    PROFILE_SCOPE_FUNCTION();
+
     cstring frame_label = "Graphical";
     FrameMarkNamed( frame_label );
 

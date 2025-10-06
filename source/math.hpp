@@ -10,6 +10,17 @@ FORWARD template <typename T> struct vector3_t;
 FORWARD template <typename T> struct vector4_t;
 FORWARD struct matrix;
 
+struct vec2
+{
+    f32 x; f32 y;
+    CONSTRUCTOR vec2() {}
+    CONSTRUCTOR vec2( f32 arg ) : x(arg), y(arg) {}
+    CONSTRUCTOR vec2( f32 _x, f32 _y ) : x(_x), y(_y) {}
+    explicit CONSTRUCTOR vec2( u32 _x, u32 _y ) : x(_x), y(_y) {}
+    explicit CONSTRUCTOR vec2( i32 _x, i32 _y ) : x(_x), y(_y) {}
+
+};
+
 struct v3f final
 {
     // f32 x, y, z;
@@ -305,6 +316,25 @@ struct stl_triangle
 
 #pragma pack(pop)
 
+vec2 operator+(const vec2& v1, const vec2& v2);
+vec2 operator+(const vec2& v1, const f32& c);
+vec2 operator+(const f32& c, const vec2& v1);
+vec2 operator-( vec2 v1);
+vec2 operator-(const vec2& v1, const vec2& v2);
+vec2 operator-(const vec2& v1, const f32& c);
+vec2 operator*(const vec2& v1, const f32& c);
+vec2 operator*(const f32& c, const vec2& v1);
+vec2 operator/(const vec2& v1, const f32& c);
+f32 dot_product(const vec2& v1, const vec2& v2);
+f32 vector_length(const vec2& v1);
+
+vec2 pair_multiply( vec2 lhs, vec2 rhs );
+vec2 pair_divide( vec2 lhs, vec2 rhs );
+vec2 pair_half( vec2 lhs );
+vec2 abs( vec2 arg );
+
+fstring
+format_as( vec2 arg );
 
 
 using v3_f32 = vector3_t<f32>;
@@ -315,6 +345,7 @@ using v4     = vector4_t<f32>;
 using v4_i32 = vector4_t<fint32>;
 using f4_i64 = vector4_t<fint64>;
 
+using v2 = vec2;
 using v3 = v3f;
 using v4 = vector4_t<f32>;
 

@@ -1,6 +1,12 @@
 
 #pragma once
 
+struct render_context
+{
+    // Primary window size
+    v2 window_size = { 1920.0f, 1080.0f };
+};
+
 struct mesh
 {
     uid id;
@@ -20,6 +26,7 @@ struct mesh
     i32 vertex_colors_n = 0;
 };
 
+extern render_context* g_render;
 
 PROC render_init() -> void;
 

@@ -5,10 +5,13 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
 #define module module_
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_xlib.h>
 #undef module
+#pragma clang diagnostic pop
 
 // -- stdlib / stl --
 #include "include_stl.h"

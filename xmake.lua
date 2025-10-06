@@ -66,6 +66,9 @@ target( "tachyon_engine" )
     elseif is_mode ( "debug" ) then
        set_optimize( "none" )
     end
+
+    -- TODO: Add error list from VMEC project
+    -- TODO: Make all warnings errors on shipping build to force fixing everything
     -- Temporary cxxflags to safe the effort of full converting to xmake --
     -- Using lld linker instead of mold for now for error messages
     -- Reconsider if the build gets slow
@@ -94,6 +97,7 @@ target( "tachyon_engine" )
                   -- Warnings
                   "clang::-Wpedantic",
                   "-Wall",
+
                   -- Whitelist Errors
                   -- #import is a Obj-C language extension and easily confused with C++ modules
                   "clang::-Werror=import-preprocessor-directive-pedantic",
@@ -108,7 +112,19 @@ target( "tachyon_engine" )
                   -- Has inconsistent behaviour and behaves like reinterpret cast, never use
                   -- "clang::-Werror=old-style-cast",
 
-                  -- -- Disable Warnings
+                  -- Always bad, reading uninitialized corrupts data
+                  "-Werror=uninitialized",
+
+                  -- Missing enumeration cases is indicative of a logic issue or missing code
+                  "-Werror=switch",
+
+                  -- Missing breaks can cause really nasty bugs, try to annotate all intentional fallthroughs
+                  "-Werror=implicit-fallthrough",
+
+                  -- Copy asignment in statement often is indicative of a logic error.
+                  "-Werror=parentheses",
+
+                  -- Disable Warnings
                   "clang::-Wno-unused-value",
                   "clang::-Wno-padded",
                   "clang::-Wno-c++98-compat",
