@@ -161,7 +161,8 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
     return true;
 }
 
-PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
+PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchain )
+    -> fresult
 {
     TIME_SCOPED_FUNCTION();
     TracyCZoneN( zone_1, "Zone 1", true );
@@ -220,7 +221,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
     swapchain_args.pQueueFamilyIndices = family_indexes;
     swapchain_args.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     swapchain_args.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-
+    swapchain_args.oldSwapchain = reuse_swapchain;
 
     auto swapchain_ok = vkCreateSwapchainKHR(
         g_vulkan->logical_device,
@@ -338,11 +339,16 @@ PROC vulkan_swapchain_destroy( vulkan_swapchain* arg ) -> void
         &allocator
     );
     // vkDestroyImageView
-    vkDestroySwapchainKHR(
-        g_vulkan->logical_device,
-        arg->platform_swapchain,
-        &allocator
-    );
+    // Lazy destroy swapchain because the handle still needs to be reused by next swapchain
+    auto swapchain = arg->platform_swapchain;
+    g_vulkan->resources.push_cleanup( [=]
+    {
+        vkDestroySwapchainKHR(
+            g_vulkan->logical_device,
+            swapchain,
+            &g_vulkan->allocator_callback
+        );
+    });
     *arg = vulkan_swapchain {};
 }
 
@@ -363,13 +369,13 @@ PROC vulkan_init() -> fresult
         g_vulkan->allocator.get() );
 
     defer_procedure _exit = [&result] {
-       if (result)
-       { vulkan_log( "Vulkan Initialized" ); }
-       else
-       {
-           vulkan_error( "Vulkan initialization failure, cleaning up resources." );
-           g_vulkan->resources.~resource_arena();
-       }
+        if (result)
+        { vulkan_log( "Vulkan Initialized" ); }
+        else
+        {
+            vulkan_error( "Vulkan initialization failure, cleaning up resources." );
+            g_vulkan->resources.~resource_arena();
+        }
     };
 
 
@@ -441,13 +447,13 @@ PROC vulkan_init() -> fresult
 
     // need to do this to get validation layer callbacks aparently?
     auto dyn_vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)
-        vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );
+    vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );
     VkDebugUtilsMessengerEXT debug_messenger {};
     dyn_vkCreateDebugUtilsMessengerEXT(instance, &messenger_args, nullptr, &debug_messenger );
 
     // For debug naming
     dyn::vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)
-        vkGetInstanceProcAddr( g_vulkan->instance, "vkSetDebugUtilsObjectNameEXT" );
+    vkGetInstanceProcAddr( g_vulkan->instance, "vkSetDebugUtilsObjectNameEXT" );
 
     // -- Setup default window surfaces --
     if (g_x11->server && g_x11->window)
@@ -541,7 +547,7 @@ PROC vulkan_init() -> fresult
         }
 
         bool select_device =
-            (suitible && (dedicated_graphics || g_vulkan->device == VK_NULL_HANDLE));
+        (suitible && (dedicated_graphics || g_vulkan->device == VK_NULL_HANDLE));
         if (select_device)
         {
             g_vulkan->device = x_device;
@@ -700,7 +706,7 @@ PROC vulkan_init() -> fresult
                 .stage = x_shader.stage_flag,
                 .module_ = x_shader.platform_module,
                 .pName = x_shader.entry_point.c_str()
-        });
+            });
     }
 
     VkFormatProperties format_props {};
@@ -814,9 +820,9 @@ PROC vulkan_init() -> fresult
     vulkan_log( "Created render pass" );
 
     /* Create swapchain before pipeline so we can pass present surface current extent
-    But after render pass... because it gets passed in the swapchain */
+       But after render pass... because it gets passed in the swapchain */
     g_vulkan->swapchain.name = "version_0";
-    vulkan_swapchain_init( &g_vulkan->swapchain );
+    vulkan_swapchain_init( &g_vulkan->swapchain, VK_NULL_HANDLE );
 
 
     array<VkVertexInputBindingDescription> bindings {
@@ -1056,9 +1062,9 @@ PROC vulkan_draw() -> void
 
     if (acquire_bad == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        static time_periodic resize_delay( 16ms );
-        if (resize_delay.triggered() == false)
-        { return; }
+        // static time_periodic resize_delay( 16ms );
+        // if (resize_delay.triggered() == false)
+        // { return; }
 
         // Reset fence before using again VUID-vkResetFences-pFences-01123
         vkResetFences( self->logical_device, 1, &g_vulkan->frame_acquire_fence );
@@ -1071,9 +1077,10 @@ PROC vulkan_draw() -> void
             true,
             3'000'000'000
         );
+        VkSwapchainKHR reuse_swapchain = g_vulkan->swapchain.platform_swapchain;
         vulkan_swapchain_destroy( &g_vulkan->swapchain );
         g_vulkan->swapchain.name = fmt::format( "version_{}", current_frame );
-        vulkan_swapchain_init( &g_vulkan->swapchain );
+        vulkan_swapchain_init( &g_vulkan->swapchain, reuse_swapchain );
 
         acquire_bad = vkAcquireNextImageKHR(
             g_vulkan->logical_device,

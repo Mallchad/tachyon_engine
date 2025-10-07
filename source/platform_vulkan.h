@@ -102,7 +102,8 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator );
 
 PROC vulkan_label_object( u64 handle, VkObjectType type, fstring name ) -> void;
 
-PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult;
+PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchain )
+    -> fresult;
 
 PROC vulkan_init() -> fresult;
 
