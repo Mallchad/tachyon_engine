@@ -374,7 +374,7 @@ PROC vulkan_init() -> fresult
 
     // -- Setup extensions and layers --
     array<cstring> enabled_layers = {
-        // "VK_LAYER_KHRONOS_validation", // debug validaiton layer
+        "VK_LAYER_KHRONOS_validation", // debug validaiton layer
     };
     array<cstring> enabled_extensions = {
         // Surface for common window and compositing tasks
@@ -426,7 +426,7 @@ PROC vulkan_init() -> fresult
     }
     g_vulkan->resources.push_cleanup( []{
         vulkan_log( "Destroying Vulkan instance" );
-        vkDestroyInstance( g_vulkan->instance, nullptr);
+        vkDestroyInstance( g_vulkan->instance, &g_vulkan->allocator_callback );
         g_vulkan->instance = VK_NULL_HANDLE;
     });
 
@@ -1006,6 +1006,9 @@ PROC vulkan_destroy() -> void
     if (g_vulkan == nullptr || g_vulkan->initialized == false) { return; }
     // Wait for device before attempting to cleanup
     vkDeviceWaitIdle( g_vulkan->logical_device );
+
+    // Might be needed one day, but not right now
+    // g_vulkan->resources.run_cleanup();
     g_vulkan->~vulkan_context();
 }
 
@@ -1043,7 +1046,7 @@ PROC vulkan_draw() -> void
 
     if (acquire_bad == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        static time_periodic resize_delay( 1ms );
+        static time_periodic resize_delay( 200ms );
         if (resize_delay.triggered() == false)
         { return; }
 

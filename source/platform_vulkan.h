@@ -85,13 +85,15 @@ struct vulkan_context
     // Configurables
     VkFormat swapchain_image_format = VK_FORMAT_B8G8R8A8_UNORM;
 
-    // Top level resource manager for vulkan
-    resource_arena resources;
 
     // Platform Independant State
     /* memory_stack_allocator default_allocator; */
     std::unique_ptr<i_allocator> allocator = std::make_unique<memory_stack_allocator>();
-    bool initialized = false;
+    /* Top level resource manager for vulkan, needs to be ordered after allocator for
+     because Vulkan resoruces are allocated out of the allocator*/
+    resource_arena resources;
+
+bool initialized = false;
     i64 frames_started = 0;
     i64 frames_completed = 0;
 };
