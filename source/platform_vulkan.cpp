@@ -164,6 +164,7 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
 PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
 {
     TIME_SCOPED_FUNCTION();
+    TracyCZoneN( zone_1, "Zone 1", true );
     ERROR_GUARD( arg->id.valid() == false,
                  "Using init on a object that's already initialized can't possible make sense." );
     ERROR_GUARD( arg->initialized == false, "Called init on an already initialized swapchain" );
@@ -188,6 +189,8 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
     );
     vulkan_log( "Current X11 window size: {}", g_render->window_size );
 
+    TracyCZoneEnd( zone_1 );
+    TracyCZoneN( zone_2, "Zone 2", true );
     // Also diagnostics for device formats
     array<VkSurfaceFormatKHR> surface_formats;
     u32 n_surfaces {};
@@ -197,6 +200,8 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
     vkGetPhysicalDeviceSurfaceFormatsKHR(
         g_vulkan->device, g_vulkan->surface, &n_surfaces, surface_formats.data );
 
+    TracyCZoneEnd( zone_2 );
+    TracyCZoneNC( zone_3, "Zone 3", 0xA04040, true );
     // Create swapchan for presentation of images to windows
     VkSwapchainCreateInfoKHR swapchain_args {};
     swapchain_args.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -231,6 +236,8 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
     vulkan_log( "Initialized presentation swapchain" );
     arg->initialized = true;
 
+    TracyCZoneEnd( zone_3 );
+    TracyCZoneNC( zone_4, "Zone 4", 0xA040A0, true );
     array<VkImage>& swapchain_images = g_vulkan->swapchain_images;
     u32 n_swapchain_images = 0;
     vkGetSwapchainImagesKHR( g_vulkan->logical_device, arg->platform_swapchain,
@@ -255,7 +262,8 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
 
     // Don't forget to setup object arrays as well
     arg->frame_end_fences.resize( n_swapchain_images );
-
+    TracyCZoneEnd( zone_4 );
+    TracyCZoneNC( zone_5, "Zone 5", 0xA0A040, true );
     for (i32 i = 0; i < n_swapchain_images; i++)
     {
         // Make synchronization primitives
@@ -310,6 +318,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
         ERROR_GUARD(view_errors[i] == VK_SUCCESS , "view creation error" );
         ERROR_GUARD(framebuffer_errors[i] == VK_SUCCESS , "fraembuffer creation error" );
     }
+    TracyCZoneEnd( zone_5 );
     ERROR_GUARD( arg->id.valid(), "All entities have an  UUID" );
     ERROR_GUARD( arg->platform_swapchain, "Function ended with null swapchain handle" );
     return false;
@@ -453,14 +462,15 @@ PROC vulkan_init() -> fresult
         VkResult surface_ok = vkCreateXlibSurfaceKHR(
             g_vulkan->instance,
             &surface_args,
-            nullptr,
+            &g_vulkan->allocator_callback,
             &g_vulkan->surface
         );
         ERROR_GUARD( surface_ok == VK_SUCCESS, "Vulkan/xlib Surface creation error" );
         vulkan_log( "Tachyon Vulkan", "Vulkan Instance created" );
         g_vulkan->resources.push_cleanup( [] {
             vulkan_logf( "Destroying surface 0x{:x}", u64(g_vulkan->surface) );
-            vkDestroySurfaceKHR( g_vulkan->instance, g_vulkan->surface, nullptr );
+            vkDestroySurfaceKHR(
+                g_vulkan->instance, g_vulkan->surface, &g_vulkan->allocator_callback );
         });
     }
     else
@@ -1046,7 +1056,7 @@ PROC vulkan_draw() -> void
 
     if (acquire_bad == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        static time_periodic resize_delay( 200ms );
+        static time_periodic resize_delay( 16ms );
         if (resize_delay.triggered() == false)
         { return; }
 

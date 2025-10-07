@@ -11,4 +11,6 @@
 #pragma clang diagnostic ignored "-Wextra-semi-stmt"
 
 #include "Tracy.hpp"
+#include "TracyC.h"
+
 #pragma clang diagnostic pop
