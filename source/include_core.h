@@ -10,6 +10,7 @@
 #define module module_
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_xlib.h>
+#include <vulkan/vk_enum_string_helper.h>
 #undef module
 #pragma clang diagnostic pop
 

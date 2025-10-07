@@ -31,6 +31,68 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
 {
     PROFILE_SCOPE_FUNCTION();
     VkAllocationCallbacks result = {};
+    result.pUserData = allocator;
+
+    result.pfnAllocation = [] (
+        void* context,
+        size_t bytes,
+        size_t alignment,
+        VkSystemAllocationScope scope
+    )
+    {   i_allocator* impl = ptr_cast<i_allocator*>( context );
+        void* result_ = impl->allocate_raw( bytes, alignment );
+        vulkan_logf( "Allocated {} bytes in driver", bytes );
+
+        return result_;
+    };
+
+    result.pfnReallocation = [] (
+        void* context,
+        void* original,
+        size_t bytes,
+        size_t alignment,
+        VkSystemAllocationScope scope
+    )
+    {   i_allocator* impl = ptr_cast<i_allocator*>( context );
+        void* result_ = impl->allocate_raw( bytes, alignment );
+        memory_copy_raw( result_, original, bytes );
+        return result_;
+    };
+
+    result.pfnFree = [] (
+        void* context,
+        void* address
+    )
+    {   i_allocator* impl = ptr_cast<i_allocator*>( context );
+        impl->deallocate( address );
+    };
+
+    // Allocation Notification
+    result.pfnInternalAllocation = [](
+        void* context,
+        size_t bytes,
+        VkInternalAllocationType type,
+        VkSystemAllocationScope scope
+    )
+    {
+        vulkan_log( "Allocation Request Event" );
+        vulkan_logf( "\tAllocator Address: {}", (void*)(context) );
+        vulkan_logf( "\tAllocation Type: {} ", string_VkInternalAllocationType(type) );
+        vulkan_logf( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
+    };
+
+    result.pfnInternalFree = [](
+        void* context,
+        size_t bytes,
+        VkInternalAllocationType type,
+        VkSystemAllocationScope scope
+    )
+    {
+        vulkan_log( "Deallocation Request Event" );
+        vulkan_logf( "\tAllocator Address: {}", (void*)(context) );
+        vulkan_logf( "\tAllocation Type: {} ", string_VkInternalAllocationType(type) );
+        vulkan_logf( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
+    };
 
     TYON_TODO( "Unimplimented" );
     return result;
@@ -101,11 +163,15 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
 
 PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
 {
+    TIME_SCOPED_FUNCTION();
     ERROR_GUARD( arg->id.valid() == false,
                  "Using init on a object that's already initialized can't possible make sense." );
     ERROR_GUARD( arg->initialized == false, "Called init on an already initialized swapchain" );
     auto self = g_vulkan;
     arg->id = uuid_generate();
+
+    VkAllocationCallbacks allocator = vulkan_allocator_create_callbacks(
+        g_vulkan->allocator.get() );
 
     /* We need to know the capabilities of the surface associated with the physical device
        So we retreive those capabilities */
@@ -154,7 +220,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
     auto swapchain_ok = vkCreateSwapchainKHR(
         g_vulkan->logical_device,
         &swapchain_args,
-        nullptr,
+        &allocator,
         &arg->platform_swapchain
     );
     if (swapchain_ok != VK_SUCCESS)
@@ -168,7 +234,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
     array<VkImage>& swapchain_images = g_vulkan->swapchain_images;
     u32 n_swapchain_images = 0;
     vkGetSwapchainImagesKHR( g_vulkan->logical_device, arg->platform_swapchain,
-                             &n_swapchain_images, nullptr);
+                             &n_swapchain_images, nullptr );
     swapchain_images.resize( n_swapchain_images );
     vkGetSwapchainImagesKHR( g_vulkan->logical_device, arg->platform_swapchain,
                              &n_swapchain_images, swapchain_images.data );
@@ -200,9 +266,9 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
         };
 
         fence_errors[i] = vkCreateFence(
-            g_vulkan->logical_device, &fence_args, nullptr, arg->frame_end_fences.address(i) );
+            g_vulkan->logical_device, &fence_args, &allocator, arg->frame_end_fences.address(i) );
         vulkan_label_object( (u64)arg->frame_end_fences[i], VK_OBJECT_TYPE_FENCE,
-                             fmt::format( "{}_frame_begin_fence_{}", arg->name, i ) );
+                             fmt::format( "{}_frame_end_fence_{}", arg->name, i ) );
 
 
         VkImageViewCreateInfo view_args{};
@@ -220,7 +286,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
         view_args.subresourceRange.baseArrayLayer = 0;
         view_args.subresourceRange.layerCount = 1;
         view_errors[i] = vkCreateImageView(
-            g_vulkan->logical_device, &view_args, nullptr, &swapchain_image_views[i] );
+            g_vulkan->logical_device, &view_args, &allocator, &swapchain_image_views[i] );
         vulkan_label_object( (u64)swapchain_image_views[i], VK_OBJECT_TYPE_IMAGE_VIEW,
                              fmt::format( "{}_swapchain_image_view_{}", arg->name, i ) );
 
@@ -251,16 +317,22 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg ) -> fresult
 
 PROC vulkan_swapchain_destroy( vulkan_swapchain* arg ) -> void
 {
+    TIME_SCOPED_FUNCTION();
+    VkAllocationCallbacks allocator = vulkan_allocator_create_callbacks(
+        g_vulkan->allocator.get() );
+
+    // Can't destroy resources that are still in use
+    vkDeviceWaitIdle( g_vulkan->logical_device );
     vkDestroyFramebuffer(
         g_vulkan->logical_device,
         arg->platform_framebuffer,
-        nullptr
+        &allocator
     );
     // vkDestroyImageView
     vkDestroySwapchainKHR(
         g_vulkan->logical_device,
         arg->platform_swapchain,
-        nullptr
+        &allocator
     );
     *arg = vulkan_swapchain {};
 }
@@ -277,6 +349,9 @@ PROC vulkan_init() -> fresult
     VkXlibSurfaceCreateInfoKHR surface_args = {};
     i32 graphics_queue_family = self->graphics_queue_family;
     i32 present_queue_family = self->present_queue_family;
+
+    g_vulkan->allocator_callback = vulkan_allocator_create_callbacks(
+        g_vulkan->allocator.get() );
 
     defer_procedure _exit = [&result] {
        if (result)
@@ -299,7 +374,7 @@ PROC vulkan_init() -> fresult
 
     // -- Setup extensions and layers --
     array<cstring> enabled_layers = {
-        "VK_LAYER_KHRONOS_validation", // debug validaiton layer
+        // "VK_LAYER_KHRONOS_validation", // debug validaiton layer
     };
     array<cstring> enabled_extensions = {
         // Surface for common window and compositing tasks
@@ -341,7 +416,9 @@ PROC vulkan_init() -> fresult
     instance_args.ppEnabledExtensionNames = enabled_extensions.data;
     instance_args.pNext = &messenger_args;
 
-    VkResult instance_ok = vkCreateInstance( &instance_args, nullptr, &g_vulkan->instance );
+
+    VkResult instance_ok = vkCreateInstance(
+        &instance_args, &g_vulkan->allocator_callback, &g_vulkan->instance );
     if (instance_ok != VK_SUCCESS)
     {
         vulkan_error( "Failed to create Vulkan instance" );
@@ -516,7 +593,7 @@ PROC vulkan_init() -> fresult
     auto device_ok = vkCreateDevice(
         g_vulkan->device,
         &device_args,
-        nullptr,
+        &g_vulkan->allocator_callback,
         &g_vulkan->logical_device
     );
     if (device_ok) { tyon_error( "Device creation error" ); }
@@ -534,7 +611,7 @@ PROC vulkan_init() -> fresult
     fence_args.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     bool fence_ok = true;
     fence_ok &= VK_SUCCESS == vkCreateFence(
-        g_vulkan->logical_device, &fence_args, nullptr, &g_vulkan->frame_aquire_fence );
+        g_vulkan->logical_device, &fence_args, nullptr, &g_vulkan->frame_acquire_fence );
     // Signal the begin fence to prevent it hanging
     fence_args.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     fence_ok &= VK_SUCCESS == vkCreateFence(
@@ -543,7 +620,7 @@ PROC vulkan_init() -> fresult
     vulkan_label_object(
         (u64)self->frame_begin_fence, VK_OBJECT_TYPE_FENCE, "frame_begin_fence" );
     vulkan_label_object(
-        (u64)self->frame_aquire_fence, VK_OBJECT_TYPE_FENCE, "frame_begin_fence" );
+        (u64)self->frame_acquire_fence, VK_OBJECT_TYPE_FENCE, "frame_acquire_fence" );
 
     VkSemaphoreCreateInfo semaphore_args {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
@@ -728,6 +805,7 @@ PROC vulkan_init() -> fresult
 
     /* Create swapchain before pipeline so we can pass present surface current extent
     But after render pass... because it gets passed in the swapchain */
+    g_vulkan->swapchain.name = "version_0";
     vulkan_swapchain_init( &g_vulkan->swapchain );
 
 
@@ -947,9 +1025,10 @@ PROC vulkan_draw() -> void
     auto& swapchain = self->swapchain;
     if (g_vulkan->initialized == false) { return; }
     i64 current_frame = g_vulkan->frames_started;
-    ++g_vulkan->frames_started;
 
     // -- Pre-Draw Start Setup and Reset Tasks
+    // Clear acquire fence if we skipped the last frame
+    vkResetFences( self->logical_device, 1, &g_vulkan->frame_acquire_fence );
 
     // Set draw commands
     u32 image_index {};
@@ -958,12 +1037,18 @@ PROC vulkan_draw() -> void
         g_vulkan->swapchain.platform_swapchain,
         0,
         VK_NULL_HANDLE,
-        g_vulkan->frame_aquire_fence,
+        g_vulkan->frame_acquire_fence,
         &image_index
     );
 
     if (acquire_bad == VK_ERROR_OUT_OF_DATE_KHR)
     {
+        static time_periodic resize_delay( 1ms );
+        if (resize_delay.triggered() == false)
+        { return; }
+
+        // Reset fence before using again VUID-vkResetFences-pFences-01123
+        vkResetFences( self->logical_device, 1, &g_vulkan->frame_acquire_fence );
         // Window probably resized and invalidated the swapchain so we'll try again.
         // Wait for all frames to finish before messing with the swapchain
         vkWaitForFences(
@@ -974,6 +1059,7 @@ PROC vulkan_draw() -> void
             3'000'000'000
         );
         vulkan_swapchain_destroy( &g_vulkan->swapchain );
+        g_vulkan->swapchain.name = fmt::format( "version_{}", current_frame );
         vulkan_swapchain_init( &g_vulkan->swapchain );
 
         acquire_bad = vkAcquireNextImageKHR(
@@ -981,32 +1067,41 @@ PROC vulkan_draw() -> void
             g_vulkan->swapchain.platform_swapchain,
             0,
             VK_NULL_HANDLE,
-            g_vulkan->frame_aquire_fence,
+            g_vulkan->frame_acquire_fence,
             &image_index
         );
     }
 
     // New new frame needs to be rendered yet, do something else
     if (acquire_bad == VK_NOT_READY)
-    {  vulkan_log( "No frame ready to begin" ); return; }
+    {   vulkan_log( "No frame ready to begin from vkAcquireNextImageKHR 'VK_NOT_READY'" );
+        return;
+    }
     else if (acquire_bad)
-    { vulkan_error( "Failed to acquire next presentable image" ); return; }
+    {   vulkan_errorf( "Failed to acquire next presentable image '{}'",
+                       string_VkResult(acquire_bad) );
+        return;
+    }
 
     VkFence frame_end_fence = swapchain.frame_end_fences[ image_index ];
-    // Wait before proceeding to reset the fence
+    // Wait on 'frame_acquire_fence' before proceeding to reset the fence
+    auto end_timeout = vkWaitForFences(
+        g_vulkan->logical_device, 1, &frame_end_fence, true, 1'0000'000'000 );
     vkResetFences( self->logical_device, 1, &frame_end_fence );
+    if (end_timeout == VK_TIMEOUT)
+    {   vulkan_errorf( "Huge hitch waiting on frame index {}", image_index ); return; }
 
     /* Wait for frame acquire before proceeding to resetting command buffer This
        sort of halts when the next frame is not completed or blocked so no more
        work can be done */
     auto frame_timeout = vkWaitForFences(
-        g_vulkan->logical_device, 1, &self->frame_aquire_fence, true, 16'666'666 );
-    vkResetFences( g_vulkan->logical_device, 1, &self->frame_aquire_fence );
+        g_vulkan->logical_device, 1, &self->frame_acquire_fence, true, 16'666'666 );
     if (frame_timeout == VK_TIMEOUT)
     {   vulkan_errorf( "Frame: {}] | Missed frame!", current_frame ); return;
     }
     else if (frame_timeout == VK_ERROR_DEVICE_LOST)
-    {   vulkan_error( "Something really horrible happened, device was lost waiting on frame end" );
+    {   vulkan_error( "Something really horrible happened, "
+                      "device was lost waiting on frame end, 'VK_DEVICE_LOST'" );
         return;
     }
     else if (frame_timeout == VK_SUCCESS)
@@ -1015,6 +1110,8 @@ PROC vulkan_draw() -> void
     VkCommandBuffer command_buffer = self->commands[ image_index ];
     vkResetCommandBuffer( command_buffer, 0x0 );
 
+    // -- Get started on new frame --
+    ++g_vulkan->frames_started;
     // Start writing draw commands to command buffer
     VkCommandBufferBeginInfo begin_args {};
     begin_args.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1114,7 +1211,9 @@ PROC vulkan_draw() -> void
     };
     VkResult present_bad = vkQueuePresentKHR( self->present_queue, &present_args );
     if (present_bad)
-    { vulkan_error( "Fatal error with drawing and presentation 'VkQueuePresent'" ); }
+    {   vulkan_errorf( "Fatal error '{}' with drawing and presentation 'VkQueuePresent'",
+                       string_VkResult(present_bad) );
+    }
 
     // TODO: Remove because useless now?
     // auto frame_timeout = vkWaitForFences(

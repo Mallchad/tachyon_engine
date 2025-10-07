@@ -60,12 +60,13 @@ struct vulkan_context
 
     // Ungrouped threading primitives
     VkFence frame_begin_fence;
-    VkFence frame_aquire_fence;
+    VkFence frame_acquire_fence;
     /* VkFence frame_end_fence; */
 
     VkSemaphore queue_submit_semaphore;
     VkSemaphore frame_end_semaphore;
 
+    VkAllocationCallbacks allocator_callback;
     i32 frame_max_inflight = 2;
     vulkan_swapchain swapchain;
 
@@ -88,6 +89,8 @@ struct vulkan_context
     resource_arena resources;
 
     // Platform Independant State
+    /* memory_stack_allocator default_allocator; */
+    std::unique_ptr<i_allocator> allocator = std::make_unique<memory_stack_allocator>();
     bool initialized = false;
     i64 frames_started = 0;
     i64 frames_completed = 0;
