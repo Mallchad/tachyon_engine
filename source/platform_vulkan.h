@@ -29,6 +29,7 @@ struct vulkan_swapchain
     /** Vulkan dependant size of presentable surface, often close to window size.
     ultra pedantic about timing and exact size on most platforms. */
     VkExtent2D present_size;
+    i32 n_images = 0;
     bool initialized = false;
     resource_arena resources;
 };
@@ -43,6 +44,7 @@ struct vulkan_context
     VkDevice logical_device;
     // Primary Window surface to draw to
     VkSurfaceKHR surface;
+    VkCommandPool command_pool;
     array<VkCommandBuffer> commands;
     /** Views describe how to interpret VkImage's, VkImages are related to
         textures and framebuffers */
@@ -53,6 +55,9 @@ struct vulkan_context
     i32 present_queue_family = -1;
     VkQueue graphics_queue;
     VkQueue present_queue;
+
+    VkDescriptorSetLayout descriptor_layout;
+    VkPipelineLayout pipeline_layout;
 
     VkRenderPass render_pass;
     // Primary graphics pipeline, associated with render pass
@@ -71,6 +76,7 @@ struct vulkan_context
     vulkan_swapchain swapchain;
 
     // Test Data
+    VkDeviceMemory vertex_memory;
     VkBuffer test_triangle_buffer {};
     array<f32> test_triangle_data = {
         0.f, 0.f, 1.f, // TODO: Remove temporary colour
