@@ -97,8 +97,6 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
         vulkan_logf( "\tAllocation Type: {} ", string_VkInternalAllocationType(type) );
         vulkan_logf( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
     };
-
-    TYON_TODO( "Unimplimented" );
     return result;
 }
 
