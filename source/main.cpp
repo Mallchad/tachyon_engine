@@ -22,16 +22,19 @@ int main( int argc, char** argv )
     global->kill_program = false;
 
     // Argument processing
+    tyon_log( "Processing Command Line Arguments" );
     for (int i=0; i < argc; ++i)
     {
         fstring x_arg = argv[i];
         tyon_logf( "arg {}: '{}'", i, x_arg );
         if (x_arg == "--no-main-loop"s )
         { global->kill_program = true; }
-        if (x_arg == "--vulkan")
+        else if (x_arg == "--vulkan")
         { global->render_backend = e_render_backend::vulkan; }
-        if (x_arg == "--opengl")
+        else if (x_arg == "--opengl")
         { global->render_backend = e_render_backend::opengl; }
+        else if (x_arg == "--graphics-llvmpipe")
+        { global-> graphics_llvmpipe = true; }
     }
 
 

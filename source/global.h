@@ -43,8 +43,10 @@ public:
     std::vector<fstring> search_paths;
     fpath project_root = TRIANGULATE_PROJECT_ROOT;
 
-    //
+    // Backend service to use for fulfilling rendering duties
     e_render_backend render_backend = e_render_backend::vulkan;
+    // prefer llvmpipe software renderer, either OpenGL or Vulkan
+    bool graphics_llvmpipe = false;
 
     /// Try to gracefully quit the program
     bool kill_program = false;

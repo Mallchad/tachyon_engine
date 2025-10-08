@@ -8,7 +8,10 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #define module module_
+// Enable Assistance with loading function pointers from hpp
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_xlib.h>
 #include <vulkan/vk_enum_string_helper.h>
 #undef module

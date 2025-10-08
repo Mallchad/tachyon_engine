@@ -12,6 +12,7 @@ vulkan_context* g_vulkan = nullptr;
 namespace dyn
 {
     PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
+    PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = nullptr;
 }
 
 VKAPI_ATTR VKAPI_CALL
@@ -39,9 +40,12 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
         size_t alignment,
         VkSystemAllocationScope scope
     )
-    {   i_allocator* impl = ptr_cast<i_allocator*>( context );
+    {
+        PROFILE_SCOPE_FUNCTION();
+        i_allocator* impl = ptr_cast<i_allocator*>( context );
         void* result_ = impl->allocate_raw( bytes, alignment );
-        vulkan_logf( "Allocated {} bytes in driver", bytes );
+        // vulkan_logf( "Allocated {} bytes in driver", bytes );
+        // vulkan_logf( "Memory Statistics {}", impl->get_memory_statistics() );
 
         return result_;
     };
@@ -231,7 +235,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
     );
     if (swapchain_ok != VK_SUCCESS)
     {
-        vulkan_error( "Failed to initialize swapchain" );
+        vulkan_errorf( "Failed to initialize swapchain {}", string_VkResult(swapchain_ok) );
         return false;
     }
     vulkan_log( "Initialized presentation swapchain" );
@@ -313,7 +317,8 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
         framebuffer_args.layers = 1;
 
         framebuffer_errors[i] = vkCreateFramebuffer(
-            g_vulkan->logical_device, &framebuffer_args, nullptr, &swapchain_buffers[i] );
+            g_vulkan->logical_device, &framebuffer_args,
+            &g_vulkan->allocator_callback, &swapchain_buffers[i] );
         vulkan_label_object( (u64)swapchain_buffers[i], VK_OBJECT_TYPE_FRAMEBUFFER,
                              fmt::format( "{}_swapchain_buffer_{}", arg->name, i ) );
         ERROR_GUARD(view_errors[i] == VK_SUCCESS , "view creation error" );
@@ -339,7 +344,7 @@ PROC vulkan_swapchain_destroy( vulkan_swapchain* arg ) -> void
         &allocator
     );
     // vkDestroyImageView
-    // Lazy destroy swapchain because the handle still needs to be reused by next swapchain
+    // Lazy destroy swapcarch vmhain because the handle still needs to be reused by next swapchain
     auto swapchain = arg->platform_swapchain;
     g_vulkan->resources.push_cleanup( [=]
     {
@@ -446,10 +451,19 @@ PROC vulkan_init() -> fresult
     });
 
     // need to do this to get validation layer callbacks aparently?
-    auto dyn_vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)
-    vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" );
+    auto dyn_vkCreateDebugUtilsMessengerEXT = PFN_vkCreateDebugUtilsMessengerEXT(
+        vkGetInstanceProcAddr( instance, "vkCreateDebugUtilsMessengerEXT" ) );
+    dyn::vkDestroyDebugUtilsMessengerEXT = PFN_vkDestroyDebugUtilsMessengerEXT(
+        vkGetInstanceProcAddr( instance, "vkDestroyDebugUtilsMessengerEXT" ) );
+
     VkDebugUtilsMessengerEXT debug_messenger {};
     dyn_vkCreateDebugUtilsMessengerEXT(instance, &messenger_args, nullptr, &debug_messenger );
+    if (debug_messenger)
+    {   g_vulkan->resources.push_cleanup( [debug_messenger]
+        {   dyn::vkDestroyDebugUtilsMessengerEXT(
+                g_vulkan->instance, debug_messenger, nullptr );
+        } );
+    }
 
     // For debug naming
     dyn::vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)
@@ -546,8 +560,21 @@ PROC vulkan_init() -> fresult
             return false;
         }
 
-        bool select_device =
-        (suitible && (dedicated_graphics || g_vulkan->device == VK_NULL_HANDLE));
+        if (global->graphics_llvmpipe)
+        {
+        }
+
+        // Use llvmpipe exclusively if selected, otherwise prefer dedicated
+        // graphics, otherwise use anything
+        fstring device_name = props.deviceName;
+        // std::for_each( device_name.begin(), device_name.end(), [](char x) { return std::tolower(x); } );
+        std::ranges::for_each( device_name, [](char x) { return std::tolower(x); } );
+        bool detected_llvmpipe = (device_name.find( "llvmpipe") != std::string::npos);
+        bool prefer_dedicated = (global->graphics_llvmpipe == false && dedicated_graphics);
+        bool prefer_llvm = (global->graphics_llvmpipe == true && detected_llvmpipe);
+        bool more_preferred_device = (prefer_llvm || prefer_dedicated);
+        bool select_device = (
+            suitible && (more_preferred_device || g_vulkan->device == VK_NULL_HANDLE));
         if (select_device)
         {
             g_vulkan->device = x_device;
@@ -1021,16 +1048,31 @@ PROC vulkan_destroy() -> void
     PROFILE_SCOPE_FUNCTION();
     if (g_vulkan == nullptr || g_vulkan->initialized == false) { return; }
     // Wait for device before attempting to cleanup
-    vkDeviceWaitIdle( g_vulkan->logical_device );
+    auto device_wait_bad = vkDeviceWaitIdle( g_vulkan->logical_device );
+    auto present_wait_bad = vkQueueWaitIdle( g_vulkan->present_queue );
+    auto graphics_wait_bad = vkQueueWaitIdle( g_vulkan->graphics_queue );
 
     // Might be needed one day, but not right now
     // g_vulkan->resources.run_cleanup();
     g_vulkan->~vulkan_context();
+    g_vulkan = nullptr;
 }
 
 PROC vulkan_tick() -> void
 {
     PROFILE_SCOPE_FUNCTION();
+
+    static time_periodic restart_vulkan( 5s );
+    if (restart_vulkan.triggered())
+    {
+        static bool once = true;
+        if (once == false)
+        {
+            vulkan_destroy();
+            vulkan_init();
+        }
+        once = false;
+    }
 
 
     vulkan_draw();
