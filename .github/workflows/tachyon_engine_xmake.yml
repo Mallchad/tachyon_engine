@@ -13,24 +13,24 @@ jobs:
     steps:
       - name: pre-flight checks
         # shell: bash
-        - run: echo "Current working directory:"
-        - run: pwd
-        - run: echo "Files detected by git"
-        - run: git ls-files
+      - run: echo "Current working directory:"
+      - run: pwd
+      - run: echo "Files detected by git"
+      - run: git ls-files
 
       - name: Check out repository code
         uses: actions/checkout@v5
         # shell: bash
-        - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
-        - run: echo "Current working directory"
-        - run: pwd
-        - run: echo "Files detected by git"
-        - run: git ls-files
+      - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "Current working directory"
+      - run: pwd
+      - run: echo "Files detected by git"
+      - run: git ls-files
 
       - name: submodule setup
         shell: bash
-        - run: echo "Checking submodules actually contain files"
-        - run: tree external -L 2
+      - run: echo "Checking submodules actually contain files"
+      - run: tree external -L 2
 
       - name: xmake setup
         shell: bash
@@ -40,4 +40,4 @@ jobs:
 
       - name: xmake build
         shell: bash
-        - run: xmake build --yes --verbose tachyon_engine
+      - run: xmake build --yes --verbose tachyon_engine
