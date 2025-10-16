@@ -37,4 +37,4 @@ jobs:
           xmake-version: latest
 
       - name: xmake build
-        - run: xmake build --yes --verbose tachyon_engine
+        run: xmake build --yes --verbose tachyon_engine
