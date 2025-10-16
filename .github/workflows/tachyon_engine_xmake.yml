@@ -11,6 +11,15 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - name: pre-flight checks
+        run: echo "Current working directory: $(pwd)"
+        run: echo "Files detected by git"
+        run: git ls-files
+
+      - name: submodule setup
+        run: echo "Checking submodules actually contain files"
+        run: tree external -L 2
+
       - name: xmake setup
         uses: xmake-io/github-action-setup-xmake@v1
         with:
