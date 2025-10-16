@@ -1,0 +1,45 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: xmake build
+      run: xmake build tachyon_engine
+uses: xmake-io/github-action-setup-xmake@v1
+
+
+with:
+  xmake-version: latest
+            - name: setup xmake
+  # You may pin to the exact commit or the version.
+  # uses: xmake-io/github-action-setup-xmake@dcda7affc05f4d6d32357f30e1eb3414d45ac4db
+  uses: xmake-io/github-action-setup-xmake@v1
+
+  with:
+    # The version to use. Should be a semver range or 'latest'. Or use [{repository}#]branch@{branch_name} to select a branch.
+    xmake-version: # default is latest
+    # Directory to cache xmake in. This folder will go under $GITHUB_HOME (I.e. build dir) and be cached using @actions/cache.
+    actions-cache-folder: # optional, default is
+    # The actions cache key.
+    actions-cache-key: # optional, default is
+    # Enable package cache.
+    package-cache: # optional
+    # The packages cache key.
+    package-cache-key: # optional, default is
+    # The project root path.
+    project-path: # optional, default is
+    # Enable build cache.
+    build-cache: # optional
+    # The build cache path.
+    build-cache-path: # optional, default is
+    # The build cache key.
+    build-cache-key: # optional, default is
