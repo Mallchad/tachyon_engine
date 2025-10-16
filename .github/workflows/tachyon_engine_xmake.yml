@@ -11,15 +11,8 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - name: pre-flight checks
-        run: git ls-files
-      - run: echo "Current working directory:"
-      - run: pwd
-      - run: echo "Files detected by git"
-
       - name: Check out repository code
         uses: actions/checkout@v5
-        # shell: bash
       - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
       - run: echo "Current working directory"
       - run: pwd
