@@ -31,7 +31,6 @@ jobs:
         run: tree external -L 2
 
       - name: xmake setup
-        shell: bash
         uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
