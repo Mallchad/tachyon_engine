@@ -1,5 +1,4 @@
 name: C/C++ CI
-uses: xmake-io/github-action-setup-xmake@v1
 with:
   xmake-version: latest
   - name: setup xmake
@@ -37,6 +36,10 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-    - name: xmake build
-      run: xmake build tachyon_engine
+      - name: xmake setup
+      uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: latest
 
+      - name: xmake build
+        run: xmake build --yes --verbose tachyon_engine
