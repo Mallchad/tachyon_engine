@@ -14,12 +14,13 @@ jobs:
     steps:
     - name: xmake build
       run: xmake build tachyon_engine
+
 uses: xmake-io/github-action-setup-xmake@v1
 
 
 with:
   xmake-version: latest
-            - name: setup xmake
+  - name: setup xmake
   # You may pin to the exact commit or the version.
   # uses: xmake-io/github-action-setup-xmake@dcda7affc05f4d6d32357f30e1eb3414d45ac4db
   uses: xmake-io/github-action-setup-xmake@v1

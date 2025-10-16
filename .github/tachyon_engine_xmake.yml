@@ -1,3 +1,0 @@
-uses: xmake-io/github-action-setup-xmake@v1
-with:
-  xmake-version: latest
