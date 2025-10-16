@@ -16,6 +16,13 @@ jobs:
         run: echo "Files detected by git"
         run: git ls-files
 
+      - name: Check out repository code
+        uses: actions/checkout@v5
+        run: echo "The ${{ github.repository }} repository has been cloned to the runner."
+        run: echo "Current working directory: $(pwd)"
+        run: echo "Files detected by git"
+        run: git ls-files
+
       - name: submodule setup
         run: echo "Checking submodules actually contain files"
         run: tree external -L 2
