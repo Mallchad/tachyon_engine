@@ -12,11 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: pre-flight checks
-        # shell: bash
+        run: git ls-files
       - run: echo "Current working directory:"
       - run: pwd
       - run: echo "Files detected by git"
-      - run: git ls-files
 
       - name: Check out repository code
         uses: actions/checkout@v5
@@ -27,10 +26,9 @@ jobs:
       - run: echo "Files detected by git"
       - run: git ls-files
 
-      - name: submodule setup
-        shell: bash
       - run: echo "Checking submodules actually contain files"
-      - run: tree external -L 2
+      - name: submodule setup
+        run: tree external -L 2
 
       - name: xmake setup
         shell: bash
@@ -39,5 +37,4 @@ jobs:
           xmake-version: latest
 
       - name: xmake build
-        shell: bash
-      - run: xmake build --yes --verbose tachyon_engine
+        - run: xmake build --yes --verbose tachyon_engine
