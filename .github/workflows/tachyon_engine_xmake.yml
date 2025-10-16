@@ -13,11 +13,14 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v5
-      - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "Current working directory"
-      - run: pwd
-      - run: echo "Files detected by git"
-      - run: git ls-files
+        with:
+          submodules: recursive
+          run: |
+            echo "The ${{ github.repository }} repository has been cloned to the runner."
+            echo "Current working directory"
+            pwd
+            echo "Files detected by git"
+            git ls-files
 
       - run: echo "Checking submodules actually contain files"
       - name: submodule setup
