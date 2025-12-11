@@ -8,6 +8,11 @@ set_allowedmodes( "release",
 
 option("unity_build_enabled", { default = true, description =
                     "Enable Unity build - single module cpp file compilation" })
+option("tracy_profiler", { default = true,
+                           description = "Enable profiling with tracy" });
+option("address_sanitizer", { default = false,
+                           description = "Enable fast checkng of memory integrity"  });
+
 target( "tachyon_engine" )
     set_kind( "binary" )
     set_languages( "c++20" )
@@ -51,8 +56,10 @@ target( "tachyon_engine" )
     set_pcxxheader( "external/tachyon_lib/source/include_tachyon_lib_core.h" )
 
     -- asan must be linked first
-    -- add_links( "asan" )
-    -- add_links( "ubsan" )
+    if has_config( "address_sanitizer" ) then
+       -- add_links( "asan" )
+       add_links( "ubsan" )
+    end
 
     -- Linux --
     add_links( "dl", "X11", "GL", "uuid", "vulkan" )
@@ -80,6 +87,7 @@ target( "tachyon_engine" )
                   "-march=native",
                   "-stdlib=libstdc++",
                   -- "-std=c++20",
+                  -- TODO: Needs to fixed for future clang versions
                   "-fmodules-ts",
                   -- Generate a control flow graph
                   "gcc::-fdump-tree-all-graph",
@@ -138,9 +146,9 @@ target( "tachyon_engine" )
                   "clang::-Wno-invalid-constexpr",
                   -- Only runs on extra semicolons that do nothing, pointless.
                   "-Wno-extra-semi-stmt",
-                  -- "-fsanitize=address",
+
                   -- "-fsanitize=thread",
-                  -- "-fsanitize=memory",
+
                   -- "-fsanitize=undefined",
                   -- "-fsanitize=dataflow",
                   -- "-fsanitize=cfi",   -- Control Flow Integrity
@@ -148,6 +156,11 @@ target( "tachyon_engine" )
                   -- "-fsanitize=safe-stack",
                   {tools = "clang" }
                    )
+    if has_config( "address_sanitizer" ) then
+       -- add_cxxflags( "-fsanitize=address" )
+
+       -- add_cxxflags( "-fsanitize=memory", "-fPIE", "-pie" )
+    end
 
 target( "tracy" )
     set_kind( "static" )
@@ -160,7 +173,10 @@ target( "tracy" )
     set_toolchains( "clang" )
 
     add_links( "pthread" )
-    add_cxxflags( "-DTRACY_ENABLE=1",
+    if has_config( "unity_build_enabled" ) then
+       add_cxxflags( "-DTRACY_ENABLE=1" )
+    end
+add_cxxflags( "-DTRACY_ENABLE=1",
                   "-g",
                   "-pthread" )
 
@@ -224,7 +240,7 @@ target( "tachyon_libs" )
                   "-Wno-unused-private-field",
                   "-Wno-abstract-final-class",
                   -- Only runs on extra semicolons that do nothing, pointless.
-                  "-Wno-extra-semi-stmt"
+                  "-Wno-extra-semi-stmt",
                   -- "-fsanitize=address",
                   -- "-fsanitize=thread",
                   -- "-fsanitize=memory",
@@ -233,7 +249,7 @@ target( "tachyon_libs" )
                   -- "-fsanitize=cfi",   -- Control Flow Integrity
                   -- "-fsanitize=kcfi",  -- Kernel Indirect Call Forward-Edge Control Flow Integrity
                   -- "-fsanitize=safe-stack",
-
+                  ""
                    )
 
     if is_mode( "release" ) then

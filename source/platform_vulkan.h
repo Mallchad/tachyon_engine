@@ -94,7 +94,7 @@ struct vulkan_context
 
     // Platform Independant State
     /* memory_stack_allocator default_allocator; */
-    std::unique_ptr<i_allocator> allocator = std::make_unique<memory_stack_allocator>();
+    std::unique_ptr<i_allocator> allocator = std::make_unique<memory_heap_allocator>();
     /* Top level resource manager for vulkan, needs to be ordered after allocator for
      because Vulkan resoruces are allocated out of the allocator*/
     resource_arena resources;

@@ -44,7 +44,9 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
         PROFILE_SCOPE_FUNCTION();
         i_allocator* impl = ptr_cast<i_allocator*>( context );
         void* result_ = impl->allocate_raw( bytes, alignment );
-        // vulkan_logf( "Allocated {} bytes in driver", bytes );
+        vulkan_logf( "Allocated {} bytes in driver", bytes );
+        vulkan_logf( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
+        vulkan_logf( "Allocation Address: {} ", result_ );
         // vulkan_logf( "Memory Statistics {}", impl->get_memory_statistics() );
 
         return result_;
@@ -58,8 +60,11 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
         VkSystemAllocationScope scope
     )
     {   i_allocator* impl = ptr_cast<i_allocator*>( context );
-        void* result_ = impl->allocate_raw( bytes, alignment );
-        memory_copy_raw( result_, original, bytes );
+        // TYON_BREAK();
+        void* result_ = impl->allocate_relocate( original, alignment );
+        vulkan_logf( "Reallocated {} bytes in driver", bytes );
+        vulkan_logf( "\tReallocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
+        vulkan_logf( "Re-allocation Address: {} ", original );
         return result_;
     };
 
@@ -146,7 +151,7 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
 
     VkShaderModule& platform_module = arg->platform_module;
     auto module_ok = vkCreateShaderModule(
-        g_vulkan->logical_device, &shader_args, nullptr, &platform_module );
+        g_vulkan->logical_device, &shader_args, &g_vulkan->allocator_callback, &platform_module );
     if (module_ok != VK_SUCCESS)
     {
         vulkan_errorf( "Failed to create shader module: {}", arg->name );
@@ -157,7 +162,8 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
     fstring name = arg->name;
     g_vulkan->resources.push_cleanup( [name, platform_module]{
         vulkan_log( "Destroying shader module:", name );
-        vkDestroyShaderModule( g_vulkan->logical_device, platform_module, nullptr ); } );
+        vkDestroyShaderModule(
+            g_vulkan->logical_device, platform_module, &g_vulkan->allocator_callback ); } );
 
     vulkan_logf( "Created shader module: {}", arg->name );
     return true;
@@ -473,11 +479,12 @@ PROC vulkan_init() -> fresult
         vkGetInstanceProcAddr( instance, "vkDestroyDebugUtilsMessengerEXT" ) );
 
     VkDebugUtilsMessengerEXT debug_messenger {};
-    dyn_vkCreateDebugUtilsMessengerEXT(instance, &messenger_args, nullptr, &debug_messenger );
+    dyn_vkCreateDebugUtilsMessengerEXT(
+        instance, &messenger_args, &g_vulkan->allocator_callback, &debug_messenger );
     if (debug_messenger)
     {   g_vulkan->resources.push_cleanup( [debug_messenger]
         {   dyn::vkDestroyDebugUtilsMessengerEXT(
-                g_vulkan->instance, debug_messenger, nullptr );
+                g_vulkan->instance, debug_messenger, &g_vulkan->allocator_callback );
         } );
     }
 
@@ -655,11 +662,11 @@ PROC vulkan_init() -> fresult
         &g_vulkan->allocator_callback,
         &g_vulkan->logical_device
     );
-    if (device_ok) { tyon_error( "Device creation error" ); }
+    if (device_ok) { tyon_error( "Device creation error" ); return false; }
 
     g_vulkan->resources.push_cleanup( []{
         vulkan_logf( "Destroy Logical Device 0x{:x}", u64(g_vulkan->logical_device) );
-        vkDestroyDevice( g_vulkan->logical_device, nullptr );
+        vkDestroyDevice( g_vulkan->logical_device, &g_vulkan->allocator_callback );
         g_vulkan->logical_device =  VK_NULL_HANDLE;
     } );
     vkGetDeviceQueue( g_vulkan->logical_device, graphics_queue_family, 0, &graphics_queue );
@@ -670,11 +677,11 @@ PROC vulkan_init() -> fresult
     fence_args.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     bool fence_ok = true;
     fence_ok &= VK_SUCCESS == vkCreateFence(
-        g_vulkan->logical_device, &fence_args, nullptr, &g_vulkan->frame_acquire_fence );
+        g_vulkan->logical_device, &fence_args, &g_vulkan->allocator_callback, &g_vulkan->frame_acquire_fence );
     // Signal the begin fence to prevent it hanging
     fence_args.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     fence_ok &= VK_SUCCESS == vkCreateFence(
-        g_vulkan->logical_device, &fence_args, nullptr, &g_vulkan->frame_begin_fence );
+        g_vulkan->logical_device, &fence_args, &g_vulkan->allocator_callback, &g_vulkan->frame_begin_fence );
     if (fence_ok == false) { return false; }
     vulkan_label_object(
         (u64)self->frame_begin_fence, VK_OBJECT_TYPE_FENCE, "frame_begin_fence" );
@@ -686,9 +693,11 @@ PROC vulkan_init() -> fresult
     };
     bool semaphore_ok = true;
     semaphore_ok &= VK_SUCCESS == vkCreateSemaphore(
-        self->logical_device, &semaphore_args, nullptr, &self->frame_end_semaphore );
+        self->logical_device, &semaphore_args, &g_vulkan->allocator_callback,
+        &self->frame_end_semaphore );
     semaphore_ok &= VK_SUCCESS == vkCreateSemaphore(
-        self->logical_device, &semaphore_args, nullptr, &self->queue_submit_semaphore );
+        self->logical_device, &semaphore_args, &g_vulkan->allocator_callback,
+        &self->queue_submit_semaphore );
     vulkan_label_object(
         (u64)self->frame_end_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "frame_end_semaphore" );
     vulkan_label_object(
@@ -1136,17 +1145,11 @@ PROC vulkan_tick() -> void
 {
     PROFILE_SCOPE_FUNCTION();
 
-    static time_periodic restart_vulkan( 5s );
-    if (restart_vulkan.triggered())
+    bool restart_vulkan = false;
+    if (restart_vulkan)
     {
-        static bool once = true;
-        if (once == false)
-        {
-            vulkan_destroy();
-            // std::this_thread::sleep_for( 2s );
-            vulkan_init();
-        }
-        once = false;
+        vulkan_destroy();
+        vulkan_init();
     }
 
 

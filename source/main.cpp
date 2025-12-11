@@ -8,11 +8,18 @@ int main( int argc, char** argv )
     globals _global = {}; global = &_global;
     global->program_epoch = get_time();
 
-    uid id = uuid_generate();
-    tyon_logf( "Generated UUID as presented {}", id );
-    char str[16];
-    platform::uuid_unparse( raw_pointer(&id.uuid), str );
-    tyon_logf( "Expected {}", str );
+
+    {
+        // TODO: Remove before flight
+        // Random dumb tests
+        uid id = uuid_generate();
+        tyon_logf( "Generated UUID as presented {}", id );
+        char* str = memory_allocate_raw( 20 );
+        platform::uuid_unparse( raw_pointer(&id.uuid), str );
+        tyon_logf( "Expected {}", str );
+
+        test_allocators();
+    }
 
     // Change directory to binary
     std::filesystem::current_path( file_self_directory() );

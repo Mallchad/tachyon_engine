@@ -45,9 +45,7 @@
     #include "../time.cpp"
 
 
-#include "tachyon_library.cpp"
-#include "tachyon_platform_linux.cpp"
-#include "tachyon_platform_windows.cpp"
+#include "build_control/tachyon_lib_unity_core.cpp"
 
 // #include "external/lua/onelua.c"
 
