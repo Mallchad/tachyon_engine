@@ -265,24 +265,24 @@ FUNCTION def::initialize()
         vsync_option = (vsync_option < 0 ? vsync_double_buffered : vsync_option);
         ld::glXSwapIntervalMESA( vsync_option );
         opengl_extensions.enable( "GLX_MESA_swap_control", extension_family::EXT_swap_control );
-        log( "OpenGL", "Mesa swap control" );
+        TYON_BASE_LOG( "OpenGL", "Mesa swap control" );
     }
     else if (vglx_extensions_string.find( "GLX_MESA_swap_control" ) != std::string::npos)
     {
         vsync_option = (vsync_option < 0 ? vsync_double_buffered : vsync_option);
         ld::glXSwapIntervalMESA( vsync_option );
         opengl_extensions.enable( "GLX_MESA_swap_control", extension_family::EXT_swap_control );
-        log( "OpenGL", "Mesa swap control" );
+        TYON_BASE_LOG( "OpenGL", "Mesa swap control" );
     }
     else if (vglx_extensions_string.find( "GLX_EXT_swap_control" ) != std::string::npos)
     {
         GLXDrawable drawable = glXGetCurrentDrawable();
         ld::glXSwapIntervalEXT( rx_display, drawable, 0 );
         opengl_extensions.enable( "GLX_EXT_swap_control", extension_family::EXT_swap_control );
-        log( "OpenGL", "EXT swap control" );
+        TYON_BASE_LOG( "OpenGL", "EXT swap control" );
     }
     else
-    { tyon_error( "No Gl swap_control extension detected, have no control over vsync" ); }
+    { TYON_ERROR( "No Gl swap_control extension detected, have no control over vsync" ); }
     // Enable Z Buffering
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
@@ -414,7 +414,7 @@ FUNCTION def::window_create()
     {
         vx_wm_delete_window = test_atom;
         vx_window_protocols.push_back(test_atom);
-        tyon_log( "WM_DELETE_WINDOW protocol loaded" );
+        TYON_LOG( "WM_DELETE_WINDOW protocol loaded" );
         XSetWMProtocols( rx_display, x_window_tmp, vx_window_protocols.data(), fuint32(vx_window_protocols.size()) );
     }
 

@@ -123,7 +123,7 @@ FUNCTION read_stl_file( fpath target )
     triangle_count_ptr = triangle_count_byte + file.data();
 
     std::memcpy( &triangle_count, triangle_count_ptr, sizeof(fuint32));
-    log( "File","Loading mesh with triangle count:", triangle_count );
+    TYON_BASE_LOG( "File","Loading mesh with triangle count:", triangle_count );
 
     // Do quick setup with the face count
     out.face_count = triangle_count;

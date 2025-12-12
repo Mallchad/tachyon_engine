@@ -14,7 +14,7 @@ FUNCTION x11_init()
     g_x11 = memory_allocate<x11_context>( 1 );
     g_x11->server = XOpenDisplay( nullptr );
     if (g_x11->server == nullptr)
-    { tyon_error( "Could not open X11 Server connecton" ); return; }
+    { TYON_ERROR( "Could not open X11 Server connecton" ); return; }
     g_x11->server_connection_number = XConnectionNumber( g_x11->server );
 
     // Set custom error handler so we can do more graceful error handling
@@ -97,7 +97,7 @@ FUNCTION x11_window_open()
     {
         g_x11->wm_delete_window = test_atom;
         g_x11->window_protocols.push_back(test_atom);
-        tyon_log( "WM_DELETE_WINDOW protocol loaded" );
+        TYON_LOG( "WM_DELETE_WINDOW protocol loaded" );
         XSetWMProtocols(
             g_x11->server,
             x_window_tmp,
@@ -142,7 +142,7 @@ PROC x11_event_process()
     static time_periodic log_timer( 2s );
     if (log_timer.triggered())
     {
-        log_format( "X11", "Processing {} events from the server",
+        TYON_BASE_LOGF( "X11", "Processing {} events from the server",
                     g_x11->diagnostic_recent_event_count );
         g_x11->diagnostic_recent_event_count = 0;
     }
@@ -172,7 +172,7 @@ PROC x11_event_process()
             {
                 XConfigureEvent configure = event.xconfigure;
                 g_render->window_size = v2 { configure.width, configure.height };
-                log_format( "X11", "X11 window size: {}", g_render->window_size );
+                TYON_BASE_LOGF( "X11", "X11 window size: {}", g_render->window_size );
                 break;
             }
             case DestroyNotify:

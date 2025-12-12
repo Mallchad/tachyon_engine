@@ -32,7 +32,7 @@ FUNCTION lua_table::operator[] ( fstring key )
 
     if (lua_isnil( lua, -1 ))
     {
-        log( "lua", "indexed a nil value, this is probably not what you wanted." );
+        TYON_BASE_LOG( "lua", "indexed a nil value, this is probably not what you wanted." );
         return result;
     }
     return result;

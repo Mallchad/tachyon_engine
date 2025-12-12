@@ -88,7 +88,7 @@ target( "tachyon_engine" )
                   "-stdlib=libstdc++",
                   -- "-std=c++20",
                   -- TODO: Needs to fixed for future clang versions
-                  "-fmodules-ts",
+                  -- "-fmodules-ts",
                   -- Generate a control flow graph
                   "gcc::-fdump-tree-all-graph",
                   -- Preprocessor Only Output (have fun finding the source files in xmake)
@@ -286,9 +286,11 @@ target( "tachyon_shaders" )
           import("core.project.config")
           build_dir = target:targetdir()
           build_root = config.get("buildir")
-          print( build_root )
+          print( "build_dir: %s", build_dir )
+          print( "build_root: %s", build_root )
           -- Copy shaders into build directory so it can find them more easily per-build mode
-          os.cp( config.get("buildir").."/shaders/", build_dir )
+
+          os.trycp( build_dir.."/shaders/", build_dir )
     end )
 
 

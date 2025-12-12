@@ -248,7 +248,7 @@ public:
         }
         if ( argument_count != member_count )
         {
-            tyon_error( "Provided member count does not match previously provided pack definition" );
+            TYON_ERROR( "Provided member count does not match previously provided pack definition" );
             return false;
         }
         member_count = argument_count;

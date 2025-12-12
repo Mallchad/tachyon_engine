@@ -3,12 +3,6 @@
 
 vulkan_context* g_vulkan = nullptr;
 
-#define vulkan_log( ... ) log( "Tachyon Vulkan", __VA_ARGS__ );
-#define vulkan_error( ... ) TYON_LOG_ERROR( "Tachyon Vulkan Error", __VA_ARGS__ );
-#define vulkan_logf( FORMAT_, ... ) log_format( "Tachyon Vulkan", (FORMAT_), __VA_ARGS__);
-#define vulkan_errorf( FORMAT_, ... ) log_error_format_impl( \
-        "Tachyon Vulkan Error", fmt::format((FORMAT_),  __VA_ARGS__) );
-
 namespace dyn
 {
     PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
@@ -23,7 +17,7 @@ PROC vulkan_debug_callback(
     void* user_data ) -> VkBool32
 {
     PROFILE_SCOPE_FUNCTION();
-    log_format( "Vulkan Validation", "{}", callback_data->pMessage );
+    TYON_BASE_LOGF( "Vulkan Validation", "{}", callback_data->pMessage );
 
     return VK_FALSE;
 }
@@ -44,10 +38,10 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
         PROFILE_SCOPE_FUNCTION();
         i_allocator* impl = ptr_cast<i_allocator*>( context );
         void* result_ = impl->allocate_raw( bytes, alignment );
-        vulkan_logf( "Allocated {} bytes in driver", bytes );
-        vulkan_logf( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
-        vulkan_logf( "Allocation Address: {} ", result_ );
-        // vulkan_logf( "Memory Statistics {}", impl->get_memory_statistics() );
+        VULKAN_LOGF( "Allocated {} bytes in driver", bytes );
+        VULKAN_LOGF( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
+        VULKAN_LOGF( "Allocation Address: {} ", result_ );
+        // VULKAN_LOGF( "Memory Statistics {}", impl->get_memory_statistics() );
 
         return result_;
     };
@@ -62,9 +56,9 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
     {   i_allocator* impl = ptr_cast<i_allocator*>( context );
         // TYON_BREAK();
         void* result_ = impl->allocate_relocate( original, alignment );
-        vulkan_logf( "Reallocated {} bytes in driver", bytes );
-        vulkan_logf( "\tReallocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
-        vulkan_logf( "Re-allocation Address: {} ", original );
+        VULKAN_LOGF( "Reallocated {} bytes in driver", bytes );
+        VULKAN_LOGF( "\tReallocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
+        VULKAN_LOGF( "Re-allocation Address: {} ", original );
         return result_;
     };
 
@@ -84,10 +78,10 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
         VkSystemAllocationScope scope
     )
     {
-        vulkan_log( "Allocation Request Event" );
-        vulkan_logf( "\tAllocator Address: {}", (void*)(context) );
-        vulkan_logf( "\tAllocation Type: {} ", string_VkInternalAllocationType(type) );
-        vulkan_logf( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
+        VULKAN_LOG( "Allocation Request Event" );
+        VULKAN_LOGF( "\tAllocator Address: {}", (void*)(context) );
+        VULKAN_LOGF( "\tAllocation Type: {} ", string_VkInternalAllocationType(type) );
+        VULKAN_LOGF( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
     };
 
     result.pfnInternalFree = [](
@@ -97,10 +91,10 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
         VkSystemAllocationScope scope
     )
     {
-        vulkan_log( "Deallocation Request Event" );
-        vulkan_logf( "\tAllocator Address: {}", (void*)(context) );
-        vulkan_logf( "\tAllocation Type: {} ", string_VkInternalAllocationType(type) );
-        vulkan_logf( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
+        VULKAN_LOG( "Deallocation Request Event" );
+        VULKAN_LOGF( "\tAllocator Address: {}", (void*)(context) );
+        VULKAN_LOGF( "\tAllocation Type: {} ", string_VkInternalAllocationType(type) );
+        VULKAN_LOGF( "\tAllocated Bytes: {} ", string_VkSystemAllocationScope(scope) );
     };
     return result;
 }
@@ -154,18 +148,18 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
         g_vulkan->logical_device, &shader_args, &g_vulkan->allocator_callback, &platform_module );
     if (module_ok != VK_SUCCESS)
     {
-        vulkan_errorf( "Failed to create shader module: {}", arg->name );
+        VULKAN_ERRORF( "Failed to create shader module: {}", arg->name );
         return false;
     }
     vulkan_label_object(
         (u64)platform_module, VK_OBJECT_TYPE_SHADER_MODULE, arg->name + "_shader" );
     fstring name = arg->name;
     g_vulkan->resources.push_cleanup( [name, platform_module]{
-        vulkan_log( "Destroying shader module:", name );
+        VULKAN_LOG( "Destroying shader module:", name );
         vkDestroyShaderModule(
             g_vulkan->logical_device, platform_module, &g_vulkan->allocator_callback ); } );
 
-    vulkan_logf( "Created shader module: {}", arg->name );
+    VULKAN_LOGF( "Created shader module: {}", arg->name );
     return true;
 }
 
@@ -192,11 +186,11 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
     VkExtent2D min = surface_capabilities.minImageExtent;
     VkExtent2D max = surface_capabilities.maxImageExtent;
     VkExtent2D current = surface_capabilities.currentExtent;
-    vulkan_logf(
+    VULKAN_LOGF(
         "Present surface/image extent min: {} {} max: {} {} current {} {}",
         min.width, min.height, max.width, max.height, current.width, current.height
     );
-    vulkan_log( "Current X11 window size: {}", g_render->window_size );
+    VULKAN_LOG( "Current X11 window size: {}", g_render->window_size );
 
     TracyCZoneEnd( zone_1 );
     TracyCZoneN( zone_2, "Zone 2", true );
@@ -247,10 +241,10 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
     );
     if (swapchain_ok != VK_SUCCESS)
     {
-        vulkan_errorf( "Failed to initialize swapchain {}", string_VkResult(swapchain_ok) );
+        VULKAN_ERRORF( "Failed to initialize swapchain {}", string_VkResult(swapchain_ok) );
         return false;
     }
-    vulkan_log( "Initialized presentation swapchain" );
+    VULKAN_LOG( "Initialized presentation swapchain" );
     arg->initialized = true;
 
     TracyCZoneEnd( zone_3 );
@@ -397,10 +391,10 @@ PROC vulkan_init() -> fresult
 
     defer_procedure _exit = [&result] {
         if (result)
-        { vulkan_log( "Vulkan Initialized" ); }
+        { VULKAN_LOG( "Vulkan Initialized" ); }
         else
         {
-            vulkan_error( "Vulkan initialization failure, cleaning up resources." );
+            VULKAN_ERROR( "Vulkan initialization failure, cleaning up resources." );
             g_vulkan->resources.~resource_arena();
         }
     };
@@ -463,11 +457,11 @@ PROC vulkan_init() -> fresult
         &instance_args, &g_vulkan->allocator_callback, &g_vulkan->instance );
     if (instance_ok != VK_SUCCESS)
     {
-        vulkan_error( "Failed to create Vulkan instance" );
+        VULKAN_ERROR( "Failed to create Vulkan instance" );
         return false;
     }
     g_vulkan->resources.push_cleanup( []{
-        vulkan_log( "Destroying Vulkan instance" );
+        VULKAN_LOG( "Destroying Vulkan instance" );
         vkDestroyInstance( g_vulkan->instance, &g_vulkan->allocator_callback );
         g_vulkan->instance = VK_NULL_HANDLE;
     });
@@ -501,7 +495,7 @@ PROC vulkan_init() -> fresult
         surface_args.flags = 0x0;
         surface_args.window = g_x11->window;
 
-        vulkan_log( "Creating Vulkan/Xlib drawing surface" );
+        VULKAN_LOG( "Creating Vulkan/Xlib drawing surface" );
         VkResult surface_ok = vkCreateXlibSurfaceKHR(
             g_vulkan->instance,
             &surface_args,
@@ -509,15 +503,15 @@ PROC vulkan_init() -> fresult
             &g_vulkan->surface
         );
         ERROR_GUARD( surface_ok == VK_SUCCESS, "Vulkan/xlib Surface creation error" );
-        vulkan_log( "Tachyon Vulkan", "Vulkan Instance created" );
+        VULKAN_LOG( "Tachyon Vulkan", "Vulkan Instance created" );
         g_vulkan->resources.push_cleanup( [] {
-            vulkan_logf( "Destroying surface 0x{:x}", u64(g_vulkan->surface) );
+            VULKAN_LOGF( "Destroying surface 0x{:x}", u64(g_vulkan->surface) );
             vkDestroySurfaceKHR(
                 g_vulkan->instance, g_vulkan->surface, &g_vulkan->allocator_callback );
         });
     }
     else
-    { vulkan_log( "Vulkan surface could not be created for platform Xlib" ); }
+    { VULKAN_LOG( "Vulkan surface could not be created for platform Xlib" ); }
 
     // -- Device Enumeration and Selection --
     array<VkPhysicalDevice> devices;
@@ -528,7 +522,7 @@ PROC vulkan_init() -> fresult
 
     if (n_devices <= 0)
     {
-        vulkan_error( "No physical devices found. Bailing Vulkan initialization" );
+        VULKAN_ERROR( "No physical devices found. Bailing Vulkan initialization" );
         return false;
     }
     for (i32 i=0; i < devices.size(); ++i)
@@ -538,19 +532,19 @@ PROC vulkan_init() -> fresult
         bool suitible = true;
         bool dedicated_graphics = false;
         vkGetPhysicalDeviceProperties( x_device, &props );
-        vulkan_logf( "Enumerated physical device: {} | {:x}:{:x}",
+        VULKAN_LOGF( "Enumerated physical device: {} | {:x}:{:x}",
                      props.deviceName, props.vendorID, props.deviceID );
         /* The driver version is literally trash. It's a vendor specific bitmask
          * so you could never hope to get it a coherent number without a complex
          * codepath figuring out which bitmask to use for each card and also
          * somehow finding all the different vendor bitmasks in history. */
-        vulkan_logf(
+        VULKAN_LOGF(
             "    Vulkan API version: {}.{}.{}", VK_VERSION_MAJOR(props.apiVersion),
             VK_VERSION_MINOR(props.apiVersion), VK_VERSION_PATCH(props.apiVersion) );
         if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
         {
             dedicated_graphics = true;
-            vulkan_log( "    Device Type: Discrete GPU");
+            VULKAN_LOG( "    Device Type: Discrete GPU");
         }
 
         array<VkQueueFamilyProperties> families;
@@ -558,7 +552,7 @@ PROC vulkan_init() -> fresult
         vkGetPhysicalDeviceQueueFamilyProperties( x_device, &n_families, nullptr );
         families.resize( n_families );
         vkGetPhysicalDeviceQueueFamilyProperties( x_device, &n_families, families.data );
-        vulkan_log( "Queue Family Count: ", n_families );
+        VULKAN_LOG( "Queue Family Count: ", n_families );
 
         /* Seriously... Why. you have to reference the queue family by an
          * arbitrary index. you get whilst looping through */
@@ -578,7 +572,7 @@ PROC vulkan_init() -> fresult
             }
         }
         if (graphics_queue_family < 0 || graphics_queue_family < 0)
-        {   vulkan_error( "Failed to find suitible queue family for device"
+        {   VULKAN_ERROR( "Failed to find suitible queue family for device"
                           "Vulkan initialized failed" );
             return false;
         }
@@ -601,12 +595,12 @@ PROC vulkan_init() -> fresult
         if (select_device)
         {
             g_vulkan->device = x_device;
-            vulkan_log( "Changed primary graphics device to", props.deviceName );
+            VULKAN_LOG( "Changed primary graphics device to", props.deviceName );
         }
-        vulkan_log( "" );
+        VULKAN_LOG( "" );
     }
     if (g_vulkan->device == VK_NULL_HANDLE)
-    {   vulkan_error( "Could not find a suitible graphics device for some reason."
+    {   VULKAN_ERROR( "Could not find a suitible graphics device for some reason."
                       "Vulkan initialization failed. " );
         return false;
     }
@@ -662,10 +656,10 @@ PROC vulkan_init() -> fresult
         &g_vulkan->allocator_callback,
         &g_vulkan->logical_device
     );
-    if (device_ok) { tyon_error( "Device creation error" ); return false; }
+    if (device_ok) { TYON_ERROR( "Device creation error" ); return false; }
 
     g_vulkan->resources.push_cleanup( []{
-        vulkan_logf( "Destroy Logical Device 0x{:x}", u64(g_vulkan->logical_device) );
+        VULKAN_LOGF( "Destroy Logical Device 0x{:x}", u64(g_vulkan->logical_device) );
         vkDestroyDevice( g_vulkan->logical_device, &g_vulkan->allocator_callback );
         g_vulkan->logical_device =  VK_NULL_HANDLE;
     } );
@@ -711,11 +705,11 @@ PROC vulkan_init() -> fresult
     VkResult pool_ok = vkCreateCommandPool(
         g_vulkan->logical_device, &pool_args, &allocator, &command_pool );
     if (pool_ok)
-    {   vulkan_error( "Failed to create command pool" );
+    {   VULKAN_ERROR( "Failed to create command pool" );
         return false;
     }
     g_vulkan->resources.push_cleanup( [] {
-        vulkan_log( "Destroying command pool" );
+        VULKAN_LOG( "Destroying command pool" );
         vkDestroyCommandPool(
             g_vulkan->logical_device, g_vulkan->command_pool, &g_vulkan->allocator_callback );
     } );
@@ -732,7 +726,7 @@ PROC vulkan_init() -> fresult
         g_vulkan->logical_device, &command_args, g_vulkan->commands.data );
     if (command_buffer_bad)
     {
-        vulkan_error( "Failed to allocate command buffers" );
+        VULKAN_ERROR( "Failed to allocate command buffers" );
         return false;
     }
     g_vulkan->resources.push_cleanup( [] {
@@ -782,7 +776,7 @@ PROC vulkan_init() -> fresult
     // Mandated by the spec when setting vertex bindings
     bool vertex_buffer_ok = format_props.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
     if (!vertex_buffer_ok)
-    { vulkan_error( "Format feature vertex buffer not supported for specified format" ); }
+    { VULKAN_ERROR( "Format feature vertex buffer not supported for specified format" ); }
 
     // Create vertex buffer for describing a mesh
     VkDeviceMemory& vertex_memory = g_vulkan->vertex_memory;
@@ -795,13 +789,13 @@ PROC vulkan_init() -> fresult
     auto triangle_buffer_bad = vkCreateBuffer(
         self->logical_device, &buffer_args, &allocator, &self->test_triangle_buffer);
     if (triangle_buffer_bad)
-    {   vulkan_error( "Failed to create test triangle buffer" );
+    {   VULKAN_ERROR( "Failed to create test triangle buffer" );
         return false;
     }
     vulkan_label_object(
         (u64)self->test_triangle_buffer, VK_OBJECT_TYPE_BUFFER, "test_triangle_buffer" );
     g_vulkan->resources.push_cleanup( [] {
-        vulkan_log( "Destroying test triangle buffer" );
+        VULKAN_LOG( "Destroying test triangle buffer" );
         vkDestroyBuffer( g_vulkan->logical_device, g_vulkan->test_triangle_buffer,
             &g_vulkan->allocator_callback );
     } );
@@ -828,7 +822,7 @@ PROC vulkan_init() -> fresult
         if (match) { memory_type = i; }
     }
     if (match == false)
-    {   vulkan_error( "Couldn't find suitible memory type for test_triangle_buffer" );
+    {   VULKAN_ERROR( "Couldn't find suitible memory type for test_triangle_buffer" );
         return false;
     }
 
@@ -839,11 +833,11 @@ PROC vulkan_init() -> fresult
     auto memory_bad = vkAllocateMemory(
         self->logical_device, &memory_args, &allocator, &g_vulkan->vertex_memory);
     if (memory_bad)
-    {   vulkan_error( "Failed to allocate memory for triangle buffer" );
+    {   VULKAN_ERROR( "Failed to allocate memory for triangle buffer" );
         return false;
     }
     g_vulkan->resources.push_cleanup( [] {
-        vulkan_log( "Destroying memory allocated for test triangle" );
+        VULKAN_LOG( "Destroying memory allocated for test triangle" );
         vkFreeMemory( g_vulkan->logical_device, g_vulkan->vertex_memory,
             &g_vulkan->allocator_callback );
     });
@@ -902,10 +896,10 @@ PROC vulkan_init() -> fresult
     auto pass_ok = vkCreateRenderPass(
         g_vulkan->logical_device, &pass_args, &allocator, &render_pass );
     if (pass_ok)
-    {   vulkan_error( "Failed to create render pass" ); return false; }
-    vulkan_log( "Created render pass" );
+    {   VULKAN_ERROR( "Failed to create render pass" ); return false; }
+    VULKAN_LOG( "Created render pass" );
     g_vulkan->resources.push_cleanup( [] {
-        vulkan_log( "Destroying render pass" );
+        VULKAN_LOG( "Destroying render pass" );
         vkDestroyRenderPass( g_vulkan->logical_device, g_vulkan->render_pass,
             &g_vulkan->allocator_callback );
     });
@@ -1067,7 +1061,7 @@ PROC vulkan_init() -> fresult
     auto descriptor_layout_ok = vkCreateDescriptorSetLayout(
         g_vulkan->logical_device, &descriptor_layout_args, &allocator, &descriptor_layout );
     g_vulkan->resources.push_cleanup( [] {
-        vulkan_log( "Destroying descriptor layout set" );
+        VULKAN_LOG( "Destroying descriptor layout set" );
         vkDestroyDescriptorSetLayout( g_vulkan->logical_device, g_vulkan->descriptor_layout,
             &g_vulkan->allocator_callback );
     });
@@ -1075,11 +1069,11 @@ PROC vulkan_init() -> fresult
     auto layout_bad = vkCreatePipelineLayout(
         g_vulkan->logical_device, &layout_args, &allocator, &layout );
     if (layout_bad)
-    {   vulkan_error( "Faled to create pipeline layout" );
+    {   VULKAN_ERROR( "Faled to create pipeline layout" );
         return false;
     }
     g_vulkan->resources.push_cleanup( [] {
-        vulkan_log( "Destroying pipeline layout" );
+        VULKAN_LOG( "Destroying pipeline layout" );
         vkDestroyPipelineLayout( g_vulkan->logical_device, g_vulkan->pipeline_layout,
             &g_vulkan->allocator_callback );
     });
@@ -1112,10 +1106,10 @@ PROC vulkan_init() -> fresult
         &allocator,
         &g_vulkan->pipeline );
     if (pipeline_ok)
-    {   vulkan_error( "Failed to create graphics pipeline" ); return false; }
-    vulkan_log( "Created graphics pipeline" );
+    {   VULKAN_ERROR( "Failed to create graphics pipeline" ); return false; }
+    VULKAN_LOG( "Created graphics pipeline" );
     g_vulkan->resources.push_cleanup( [] {
-        vulkan_log( "Destroying graphics pipeline" );
+        VULKAN_LOG( "Destroying graphics pipeline" );
         vkDestroyPipeline( g_vulkan->logical_device, g_vulkan->pipeline,
             &g_vulkan->allocator_callback );
     });
@@ -1214,11 +1208,11 @@ PROC vulkan_draw() -> void
 
     // New new frame needs to be rendered yet, do something else
     if (acquire_bad == VK_NOT_READY)
-    {   vulkan_log( "No frame ready to begin from vkAcquireNextImageKHR 'VK_NOT_READY'" );
+    {   VULKAN_LOG( "No frame ready to begin from vkAcquireNextImageKHR 'VK_NOT_READY'" );
         return;
     }
     else if (acquire_bad)
-    {   vulkan_errorf( "Failed to acquire next presentable image '{}'",
+    {   VULKAN_ERRORF( "Failed to acquire next presentable image '{}'",
                        string_VkResult(acquire_bad) );
         return;
     }
@@ -1229,7 +1223,7 @@ PROC vulkan_draw() -> void
         g_vulkan->logical_device, 1, &frame_end_fence, true, 1'0000'000'000 );
     vkResetFences( self->logical_device, 1, &frame_end_fence );
     if (end_timeout == VK_TIMEOUT)
-    {   vulkan_errorf( "Huge hitch waiting on frame index {}", image_index ); return; }
+    {   VULKAN_ERRORF( "Huge hitch waiting on frame index {}", image_index ); return; }
 
     /* Wait for frame acquire before proceeding to resetting command buffer This
        sort of halts when the next frame is not completed or blocked so no more
@@ -1237,15 +1231,15 @@ PROC vulkan_draw() -> void
     auto frame_timeout = vkWaitForFences(
         g_vulkan->logical_device, 1, &self->frame_acquire_fence, true, 16'666'666 );
     if (frame_timeout == VK_TIMEOUT)
-    {   vulkan_errorf( "Frame: {}] | Missed frame!", current_frame ); return;
+    {   VULKAN_ERRORF( "Frame: {}] | Missed frame!", current_frame ); return;
     }
     else if (frame_timeout == VK_ERROR_DEVICE_LOST)
-    {   vulkan_error( "Something really horrible happened, "
+    {   VULKAN_ERROR( "Something really horrible happened, "
                       "device was lost waiting on frame end, 'VK_DEVICE_LOST'" );
         return;
     }
     else if (frame_timeout == VK_SUCCESS)
-    {   vulkan_logf( "Frame: {} | Completed Frame.", current_frame ); }
+    {   VULKAN_LOGF( "Frame: {} | Completed Frame.", current_frame ); }
 
     VkCommandBuffer command_buffer = self->commands[ image_index ];
     vkResetCommandBuffer( command_buffer, 0x0 );
@@ -1335,7 +1329,7 @@ PROC vulkan_draw() -> void
     vkEndCommandBuffer( command_buffer );
 
     // if (sync_ok != VK_SUCCESS)
-    // { tyon_error( "Failed to wait on frame start fence for some reason" ); }
+    // { TYON_ERROR( "Failed to wait on frame start fence for some reason" ); }
     vkQueueSubmit( self->graphics_queue, 1, &submit_args, frame_end_fence );
 
     VkSwapchainKHR present_swapchains[] = { self->swapchain.platform_swapchain };
@@ -1351,7 +1345,7 @@ PROC vulkan_draw() -> void
     };
     VkResult present_bad = vkQueuePresentKHR( self->present_queue, &present_args );
     if (present_bad)
-    {   vulkan_errorf( "Fatal error '{}' with drawing and presentation 'VkQueuePresent'",
+    {   VULKAN_ERRORF( "Fatal error '{}' with drawing and presentation 'VkQueuePresent'",
                        string_VkResult(present_bad) );
     }
 

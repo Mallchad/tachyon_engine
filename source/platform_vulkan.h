@@ -1,6 +1,11 @@
 
 #pragma once
 
+#define VULKAN_LOG( ... ) TYON_BASE_LOG( "Vulkan", __VA_ARGS__ );
+#define VULKAN_LOGF( FORMAT_, ... ) TYON_BASE_LOGF( "Vulkan", FORMAT_, __VA_ARGS__ );
+#define VULKAN_ERROR( ... ) TYON_BASE_ERROR( "Vulkan", __VA_ARGS__ );
+#define VULKAN_ERRORF( FORMAT_, ... ) TYON_BASE_ERRORF( "Vulkan", FORMAT_, __VA_ARGS__ );
+
 struct vulkan_shader
 {
     uid id;

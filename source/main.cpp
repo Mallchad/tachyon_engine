@@ -13,27 +13,27 @@ int main( int argc, char** argv )
         // TODO: Remove before flight
         // Random dumb tests
         uid id = uuid_generate();
-        tyon_logf( "Generated UUID as presented {}", id );
+        TYON_LOGF( "Generated UUID as presented {}", id );
         char* str = memory_allocate_raw( 20 );
         platform::uuid_unparse( raw_pointer(&id.uuid), str );
-        tyon_logf( "Expected {}", str );
+        TYON_LOGF( "Expected {}", str );
 
         test_allocators();
     }
 
     // Change directory to binary
     std::filesystem::current_path( file_self_directory() );
-    tyon_logf( "Current working directory: {}",  std::filesystem::current_path() );
+    TYON_LOGF( "Current working directory: {}",  std::filesystem::current_path() );
 
     globals::primary_database = &_global;
     global->kill_program = false;
 
     // Argument processing
-    tyon_log( "Processing Command Line Arguments" );
+    TYON_LOG( "Processing Command Line Arguments" );
     for (int i=0; i < argc; ++i)
     {
         fstring x_arg = argv[i];
-        tyon_logf( "arg {}: '{}'", i, x_arg );
+        TYON_LOGF( "arg {}: '{}'", i, x_arg );
         if (x_arg == "--no-main-loop"s )
         { global->kill_program = true; }
         else if (x_arg == "--vulkan")
@@ -45,7 +45,7 @@ int main( int argc, char** argv )
     }
 
 
-    tyon_log( "Running executable: ", file_self_filename() );
+    TYON_LOG( "Running executable: ", file_self_filename() );
 
     #ifdef TRACY_ENABLE
     std::cout << "Tracy Client has been enabled for profiling \n";
@@ -63,7 +63,7 @@ int main( int argc, char** argv )
         // Initialize lua related things
         // Make C libraries available to Lua
         luaL_openlibs( lua );
-        log( "lua", "Lua VM Initialized" );
+        TYON_BASE_LOG( "lua", "Lua VM Initialized" );
         if (luaL_dofile( lua, "/mnt/tmp/repos/tachyon_engine/content/options.lua" ))
         { throw 1; };
 
