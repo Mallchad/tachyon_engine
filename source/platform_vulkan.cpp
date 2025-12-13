@@ -145,7 +145,7 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
 
     VkShaderModule& platform_module = arg->platform_module;
     auto module_ok = vkCreateShaderModule(
-        g_vulkan->logical_device, &shader_args, &g_vulkan->allocator_callback, &platform_module );
+        g_vulkan->logical_device, &shader_args, g_vulkan->vk_allocator, &platform_module );
     if (module_ok != VK_SUCCESS)
     {
         VULKAN_ERRORF( "Failed to create shader module: {}", arg->name );
@@ -157,7 +157,7 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
     g_vulkan->resources.push_cleanup( [name, platform_module]{
         VULKAN_LOG( "Destroying shader module:", name );
         vkDestroyShaderModule(
-            g_vulkan->logical_device, platform_module, &g_vulkan->allocator_callback ); } );
+            g_vulkan->logical_device, platform_module, g_vulkan->vk_allocator ); } );
 
     VULKAN_LOGF( "Created shader module: {}", arg->name );
     return true;
@@ -236,7 +236,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
     auto swapchain_ok = vkCreateSwapchainKHR(
         g_vulkan->logical_device,
         &swapchain_args,
-        &allocator,
+        g_vulkan->vk_allocator,
         &arg->platform_swapchain
     );
     if (swapchain_ok != VK_SUCCESS)
@@ -285,7 +285,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
         };
 
         fence_errors[i] = vkCreateFence(
-            g_vulkan->logical_device, &fence_args, &allocator, arg->frame_end_fences.address(i) );
+            g_vulkan->logical_device, &fence_args, g_vulkan->vk_allocator, arg->frame_end_fences.address(i) );
         vulkan_label_object( (u64)arg->frame_end_fences[i], VK_OBJECT_TYPE_FENCE,
                              fmt::format( "{}_frame_end_fence_{}", arg->name, i ) );
 
@@ -305,7 +305,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
         view_args.subresourceRange.baseArrayLayer = 0;
         view_args.subresourceRange.layerCount = 1;
         view_errors[i] = vkCreateImageView(
-            g_vulkan->logical_device, &view_args, &allocator, &swapchain_image_views[i] );
+            g_vulkan->logical_device, &view_args, g_vulkan->vk_allocator, &swapchain_image_views[i] );
         vulkan_label_object( (u64)swapchain_image_views[i], VK_OBJECT_TYPE_IMAGE_VIEW,
                              fmt::format( "{}_swapchain_image_view_{}", arg->name, i ) );
 
@@ -324,7 +324,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
 
         framebuffer_errors[i] = vkCreateFramebuffer(
             g_vulkan->logical_device, &framebuffer_args,
-            &g_vulkan->allocator_callback, &swapchain_buffers[i] );
+            g_vulkan->vk_allocator, &swapchain_buffers[i] );
         vulkan_label_object( (u64)swapchain_buffers[i], VK_OBJECT_TYPE_FRAMEBUFFER,
                              fmt::format( "{}_swapchain_buffer_{}", arg->name, i ) );
         ERROR_GUARD(view_errors[i] == VK_SUCCESS , "view creation error" );
@@ -347,18 +347,18 @@ PROC vulkan_swapchain_destroy( vulkan_swapchain* arg ) -> void
     vkDestroyFramebuffer(
         g_vulkan->logical_device,
         arg->platform_framebuffer,
-        &allocator
+        g_vulkan->vk_allocator
     );
     // TODO: Switch size to using n_images
     for (i32 i=0; i < g_vulkan->swapchain_image_views.size(); ++i)
     {
         vkDestroyFramebuffer(
-            g_vulkan->logical_device, g_vulkan->swapchain_framebuffers[i], &allocator );
+            g_vulkan->logical_device, g_vulkan->swapchain_framebuffers[i], g_vulkan->vk_allocator );
         // TODO: Make sure this are associated with swapchain instead later for
         // multi-swapchain support
         vkDestroyImageView(
-            g_vulkan->logical_device, g_vulkan->swapchain_image_views[i], &allocator );
-        vkDestroyFence( g_vulkan->logical_device, arg->frame_end_fences[i], &allocator );
+            g_vulkan->logical_device, g_vulkan->swapchain_image_views[i], g_vulkan->vk_allocator );
+        vkDestroyFence( g_vulkan->logical_device, arg->frame_end_fences[i], g_vulkan->vk_allocator );
     }
     // Lazy destroy swapcarch vmhain because the handle still needs to be reused by next swapchain
     auto swapchain = arg->platform_swapchain;
@@ -367,7 +367,7 @@ PROC vulkan_swapchain_destroy( vulkan_swapchain* arg ) -> void
         vkDestroySwapchainKHR(
             g_vulkan->logical_device,
             swapchain,
-            &g_vulkan->allocator_callback
+            g_vulkan->vk_allocator
         );
     });
     *arg = vulkan_swapchain {};
@@ -386,8 +386,10 @@ PROC vulkan_init() -> fresult
     i32 graphics_queue_family = self->graphics_queue_family;
     i32 present_queue_family = self->present_queue_family;
 
-    auto allocator = g_vulkan->allocator_callback = vulkan_allocator_create_callbacks(
+    g_vulkan->allocator_callback = vulkan_allocator_create_callbacks(
         g_vulkan->allocator.get() );
+    // TODO: Remove Vulkan allocaotr temporarily
+    g_vulkan->vk_allocator = nullptr;
 
     defer_procedure _exit = [&result] {
         if (result)
@@ -454,7 +456,7 @@ PROC vulkan_init() -> fresult
 
 
     VkResult instance_ok = vkCreateInstance(
-        &instance_args, &g_vulkan->allocator_callback, &g_vulkan->instance );
+        &instance_args, g_vulkan->vk_allocator, &g_vulkan->instance );
     if (instance_ok != VK_SUCCESS)
     {
         VULKAN_ERROR( "Failed to create Vulkan instance" );
@@ -462,7 +464,7 @@ PROC vulkan_init() -> fresult
     }
     g_vulkan->resources.push_cleanup( []{
         VULKAN_LOG( "Destroying Vulkan instance" );
-        vkDestroyInstance( g_vulkan->instance, &g_vulkan->allocator_callback );
+        vkDestroyInstance( g_vulkan->instance, g_vulkan->vk_allocator );
         g_vulkan->instance = VK_NULL_HANDLE;
     });
 
@@ -474,11 +476,11 @@ PROC vulkan_init() -> fresult
 
     VkDebugUtilsMessengerEXT debug_messenger {};
     dyn_vkCreateDebugUtilsMessengerEXT(
-        instance, &messenger_args, &g_vulkan->allocator_callback, &debug_messenger );
+        instance, &messenger_args, g_vulkan->vk_allocator, &debug_messenger );
     if (debug_messenger)
     {   g_vulkan->resources.push_cleanup( [debug_messenger]
         {   dyn::vkDestroyDebugUtilsMessengerEXT(
-                g_vulkan->instance, debug_messenger, &g_vulkan->allocator_callback );
+                g_vulkan->instance, debug_messenger, g_vulkan->vk_allocator );
         } );
     }
 
@@ -499,7 +501,7 @@ PROC vulkan_init() -> fresult
         VkResult surface_ok = vkCreateXlibSurfaceKHR(
             g_vulkan->instance,
             &surface_args,
-            &g_vulkan->allocator_callback,
+            g_vulkan->vk_allocator,
             &g_vulkan->surface
         );
         ERROR_GUARD( surface_ok == VK_SUCCESS, "Vulkan/xlib Surface creation error" );
@@ -507,7 +509,7 @@ PROC vulkan_init() -> fresult
         g_vulkan->resources.push_cleanup( [] {
             VULKAN_LOGF( "Destroying surface 0x{:x}", u64(g_vulkan->surface) );
             vkDestroySurfaceKHR(
-                g_vulkan->instance, g_vulkan->surface, &g_vulkan->allocator_callback );
+                g_vulkan->instance, g_vulkan->surface, g_vulkan->vk_allocator );
         });
     }
     else
@@ -653,14 +655,14 @@ PROC vulkan_init() -> fresult
     auto device_ok = vkCreateDevice(
         g_vulkan->device,
         &device_args,
-        &g_vulkan->allocator_callback,
+        g_vulkan->vk_allocator,
         &g_vulkan->logical_device
     );
     if (device_ok) { TYON_ERROR( "Device creation error" ); return false; }
 
     g_vulkan->resources.push_cleanup( []{
         VULKAN_LOGF( "Destroy Logical Device 0x{:x}", u64(g_vulkan->logical_device) );
-        vkDestroyDevice( g_vulkan->logical_device, &g_vulkan->allocator_callback );
+        vkDestroyDevice( g_vulkan->logical_device, g_vulkan->vk_allocator );
         g_vulkan->logical_device =  VK_NULL_HANDLE;
     } );
     vkGetDeviceQueue( g_vulkan->logical_device, graphics_queue_family, 0, &graphics_queue );
@@ -671,11 +673,11 @@ PROC vulkan_init() -> fresult
     fence_args.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     bool fence_ok = true;
     fence_ok &= VK_SUCCESS == vkCreateFence(
-        g_vulkan->logical_device, &fence_args, &g_vulkan->allocator_callback, &g_vulkan->frame_acquire_fence );
+        g_vulkan->logical_device, &fence_args, g_vulkan->vk_allocator, &g_vulkan->frame_acquire_fence );
     // Signal the begin fence to prevent it hanging
     fence_args.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     fence_ok &= VK_SUCCESS == vkCreateFence(
-        g_vulkan->logical_device, &fence_args, &g_vulkan->allocator_callback, &g_vulkan->frame_begin_fence );
+        g_vulkan->logical_device, &fence_args, g_vulkan->vk_allocator, &g_vulkan->frame_begin_fence );
     if (fence_ok == false) { return false; }
     vulkan_label_object(
         (u64)self->frame_begin_fence, VK_OBJECT_TYPE_FENCE, "frame_begin_fence" );
@@ -687,10 +689,10 @@ PROC vulkan_init() -> fresult
     };
     bool semaphore_ok = true;
     semaphore_ok &= VK_SUCCESS == vkCreateSemaphore(
-        self->logical_device, &semaphore_args, &g_vulkan->allocator_callback,
+        self->logical_device, &semaphore_args, g_vulkan->vk_allocator,
         &self->frame_end_semaphore );
     semaphore_ok &= VK_SUCCESS == vkCreateSemaphore(
-        self->logical_device, &semaphore_args, &g_vulkan->allocator_callback,
+        self->logical_device, &semaphore_args, g_vulkan->vk_allocator,
         &self->queue_submit_semaphore );
     vulkan_label_object(
         (u64)self->frame_end_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "frame_end_semaphore" );
@@ -703,7 +705,7 @@ PROC vulkan_init() -> fresult
     pool_args.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     pool_args.queueFamilyIndex = graphics_queue_family;
     VkResult pool_ok = vkCreateCommandPool(
-        g_vulkan->logical_device, &pool_args, &allocator, &command_pool );
+        g_vulkan->logical_device, &pool_args, g_vulkan->vk_allocator, &command_pool );
     if (pool_ok)
     {   VULKAN_ERROR( "Failed to create command pool" );
         return false;
@@ -711,7 +713,7 @@ PROC vulkan_init() -> fresult
     g_vulkan->resources.push_cleanup( [] {
         VULKAN_LOG( "Destroying command pool" );
         vkDestroyCommandPool(
-            g_vulkan->logical_device, g_vulkan->command_pool, &g_vulkan->allocator_callback );
+            g_vulkan->logical_device, g_vulkan->command_pool, g_vulkan->vk_allocator );
     } );
 
     // Create a command buffer
@@ -787,7 +789,7 @@ PROC vulkan_init() -> fresult
     buffer_args.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     auto triangle_buffer_bad = vkCreateBuffer(
-        self->logical_device, &buffer_args, &allocator, &self->test_triangle_buffer);
+        self->logical_device, &buffer_args, g_vulkan->vk_allocator, &self->test_triangle_buffer);
     if (triangle_buffer_bad)
     {   VULKAN_ERROR( "Failed to create test triangle buffer" );
         return false;
@@ -797,7 +799,7 @@ PROC vulkan_init() -> fresult
     g_vulkan->resources.push_cleanup( [] {
         VULKAN_LOG( "Destroying test triangle buffer" );
         vkDestroyBuffer( g_vulkan->logical_device, g_vulkan->test_triangle_buffer,
-            &g_vulkan->allocator_callback );
+            g_vulkan->vk_allocator );
     } );
 
     VkMemoryRequirements memory_requirements;
@@ -831,7 +833,7 @@ PROC vulkan_init() -> fresult
     memory_args.allocationSize = memory_requirements.size;
     memory_args.memoryTypeIndex = memory_type;
     auto memory_bad = vkAllocateMemory(
-        self->logical_device, &memory_args, &allocator, &g_vulkan->vertex_memory);
+        self->logical_device, &memory_args, g_vulkan->vk_allocator, &g_vulkan->vertex_memory);
     if (memory_bad)
     {   VULKAN_ERROR( "Failed to allocate memory for triangle buffer" );
         return false;
@@ -839,7 +841,7 @@ PROC vulkan_init() -> fresult
     g_vulkan->resources.push_cleanup( [] {
         VULKAN_LOG( "Destroying memory allocated for test triangle" );
         vkFreeMemory( g_vulkan->logical_device, g_vulkan->vertex_memory,
-            &g_vulkan->allocator_callback );
+            g_vulkan->vk_allocator );
     });
     vkBindBufferMemory( self->logical_device, self->test_triangle_buffer, vertex_memory, 0 );
 
@@ -894,14 +896,14 @@ PROC vulkan_init() -> fresult
     pass_args.pSubpasses = &sub_pass;
 
     auto pass_ok = vkCreateRenderPass(
-        g_vulkan->logical_device, &pass_args, &allocator, &render_pass );
+        g_vulkan->logical_device, &pass_args, g_vulkan->vk_allocator, &render_pass );
     if (pass_ok)
     {   VULKAN_ERROR( "Failed to create render pass" ); return false; }
     VULKAN_LOG( "Created render pass" );
     g_vulkan->resources.push_cleanup( [] {
         VULKAN_LOG( "Destroying render pass" );
         vkDestroyRenderPass( g_vulkan->logical_device, g_vulkan->render_pass,
-            &g_vulkan->allocator_callback );
+            g_vulkan->vk_allocator );
     });
 
     /* Create swapchain before pipeline so we can pass present surface current extent
@@ -1059,15 +1061,15 @@ PROC vulkan_init() -> fresult
     layout_args.pPushConstantRanges = nullptr;
 
     auto descriptor_layout_ok = vkCreateDescriptorSetLayout(
-        g_vulkan->logical_device, &descriptor_layout_args, &allocator, &descriptor_layout );
+        g_vulkan->logical_device, &descriptor_layout_args, g_vulkan->vk_allocator, &descriptor_layout );
     g_vulkan->resources.push_cleanup( [] {
         VULKAN_LOG( "Destroying descriptor layout set" );
         vkDestroyDescriptorSetLayout( g_vulkan->logical_device, g_vulkan->descriptor_layout,
-            &g_vulkan->allocator_callback );
+            g_vulkan->vk_allocator );
     });
 
     auto layout_bad = vkCreatePipelineLayout(
-        g_vulkan->logical_device, &layout_args, &allocator, &layout );
+        g_vulkan->logical_device, &layout_args, g_vulkan->vk_allocator, &layout );
     if (layout_bad)
     {   VULKAN_ERROR( "Faled to create pipeline layout" );
         return false;
@@ -1075,7 +1077,7 @@ PROC vulkan_init() -> fresult
     g_vulkan->resources.push_cleanup( [] {
         VULKAN_LOG( "Destroying pipeline layout" );
         vkDestroyPipelineLayout( g_vulkan->logical_device, g_vulkan->pipeline_layout,
-            &g_vulkan->allocator_callback );
+            g_vulkan->vk_allocator );
     });
 
     // Pipeline creation args
@@ -1103,7 +1105,7 @@ PROC vulkan_init() -> fresult
         VK_NULL_HANDLE,
         1,
         &pipeline_args,
-        &allocator,
+        g_vulkan->vk_allocator,
         &g_vulkan->pipeline );
     if (pipeline_ok)
     {   VULKAN_ERROR( "Failed to create graphics pipeline" ); return false; }
@@ -1111,7 +1113,7 @@ PROC vulkan_init() -> fresult
     g_vulkan->resources.push_cleanup( [] {
         VULKAN_LOG( "Destroying graphics pipeline" );
         vkDestroyPipeline( g_vulkan->logical_device, g_vulkan->pipeline,
-            &g_vulkan->allocator_callback );
+            g_vulkan->vk_allocator );
     });
 
     result = true;

@@ -76,7 +76,9 @@ struct vulkan_context
     VkSemaphore queue_submit_semaphore;
     VkSemaphore frame_end_semaphore;
 
-    VkAllocationCallbacks allocator_callback;
+    VkAllocationCallbacks allocator_callback {};
+    // A pointer to the callback, may be null to turn it off
+    VkAllocationCallbacks* vk_allocator = nullptr;
     i32 frame_max_inflight = 2;
     vulkan_swapchain swapchain;
 
