@@ -138,6 +138,8 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
     arg->code = file_load_binary( arg->code.filename );
     ERROR_GUARD( arg->code.file_loaded, "Failed to load file" );
 
+    arg->id = uuid_generate();
+
     VkShaderModuleCreateInfo shader_args{};
     shader_args.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     shader_args.codeSize = arg->code.memory.size;
@@ -163,14 +165,376 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
     return true;
 }
 
+// Mesh specific pipeline initialization
+PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
+{
+    if (arg->id.valid() == false)
+    {   VULKAN_ERRORF("{} Using init on a object that's already initialized doesn't make any sense.",
+                      arg->name );
+        return false;
+    }
+    if (arg->shaders.size() <= 0)
+    {   VULKAN_ERRORF( "{} Tried to create a shader pipeline with no shaders attached.",
+                       arg->name );
+        return false;
+    }
+
+    arg->id = uuid_generate();
+
+    array<VkPipelineShaderStageCreateInfo> stages;
+    stages.change_allocation( pipeline.shaders.size() );
+    for (i64 i=0; i < pipeline.shaders.size(); ++i)
+    {
+        auto& x_shader = pipeline.shaders[i];
+        stages.push_tail( VkPipelineShaderStageCreateInfo {
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                .stage = x_shader.stage_flag,
+                .module_ = x_shader.platform_module,
+                .pName = x_shader.entry_point.c_str()
+            });
+    }
+
+    /* Colour Format
+
+     VkFormatProperties here describes the colour format that will be used for
+     simple diffuse texturing of a mesh that this pipeline will process. This is
+     speific to mesh pipelining but the mesh is generic enough that it can be
+     used for many different renderable objects. */
+    VkFormatProperties format_props {};
+    vkGetPhysicalDeviceFormatProperties(
+        g_vulkan->device, VK_FORMAT_B8G8R8A8_UNORM, &format_props );
+    // Mandated by the spec when setting vertex bindings
+    bool vertex_buffer_ok = format_props.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
+    if (!vertex_buffer_ok)
+    { VULKAN_ERROR( "Format feature vertex buffer not supported for specified format" ); }
+
+    /* SECTION: Create vertex buffer for describing a mesh
+
+     Here we create device memory to hold the data describing a mesh, like
+     vertecies and texture data.
+
+     As per the Vulkan Specification Glossary- "memory", is a handle to the
+     actual physical memory or a memory allocation we are talking about.
+
+     A "buffer", is "a resource that represents a linear array of data in device
+     memory. Represented by a VkBuffer" object. A memory object must be bound to
+     a buffer to be used properly.
+
+     TODO: This will have to be removed in future to account for mesh swapping */
+    VkDeviceMemory& vertex_memory = g_vulkan->vertex_memory;
+    VkBufferCreateInfo buffer_args {};
+    buffer_args.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_args.size = sizeof(f32) * self->test_triangle_data.size();
+    buffer_args.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    buffer_args.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    auto triangle_buffer_bad = vkCreateBuffer(
+        self->logical_device, &buffer_args, g_vulkan->vk_allocator, &self->test_triangle_buffer);
+    if (triangle_buffer_bad)
+    {   VULKAN_ERROR( "Failed to create test triangle buffer" );
+        return false;
+    }
+    vulkan_label_object(
+        (u64)self->test_triangle_buffer, VK_OBJECT_TYPE_BUFFER, "test_triangle_buffer" );
+    g_vulkan->resources.push_cleanup( [] {
+        VULKAN_LOG( "Destroying test triangle buffer" );
+        vkDestroyBuffer( g_vulkan->logical_device, g_vulkan->test_triangle_buffer,
+                         g_vulkan->vk_allocator );
+    } );
+
+    /* Before we can allocate memory we need to get some information about what
+     memory we can allocate. And we'll also how we want the driver to manage the
+     code */
+    VkMemoryRequirements memory_requirements;
+    vkGetBufferMemoryRequirements( self->logical_device, self->test_triangle_buffer,
+                                   &memory_requirements );
+
+    VkPhysicalDeviceMemoryProperties memory_props {};
+    vkGetPhysicalDeviceMemoryProperties( self->device, &memory_props );
+
+    VkMemoryPropertyFlags memory_filter = (
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    bool match = false;
+    i32 memory_type = 0;
+    for (i32 i=0; i < memory_props.memoryTypeCount; ++i)
+    {
+        // TYON_BREAK();
+        match = false;
+        bool requirement_fulfilled = memory_requirements.memoryTypeBits & (1 << i);
+        bool filter_match = (memory_props.memoryTypes[i].propertyFlags & memory_filter);
+        match = (requirement_fulfilled && filter_match);
+        if (match) { memory_type = i; }
+    }
+    if (match == false)
+    {   VULKAN_ERROR( "Couldn't find suitible memory type for test_triangle_buffer" );
+        return false;
+    }
+
+    VkMemoryAllocateInfo memory_args {};
+    memory_args.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory_args.allocationSize = memory_requirements.size;
+    memory_args.memoryTypeIndex = memory_type;
+    auto memory_bad = vkAllocateMemory(
+        self->logical_device, &memory_args, g_vulkan->vk_allocator, &g_vulkan->vertex_memory);
+    if (memory_bad)
+    {   VULKAN_ERROR( "Failed to allocate memory for triangle buffer" );
+        return false;
+    }
+    g_vulkan->resources.push_cleanup( [] {
+        VULKAN_LOG( "Destroying memory allocated for test triangle" );
+        vkFreeMemory( g_vulkan->logical_device, g_vulkan->vertex_memory,
+                      g_vulkan->vk_allocator );
+    });
+    vkBindBufferMemory( self->logical_device, self->test_triangle_buffer, vertex_memory, 0 );
+
+    void* data;
+    vkMapMemory( self->logical_device, vertex_memory, 0, buffer_args.size, 0, &data );
+    memcpy( data, self->test_triangle_data.data, size_t(buffer_args.size) );
+    // TODO: Pretty sure we can just unmap this immediately right?
+    // self->resources.push_cleanup([=] {
+    vkUnmapMemory( self->logical_device, vertex_memory );
+    // });
+
+    // Flush memory to make sure its used
+    VkMappedMemoryRange range {
+        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = vertex_memory,
+        .offset = 0,
+        .size = buffer_args.size,
+    };
+    // TODO: remove before flight
+    // vkFlushMappedMemoryRanges( self->logical_device, 1, range );
+
+/* Create swapchain before pipeline so we can pass present surface current extent
+   But after render pass... because it gets passed in the swapchain */
+    g_vulkan->swapchain.name = "version_0";
+    vulkan_swapchain_init( &g_vulkan->swapchain, VK_NULL_HANDLE );
+
+
+    array<VkVertexInputBindingDescription> bindings {
+        // {   // Normal binding
+        //     .binding = 0, // vertex attribute binding/slot. leave as 0
+        //     .stride = 4 * 6, // 3 32-bit vertexes + 3 colours 32-bit
+        //     // Not sure what this is. think it means pulling from instance wide stuffs?
+        //     .inputRate = VK_VERTEX_INPUT_RATE_INSTANCE,
+        // },
+        {   // Vertex Binding
+            .binding = 0, // vertex attribute binding/slot. leave as 0
+            .stride = 4 * 6, // 3 32-bit vertexes + 3 colours 32-bit
+            // Not sure what this is. think it means pulling from instance wide stuffs?
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+        }
+    };
+
+    array<VkVertexInputAttributeDescription> vertex_attributes {
+        {
+            .location = 2, // shader specific binding location
+            .binding = 0,
+            // This uses the color format for some strange reason. This is a 32-bit vec3
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset = 0, // 3 32-bit normals to vertex data
+        },
+        {
+            .location = 1, // shader specific binding location
+            .binding = 0,
+            // This uses the color format for some strange reason. This is a 32-bit vec3
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset = 4 * 3, // 3 32-bit normals to vertex data
+        }
+    };
+
+    // Mesh vertex input args
+    VkPipelineVertexInputStateCreateInfo vertex_args {};
+    vertex_args.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertex_args.pVertexBindingDescriptions =  bindings.data;
+    vertex_args.vertexBindingDescriptionCount = bindings.size();
+    vertex_args.pVertexAttributeDescriptions = vertex_attributes.data;
+    vertex_args.vertexAttributeDescriptionCount = vertex_attributes.size();
+
+    // Mesh rendering settings
+    VkPipelineInputAssemblyStateCreateInfo input_args {};
+    input_args.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_args.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_args.primitiveRestartEnable = VK_FALSE;
+
+    // Rasterizer settings
+    VkPipelineRasterizationStateCreateInfo raster_args {};
+    raster_args.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    raster_args.polygonMode = VK_POLYGON_MODE_FILL;
+    raster_args.lineWidth = 1.0f;
+    raster_args.cullMode = VK_CULL_MODE_BACK_BIT;
+    raster_args.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    raster_args.depthBiasEnable = VK_FALSE;
+    raster_args.depthBiasConstantFactor = 0.0f;         // Optional
+    raster_args.depthBiasClamp = 0.0f;                  // Optional
+    raster_args.depthBiasSlopeFactor = 0.0f;            // Optional
+
+    VkViewport viewport_config {
+        // Upper left coordinates
+        .x = 0,
+        .y = 0,
+        .width = float(self->swapchain.present_size.width),
+        .height = float(self->swapchain.present_size.height),
+        // Configurable viewport depth, can configurable but usually between 0 and 1
+        .minDepth = 0.0,
+        .maxDepth = 1.0
+    };
+
+    // Only render into a certain portion of the viewport with scissors
+    VkRect2D scissor_config {
+        VkOffset2D { 0, 0 },
+        self->swapchain.present_size
+    };
+
+    VkPipelineViewportStateCreateInfo viewport_args {};
+    viewport_args.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_args.pViewports = &viewport_config;
+    // viewportCount and scissorCount must be the same
+    viewport_args.viewportCount = 1;
+    viewport_args.pScissors = &scissor_config;
+    viewport_args.scissorCount = 1;
+
+    VkPipelineMultisampleStateCreateInfo multisample_args {};
+    multisample_args.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisample_args.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisample_args.sampleShadingEnable = true;
+    multisample_args.minSampleShading = 0.2f;
+    // wut is this
+    multisample_args.pSampleMask = nullptr;
+    multisample_args.alphaToCoverageEnable = false;
+    multisample_args.alphaToOneEnable = false;
+
+    VkPipelineColorBlendAttachmentState color_blend_attachment{};
+    color_blend_attachment.colorWriteMask = (
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+        VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    color_blend_attachment.blendEnable = VK_TRUE;
+    color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+    color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+    color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
+    VkPipelineColorBlendStateCreateInfo color_blend_args{};
+    color_blend_args.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color_blend_args.logicOpEnable = VK_FALSE;
+    color_blend_args.logicOp = VK_LOGIC_OP_COPY; // Optional
+    color_blend_args.attachmentCount = 1;
+    color_blend_args.pAttachments = &color_blend_attachment;
+    color_blend_args.blendConstants[0] = 0.0f; // Optional
+    color_blend_args.blendConstants[1] = 0.0f; // Optional
+    color_blend_args.blendConstants[2] = 0.0f; // Optional
+    color_blend_args.blendConstants[3] = 0.0f; // Optional
+
+    /* NOTE: A pipeline can be set to have some of it's state become dynamic
+       after creation.  Which may be a performance benefit for tasks its
+       relevant to. This setion describes what state can be dynamic instead of
+       static.*/
+    array<VkDynamicState> dynamic_states_selected = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+    };
+    VkPipelineDynamicStateCreateInfo dynamic_state_args {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .dynamicStateCount = cast<u32>(dynamic_states_selected.size()),
+        .pDynamicStates = dynamic_states_selected.data
+    };
+
+    VkPipelineLayout& layout = g_vulkan->pipeline_layout;
+    VkDescriptorSetLayout& descriptor_layout = g_vulkan->descriptor_layout;
+
+    // Set pipeline bindings here
+    VkDescriptorSetLayoutCreateInfo descriptor_layout_args {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .flags = 0x0,
+        .bindingCount = 0,
+        .pBindings = nullptr,
+    };
+
+    /* Pipeline Layout: "An object defining the set of resources (via a
+       collection of descriptor set layouts) and push constants used by
+       pipelines that are created using the layout. Used when creating a
+       pipeline and when binding descriptor sets and setting push constant
+       values. Represented by a VkPipelineLayout object." */
+    VkPipelineLayoutCreateInfo layout_args {};
+    layout_args.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layout_args.pSetLayouts = &descriptor_layout;
+    layout_args.setLayoutCount = 1;
+    layout_args.pushConstantRangeCount = 0;
+    layout_args.pPushConstantRanges = nullptr;
+
+    auto descriptor_layout_ok = vkCreateDescriptorSetLayout(
+        g_vulkan->logical_device, &descriptor_layout_args, g_vulkan->vk_allocator, &descriptor_layout );
+    g_vulkan->resources.push_cleanup( [] {
+        VULKAN_LOG( "Destroying descriptor layout set" );
+        vkDestroyDescriptorSetLayout( g_vulkan->logical_device, g_vulkan->descriptor_layout,
+                                      g_vulkan->vk_allocator );
+    });
+
+    auto layout_bad = vkCreatePipelineLayout(
+        g_vulkan->logical_device, &layout_args, g_vulkan->vk_allocator, &layout );
+    if (layout_bad)
+    {   VULKAN_ERROR( "Faled to create pipeline layout" );
+        return false;
+    }
+    g_vulkan->resources.push_cleanup( [] {
+        VULKAN_LOG( "Destroying pipeline layout" );
+        vkDestroyPipelineLayout( g_vulkan->logical_device, g_vulkan->pipeline_layout,
+                                 g_vulkan->vk_allocator );
+    });
+
+    /* Section: Pipeline creation args
+     *
+     * Now We have all the pipeline information set we can assemble it into
+     * creation args */
+    VkGraphicsPipelineCreateInfo pipeline_args {};
+    pipeline_args.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipeline_args.pStages = stages.data;
+    pipeline_args.stageCount = stages.size();
+    pipeline_args.pVertexInputState = &vertex_args;
+    pipeline_args.pInputAssemblyState = &input_args;
+    pipeline_args.pViewportState = &viewport_args;
+    pipeline_args.pRasterizationState = &raster_args;
+    pipeline_args.pMultisampleState = &multisample_args;
+    // pipeline_args.pDepthStencilState = nullptr; // Optional
+    pipeline_args.pColorBlendState = &color_blend_args;
+    pipeline_args.pDynamicState = &dynamic_state_args;
+    pipeline_args.layout = layout;
+    pipeline_args.renderPass = render_pass;
+    pipeline_args.subpass = 0;
+    // pipeline_args.basePipelineHandle = VK_NULL_HANDLE; // Optional
+    // pipeline_args.basePipelineIndex = -1; // Optional
+
+    // Provide pipeline cache here if relevant
+    auto pipeline_ok = vkCreateGraphicsPipelines(
+        g_vulkan->logical_device,
+        VK_NULL_HANDLE,
+        1,
+        &pipeline_args,
+        g_vulkan->vk_allocator,
+        &g_vulkan->pipeline );
+    if (pipeline_ok)
+    {   VULKAN_ERROR( "Failed to create graphics pipeline" ); return false; }
+    VULKAN_LOG( "Created graphics pipeline" );
+    g_vulkan->resources.push_cleanup( [] {
+        VULKAN_LOG( "Destroying graphics pipeline" );
+        vkDestroyPipeline( g_vulkan->logical_device, g_vulkan->pipeline,
+                           g_vulkan->vk_allocator );
+    });
+
+    return false;
+}
+
 PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchain )
     -> fresult
 {
     TIME_SCOPED_FUNCTION();
     TracyCZoneN( zone_1, "Zone 1", true );
-    ERROR_GUARD( arg->id.valid() == false,
+    ERROR_GUARD( arg->id.valid(),
                  "Using init on a object that's already initialized can't possible make sense." );
-    ERROR_GUARD( arg->initialized == false, "Called init on an already initialized swapchain" );
+    ERROR_GUARD( arg->initialized, "Called init on an already initialized swapchain" );
     auto self = g_vulkan;
     arg->id = uuid_generate();
 
@@ -556,6 +920,12 @@ PROC vulkan_init() -> fresult
         vkGetPhysicalDeviceQueueFamilyProperties( x_device, &n_families, families.data );
         VULKAN_LOG( "Queue Family Count: ", n_families );
 
+        // HACK: Just autofill first queue family
+        // if (n_families)
+        // {   self->graphics_queue_family = 0;
+        //     self->present_queue_family = 0;
+        // }
+
         /* Seriously... Why. you have to reference the queue family by an
          * arbitrary index. you get whilst looping through */
         for (int i_queue=0; i_queue < families.size(); ++i_queue)
@@ -863,6 +1233,14 @@ PROC vulkan_init() -> fresult
     // TODO: remove before flight
     // vkFlushMappedMemoryRanges( self->logical_device, 1, range );
 
+    /* SECTION: Create Render Pass An object that represents a set of
+       framebuffer attachments and phases of rendering using those
+       attachments. Represented by a VkRenderPass object.
+
+       A render pass describes framebuffers, each pipeline draws to one
+       framebuffer, each pipeline could have its own or use a shared
+       framebuffer. */
+
     // Create a render pass, will be passed to pipeline
     VkAttachmentDescription color_attachment {};
     color_attachment.format = self->swapchain_image_format;
@@ -907,7 +1285,7 @@ PROC vulkan_init() -> fresult
     });
 
     /* Create swapchain before pipeline so we can pass present surface current extent
-       But after render pass... because it gets passed in the swapchain */
+    But after render pass... because it gets passed in the swapchain */
     g_vulkan->swapchain.name = "version_0";
     vulkan_swapchain_init( &g_vulkan->swapchain, VK_NULL_HANDLE );
 

@@ -16,9 +16,11 @@ option("address_sanitizer", { default = false,
 target( "tachyon_engine" )
     set_kind( "binary" )
     set_languages( "c++20" )
-    add_deps( "tachyon_shaders",
-              "tracy",
-              "lua_static" )
+    add_deps(
+       "tachyon_shaders",
+       "tracy",
+       "lua_static"
+    )
 
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
@@ -284,13 +286,15 @@ target( "tachyon_shaders" )
 
     before_build( function( target )
           import("core.project.config")
-          build_dir = target:targetdir()
+          output_dir = target:targetdir()
           build_root = config.get("buildir")
-          print( "build_dir: %s", build_dir )
+          print( "output_dir: %s", output_dir )
           print( "build_root: %s", build_root )
           -- Copy shaders into build directory so it can find them more easily per-build mode
 
-          os.trycp( build_dir.."/shaders/", build_dir )
+          shader_dir = build_root.."/shaders/"
+          error = os.trycp( shader_dir, output_dir )
+          print("Copy binary shaders to output directory success:", error )
     end )
 
 

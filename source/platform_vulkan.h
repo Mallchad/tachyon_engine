@@ -22,6 +22,8 @@ struct vulkan_pipeline
     uid id;
     fstring name = "unnamed";
     array<vulkan_shader> shaders;
+    VkPipeline platform_pipeline {};
+    VkPipelineLayout platform_layout {};
 };
 
 struct vulkan_swapchain
