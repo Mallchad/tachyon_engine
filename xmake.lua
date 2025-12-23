@@ -286,7 +286,7 @@ target( "tachyon_shaders" )
 
     before_build( function( target )
           import("core.project.config")
-          output_dir = target:targetdir()
+          output_dir = (target:targetdir() or "") .. "/shaders"
           build_root = config.get("buildir")
           print( "output_dir: %s", output_dir )
           print( "build_root: %s", build_root )
