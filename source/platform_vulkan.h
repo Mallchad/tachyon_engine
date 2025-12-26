@@ -17,15 +17,6 @@ struct vulkan_shader
     VkShaderStageFlagBits stage_flag {};
 };
 
-struct vulkan_pipeline
-{
-    uid id;
-    fstring name = "unnamed";
-    array<vulkan_shader> shaders;
-    VkPipeline platform_pipeline {};
-    VkPipelineLayout platform_layout {};
-};
-
 struct vulkan_swapchain
 {
     uid id;
@@ -39,6 +30,20 @@ struct vulkan_swapchain
     i32 n_images = 0;
     bool initialized = false;
     resource_arena resources;
+};
+
+struct vulkan_pipeline
+{
+    uid id;
+    fstring name = "unnamed";
+    array<vulkan_shader> shaders;
+    vulkan_swapchain* swapchain = nullptr;
+
+    VkPipeline platform_pipeline {};
+    VkPipelineLayout platform_layout {};
+    VkDescriptorSetLayout platform_descriptor_layout {};
+    VkRenderPass platform_render_pass {};
+
 };
 
 struct vulkan_context
@@ -66,9 +71,11 @@ struct vulkan_context
     VkDescriptorSetLayout descriptor_layout;
     VkPipelineLayout pipeline_layout;
 
+    // Primary render pass
     VkRenderPass render_pass;
     // Primary graphics pipeline, associated with render pass
     VkPipeline pipeline;
+    vulkan_pipeline mesh_pipeline;
 
     // Ungrouped threading primitives
     VkFence frame_begin_fence;

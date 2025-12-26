@@ -166,9 +166,9 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
 }
 
 // Mesh specific pipeline initialization
-PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
+PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
 {
-    if (arg->id.valid() == false)
+    if (arg->id.valid())
     {   VULKAN_ERRORF("{} Using init on a object that's already initialized doesn't make any sense.",
                       arg->name );
         return false;
@@ -180,12 +180,21 @@ PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
     }
 
     arg->id = uuid_generate();
+    if (arg->swapchain == nullptr)
+    {   VULKAN_LOGF( "No swapchain provided to pipeline '{}', using global swapchain", arg->name );
+        arg->swapchain = &g_vulkan->swapchain;
+    }
+    if (arg->swapchain == nullptr)
+    {   VULKAN_ERRORF( "No valid swapchain usable for pipeline, failed to create mesh pipeline {}",
+                       arg->name );
+        return false;
+    }
 
     array<VkPipelineShaderStageCreateInfo> stages;
-    stages.change_allocation( pipeline.shaders.size() );
-    for (i64 i=0; i < pipeline.shaders.size(); ++i)
+    stages.change_allocation( arg->shaders.size() );
+    for (i64 i=0; i < arg->shaders.size(); ++i)
     {
-        auto& x_shader = pipeline.shaders[i];
+        auto& x_shader = arg->shaders[i];
         stages.push_tail( VkPipelineShaderStageCreateInfo {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = x_shader.stage_flag,
@@ -194,126 +203,18 @@ PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
             });
     }
 
-    /* Colour Format
+    /* SECTION: Setup shader input locations as "vertex-binding"
 
-     VkFormatProperties here describes the colour format that will be used for
-     simple diffuse texturing of a mesh that this pipeline will process. This is
-     speific to mesh pipelining but the mesh is generic enough that it can be
-     used for many different renderable objects. */
-    VkFormatProperties format_props {};
-    vkGetPhysicalDeviceFormatProperties(
-        g_vulkan->device, VK_FORMAT_B8G8R8A8_UNORM, &format_props );
-    // Mandated by the spec when setting vertex bindings
-    bool vertex_buffer_ok = format_props.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
-    if (!vertex_buffer_ok)
-    { VULKAN_ERROR( "Format feature vertex buffer not supported for specified format" ); }
+     Here we use a pre-defined shader input/buffer format that will be passed
+     along to the shader. The data will later by bound using `vkCmdBindVertexBuffers`
 
-    /* SECTION: Create vertex buffer for describing a mesh
-
-     Here we create device memory to hold the data describing a mesh, like
-     vertecies and texture data.
-
-     As per the Vulkan Specification Glossary- "memory", is a handle to the
-     actual physical memory or a memory allocation we are talking about.
-
-     A "buffer", is "a resource that represents a linear array of data in device
-     memory. Represented by a VkBuffer" object. A memory object must be bound to
-     a buffer to be used properly.
-
-     TODO: This will have to be removed in future to account for mesh swapping */
-    VkDeviceMemory& vertex_memory = g_vulkan->vertex_memory;
-    VkBufferCreateInfo buffer_args {};
-    buffer_args.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_args.size = sizeof(f32) * self->test_triangle_data.size();
-    buffer_args.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    buffer_args.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    auto triangle_buffer_bad = vkCreateBuffer(
-        self->logical_device, &buffer_args, g_vulkan->vk_allocator, &self->test_triangle_buffer);
-    if (triangle_buffer_bad)
-    {   VULKAN_ERROR( "Failed to create test triangle buffer" );
-        return false;
-    }
-    vulkan_label_object(
-        (u64)self->test_triangle_buffer, VK_OBJECT_TYPE_BUFFER, "test_triangle_buffer" );
-    g_vulkan->resources.push_cleanup( [] {
-        VULKAN_LOG( "Destroying test triangle buffer" );
-        vkDestroyBuffer( g_vulkan->logical_device, g_vulkan->test_triangle_buffer,
-                         g_vulkan->vk_allocator );
-    } );
-
-    /* Before we can allocate memory we need to get some information about what
-     memory we can allocate. And we'll also how we want the driver to manage the
-     code */
-    VkMemoryRequirements memory_requirements;
-    vkGetBufferMemoryRequirements( self->logical_device, self->test_triangle_buffer,
-                                   &memory_requirements );
-
-    VkPhysicalDeviceMemoryProperties memory_props {};
-    vkGetPhysicalDeviceMemoryProperties( self->device, &memory_props );
-
-    VkMemoryPropertyFlags memory_filter = (
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    bool match = false;
-    i32 memory_type = 0;
-    for (i32 i=0; i < memory_props.memoryTypeCount; ++i)
-    {
-        // TYON_BREAK();
-        match = false;
-        bool requirement_fulfilled = memory_requirements.memoryTypeBits & (1 << i);
-        bool filter_match = (memory_props.memoryTypes[i].propertyFlags & memory_filter);
-        match = (requirement_fulfilled && filter_match);
-        if (match) { memory_type = i; }
-    }
-    if (match == false)
-    {   VULKAN_ERROR( "Couldn't find suitible memory type for test_triangle_buffer" );
-        return false;
-    }
-
-    VkMemoryAllocateInfo memory_args {};
-    memory_args.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memory_args.allocationSize = memory_requirements.size;
-    memory_args.memoryTypeIndex = memory_type;
-    auto memory_bad = vkAllocateMemory(
-        self->logical_device, &memory_args, g_vulkan->vk_allocator, &g_vulkan->vertex_memory);
-    if (memory_bad)
-    {   VULKAN_ERROR( "Failed to allocate memory for triangle buffer" );
-        return false;
-    }
-    g_vulkan->resources.push_cleanup( [] {
-        VULKAN_LOG( "Destroying memory allocated for test triangle" );
-        vkFreeMemory( g_vulkan->logical_device, g_vulkan->vertex_memory,
-                      g_vulkan->vk_allocator );
-    });
-    vkBindBufferMemory( self->logical_device, self->test_triangle_buffer, vertex_memory, 0 );
-
-    void* data;
-    vkMapMemory( self->logical_device, vertex_memory, 0, buffer_args.size, 0, &data );
-    memcpy( data, self->test_triangle_data.data, size_t(buffer_args.size) );
-    // TODO: Pretty sure we can just unmap this immediately right?
-    // self->resources.push_cleanup([=] {
-    vkUnmapMemory( self->logical_device, vertex_memory );
-    // });
-
-    // Flush memory to make sure its used
-    VkMappedMemoryRange range {
-        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = vertex_memory,
-        .offset = 0,
-        .size = buffer_args.size,
-    };
-    // TODO: remove before flight
-    // vkFlushMappedMemoryRanges( self->logical_device, 1, range );
-
-/* Create swapchain before pipeline so we can pass present surface current extent
-   But after render pass... because it gets passed in the swapchain */
-    g_vulkan->swapchain.name = "version_0";
-    vulkan_swapchain_init( &g_vulkan->swapchain, VK_NULL_HANDLE );
-
-
+     Format:
+     0 - Vertex Normal
+     1 - Vertex Positions
+     2 - Texture Interpolated Diffuse Colour
+    */
     array<VkVertexInputBindingDescription> bindings {
-        // {   // Normal binding
+        // {   // Vertex Normal binding
         //     .binding = 0, // vertex attribute binding/slot. leave as 0
         //     .stride = 4 * 6, // 3 32-bit vertexes + 3 colours 32-bit
         //     // Not sure what this is. think it means pulling from instance wide stuffs?
@@ -374,8 +275,8 @@ PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
         // Upper left coordinates
         .x = 0,
         .y = 0,
-        .width = float(self->swapchain.present_size.width),
-        .height = float(self->swapchain.present_size.height),
+        .width = float(arg->swapchain->present_size.width),
+        .height = float(arg->swapchain->present_size.height),
         // Configurable viewport depth, can configurable but usually between 0 and 1
         .minDepth = 0.0,
         .maxDepth = 1.0
@@ -384,7 +285,7 @@ PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
     // Only render into a certain portion of the viewport with scissors
     VkRect2D scissor_config {
         VkOffset2D { 0, 0 },
-        self->swapchain.present_size
+        arg->swapchain->present_size
     };
 
     VkPipelineViewportStateCreateInfo viewport_args {};
@@ -442,9 +343,6 @@ PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
         .pDynamicStates = dynamic_states_selected.data
     };
 
-    VkPipelineLayout& layout = g_vulkan->pipeline_layout;
-    VkDescriptorSetLayout& descriptor_layout = g_vulkan->descriptor_layout;
-
     // Set pipeline bindings here
     VkDescriptorSetLayoutCreateInfo descriptor_layout_args {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
@@ -460,28 +358,39 @@ PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
        values. Represented by a VkPipelineLayout object." */
     VkPipelineLayoutCreateInfo layout_args {};
     layout_args.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    layout_args.pSetLayouts = &descriptor_layout;
+    layout_args.pSetLayouts = &arg->platform_descriptor_layout;
     layout_args.setLayoutCount = 1;
     layout_args.pushConstantRangeCount = 0;
     layout_args.pPushConstantRanges = nullptr;
 
     auto descriptor_layout_ok = vkCreateDescriptorSetLayout(
-        g_vulkan->logical_device, &descriptor_layout_args, g_vulkan->vk_allocator, &descriptor_layout );
+        g_vulkan->logical_device,
+        &descriptor_layout_args,
+        g_vulkan->vk_allocator,
+        &arg->platform_descriptor_layout
+    );
     g_vulkan->resources.push_cleanup( [] {
         VULKAN_LOG( "Destroying descriptor layout set" );
-        vkDestroyDescriptorSetLayout( g_vulkan->logical_device, g_vulkan->descriptor_layout,
-                                      g_vulkan->vk_allocator );
+        vkDestroyDescriptorSetLayout(
+            g_vulkan->logical_device,
+            g_vulkan->descriptor_layout,
+            g_vulkan->vk_allocator
+        );
     });
 
     auto layout_bad = vkCreatePipelineLayout(
-        g_vulkan->logical_device, &layout_args, g_vulkan->vk_allocator, &layout );
+        g_vulkan->logical_device,
+        &layout_args,
+        g_vulkan->vk_allocator,
+        &arg->platform_layout
+    );
     if (layout_bad)
     {   VULKAN_ERROR( "Faled to create pipeline layout" );
         return false;
     }
-    g_vulkan->resources.push_cleanup( [] {
+    g_vulkan->resources.push_cleanup( [arg] {
         VULKAN_LOG( "Destroying pipeline layout" );
-        vkDestroyPipelineLayout( g_vulkan->logical_device, g_vulkan->pipeline_layout,
+        vkDestroyPipelineLayout( g_vulkan->logical_device, arg->platform_layout,
                                  g_vulkan->vk_allocator );
     });
 
@@ -501,8 +410,8 @@ PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
     // pipeline_args.pDepthStencilState = nullptr; // Optional
     pipeline_args.pColorBlendState = &color_blend_args;
     pipeline_args.pDynamicState = &dynamic_state_args;
-    pipeline_args.layout = layout;
-    pipeline_args.renderPass = render_pass;
+    pipeline_args.layout = arg->platform_layout;
+    pipeline_args.renderPass = g_vulkan->render_pass;
     pipeline_args.subpass = 0;
     // pipeline_args.basePipelineHandle = VK_NULL_HANDLE; // Optional
     // pipeline_args.basePipelineIndex = -1; // Optional
@@ -514,7 +423,7 @@ PROC vulkan_mesh_pipeline_init( vulkan_pipeline* arg ) -> fresult
         1,
         &pipeline_args,
         g_vulkan->vk_allocator,
-        &g_vulkan->pipeline );
+        &arg->platform_pipeline );
     if (pipeline_ok)
     {   VULKAN_ERROR( "Failed to create graphics pipeline" ); return false; }
     VULKAN_LOG( "Created graphics pipeline" );
@@ -532,9 +441,9 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
 {
     TIME_SCOPED_FUNCTION();
     TracyCZoneN( zone_1, "Zone 1", true );
-    ERROR_GUARD( arg->id.valid(),
+    ERROR_GUARD( arg->id.valid() == false,
                  "Using init on a object that's already initialized can't possible make sense." );
-    ERROR_GUARD( arg->initialized, "Called init on an already initialized swapchain" );
+    ERROR_GUARD( arg->initialized == false, "Called init on an already initialized swapchain" );
     auto self = g_vulkan;
     arg->id = uuid_generate();
 
@@ -1125,7 +1034,7 @@ PROC vulkan_init() -> fresult
     vulkan_shader_init( &vertex_shader );
     vulkan_shader_init( &fragment_shader );
 
-    vulkan_pipeline pipeline {};
+    vulkan_pipeline& pipeline = g_vulkan->mesh_pipeline;
     pipeline.shaders.push_tail( vertex_shader );
     pipeline.shaders.push_tail( fragment_shader );
 
@@ -1142,6 +1051,20 @@ PROC vulkan_init() -> fresult
             });
     }
 
+    /* SECTION: Create vertex buffer for describing a mesh
+
+     Here we create device memory to hold the data describing a mesh, like
+     vertecies and texture data. The buffer is created per mesh and is
+     completely seperate from the pipeline, which can service any number of mesh.
+
+     As per the Vulkan Specification Glossary- "memory", is a handle to the
+     actual physical memory or a memory allocation we are talking about.
+
+     A "buffer", is "a resource that represents a linear array of data in device
+     memory. Represented by a VkBuffer" object. A memory object must be bound to
+     a buffer to be used properly.
+
+     TODO: This will have to be removed in future to account for mesh swapping */
     VkFormatProperties format_props {};
     vkGetPhysicalDeviceFormatProperties(
         g_vulkan->device, VK_FORMAT_B8G8R8A8_UNORM, &format_props );
@@ -1233,9 +1156,9 @@ PROC vulkan_init() -> fresult
     // TODO: remove before flight
     // vkFlushMappedMemoryRanges( self->logical_device, 1, range );
 
-    /* SECTION: Create Render Pass An object that represents a set of
+    /* SECTION: Render Pass - "An object that represents a set of
        framebuffer attachments and phases of rendering using those
-       attachments. Represented by a VkRenderPass object.
+       attachments. Represented by a VkRenderPass object."
 
        A render pass describes framebuffers, each pipeline draws to one
        framebuffer, each pipeline could have its own or use a shared
@@ -1289,6 +1212,8 @@ PROC vulkan_init() -> fresult
     g_vulkan->swapchain.name = "version_0";
     vulkan_swapchain_init( &g_vulkan->swapchain, VK_NULL_HANDLE );
 
+    // TODO: Test creating pipeline from function
+    vulkan_pipeline_mesh_init( &pipeline );
 
     array<VkVertexInputBindingDescription> bindings {
         // {   // Normal binding
@@ -1562,8 +1487,12 @@ PROC vulkan_draw() -> void
 
         // Reset fence before using again VUID-vkResetFences-pFences-01123
         vkResetFences( self->logical_device, 1, &g_vulkan->frame_acquire_fence );
-        // Window probably resized and invalidated the swapchain so we'll try again.
-        // Wait for all frames to finish before messing with the swapchain
+
+        /* if This code is reached there's a pretty good chance the widow was
+           resized or tampered with and it invalidated the swapchain.
+
+           We have to wait for all for all frames to finish before we're allowed
+           to regenerate the swapchain. */
         vkWaitForFences(
             g_vulkan->logical_device,
             swapchain.frame_end_fences.size(),
@@ -1652,7 +1581,7 @@ PROC vulkan_draw() -> void
     vkCmdBeginRenderPass( command_buffer, &render_pass_args, VK_SUBPASS_CONTENTS_INLINE );
     // Must bind pipeline before using it
     vkCmdBindPipeline(
-        command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, self->pipeline );
+        command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_vulkan->mesh_pipeline.platform_pipeline );
 
     // Resize viewport and scissor
     VkViewport viewport_config {
@@ -1674,10 +1603,11 @@ PROC vulkan_draw() -> void
     vkCmdSetViewport( command_buffer, 0, 1, &viewport_config );
     vkCmdSetScissor( command_buffer, 0, 1, &scissor_config );
 
-    // Bind vertex data to pipeline data slots
+    // Bind vertex/ data to pipeline data slots
     VkBuffer vertex_buffers[] = { self->test_triangle_buffer };
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers( command_buffer, 0, 1, vertex_buffers, offsets );
+    u32 n_buffers = 1;
+    vkCmdBindVertexBuffers( command_buffer, 0, n_buffers, vertex_buffers, offsets );
     // Draw an actual mesh
     vkCmdDraw( command_buffer, 3, 1, 0, 0 );
 
