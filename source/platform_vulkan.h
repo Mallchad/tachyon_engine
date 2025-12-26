@@ -103,6 +103,22 @@ struct vulkan_context
         0.0f,  0.4330127019f, 0.0f
     };
 
+    array<f32> test_square_data = {
+        0.f, 0.f, 1.f, // TODO: Remove temporary colour
+        -0.5f, -0.5, 0.0f,
+        0.f, 1.f, 0.f,
+        0.5f, -0.5, 0.0f,
+        1.f, 0.f, 0.f,
+        0.5f, 0.5, 0.0f,
+
+        0.f, 0.f, 1.f, // TODO: Remove temporary colour
+        -0.5f, -0.5, 0.0f,
+        1.f, 0.f, 0.f,
+        0.5f, 0.5, 0.0f,
+        0.f, 1.f, 0.f,
+        -0.5f, 0.5, 0.0f,
+    };
+
 
     // Configurables
     VkFormat swapchain_image_format = VK_FORMAT_B8G8R8A8_UNORM;
@@ -118,6 +134,14 @@ struct vulkan_context
 bool initialized = false;
     i64 frames_started = 0;
     i64 frames_completed = 0;
+};
+
+struct vulkan_mesh_draw_args
+{
+    u32 n_vertexes = 3;
+    u32 n_instances = 1;
+    u32 first_vertex = 0;
+    u32 first_instance = 0;
 };
 
 PROC vulkan_allocator_create_callbacks( i_allocator* allocator );
