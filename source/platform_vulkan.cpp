@@ -1262,7 +1262,7 @@ PROC vulkan_init() -> fresult
                           { 0.f, 1.f, 0.f, 0.f },
                           { 1.f, 0.f, 0.f, 0.f }}
     };
-    mesh_init( &g_vulkan->test_triangle );
+    // Don't need to initialize mesh, vulkan_mesh does it automatically
     vulkan_mesh_init( &g_vulkan->test_triangle );
     // TODO: Create memory object here
     g_vulkan->device_memory = {
