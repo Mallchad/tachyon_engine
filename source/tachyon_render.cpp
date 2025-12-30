@@ -50,3 +50,22 @@ PROC render_tick() -> void
         default: break;
     }
 }
+
+PROC mesh_init( mesh* arg ) -> fresult
+{
+    if (arg->id.valid())
+    {   VULKAN_ERRORF( "Tried to initialize already initialize mesh '{}'", arg->name );
+        return false;
+    }
+    if (arg->vertexes.size() <= 0)
+    {   VULKAN_ERRORF( "Tried to initialize mesh '{}' with {} vertexes",
+                       arg->name, arg->vertexes.size() * 3 );
+        return false;
+    }
+
+    arg->id = uuid_generate();
+    arg->faces_n = arg->vertexes.size();
+    arg->vertexes_n = arg->vertexes.size() * 3;
+    arg->vertex_indexes_n = arg->vertex_indexes.size();
+    return true;
+}

@@ -42,12 +42,17 @@ using namespace tyon;
 #include "extensions.hpp"
 #include "file.hpp"
 
+// Old interface header
 #include "renderer_interface.hpp"
+
+// New headers
 #include "platform_linux_x11.h"
+#include "tachyon_render.h"
 #include "platform_vulkan.h"
+
+// Old stuff
 #include "linux_opengl.h"
 #include "linux_input_xlib.h"
-#include "tachyon_render.h"
 #include "renderer.h"
 #include "input.h"
 

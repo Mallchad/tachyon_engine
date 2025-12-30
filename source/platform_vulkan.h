@@ -46,6 +46,62 @@ struct vulkan_pipeline
 
 };
 
+struct vulkan_mesh
+{
+    uid id;
+    VkBuffer buffer;
+};
+
+struct vulkan_device_memory_entry
+{
+    VkBuffer buffer {};
+    // Identifying position
+    i64 position {};
+    i64 size {};
+    i64 alignment {};
+    VkBufferUsageFlagBits usage_flag;
+};
+
+/* Devie memory managed by the platform layer */
+struct vulkan_memory
+{
+    uid id;
+    // Arguments
+    // Name of the device memory region
+    fstring name;
+    i64 size {};
+    VkMemoryPropertyFlags access_flags;
+    // State
+    VkDeviceMemory memory;
+    VkSharingMode sharing_mode;
+
+    linked_list<vulkan_device_memory_entry> used;
+    linked_list<vulkan_device_memory_entry> free;
+    i64 head_size {};
+};
+
+struct vulkan_buffer
+{
+    uid id;
+    // Arguments
+    fstring name;
+    i32 size = 0;
+    VkBufferUsageFlags type = VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
+    VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE;
+
+    // State
+    VkBuffer buffer {};
+};
+
+struct vulkan_mesh_draw_args
+{
+    u32 n_vertexes = 0;
+    u32 n_instances = 1;
+    u32 first_vertex = 0;
+    u32 first_instance = 0;
+};
+
+
 struct vulkan_context
 {
     // Primary Vulkan instance of to interface with
@@ -91,9 +147,13 @@ struct vulkan_context
     i32 frame_max_inflight = 2;
     vulkan_swapchain swapchain;
 
+    vulkan_mesh meshes;
+    vulkan_memory device_memory;
+
     // Test Data
     VkDeviceMemory vertex_memory;
     VkBuffer test_triangle_buffer {};
+    mesh test_triangle;
     array<f32> test_triangle_data = {
         0.f, 0.f, 1.f, // TODO: Remove temporary colour
         -0.5f, -0.4330127019f, 0.0f,
@@ -122,6 +182,13 @@ struct vulkan_context
 
     // Configurables
     VkFormat swapchain_image_format = VK_FORMAT_B8G8R8A8_UNORM;
+    /** This should be enough to fit 1 very large object, like 1 million verticies
+        1 200 000 × 4 × 3 × 4 = 54.931 MiB
+
+        The rationale being the GPU might be pedantic about where things can be
+        stored so memory is chunked this way to account for that. TODO: Needs
+        testing how reasonable this is. */
+    i64 device_memory_chunk_size = 256_MiB;
 
 
     // Platform Independant State
@@ -131,17 +198,9 @@ struct vulkan_context
      because Vulkan resoruces are allocated out of the allocator*/
     resource_arena resources;
 
-bool initialized = false;
+    bool initialized = false;
     i64 frames_started = 0;
     i64 frames_completed = 0;
-};
-
-struct vulkan_mesh_draw_args
-{
-    u32 n_vertexes = 3;
-    u32 n_instances = 1;
-    u32 first_vertex = 0;
-    u32 first_instance = 0;
 };
 
 PROC vulkan_allocator_create_callbacks( i_allocator* allocator );
@@ -150,6 +209,20 @@ PROC vulkan_label_object( u64 handle, VkObjectType type, fstring name ) -> void;
 
 PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchain )
     -> fresult;
+
+PROC vulkan_buffer_create(
+    fstring name,
+    i32 size,
+    VkBufferUsageFlags type,
+    VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE
+)   -> vulkan_buffer;
+
+PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult;
+
+PROC vulkan_mesh_init( mesh* arg) -> fresult;
+
+/** Create a VkMemory object */
+PROC vulkan_memory_init( vulkan_memory* arg ) -> fresult;
 
 PROC vulkan_init() -> fresult;
 

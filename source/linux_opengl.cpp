@@ -97,7 +97,7 @@ x11_error_handler( Display* server, XErrorEvent* event )
 {
     printf( "[X11] X Error of failed request: %d \n\
 Major opcode of failed request: %d \n\
-Resource id in failed request: %x \n\
+Resource id in failed request: %lx \n\
 Serial number of failed request: %d \n",
             event->error_code, event->request_code, event->resourceid, event->serial );
     return 0;

@@ -394,7 +394,7 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
                                  g_vulkan->vk_allocator );
     });
 
-    /* Section: Pipeline creation args
+    /* SECTION: Pipeline creation args
      *
      * Now We have all the pipeline information set we can assemble it into
      * creation args */
@@ -644,6 +644,207 @@ PROC vulkan_swapchain_destroy( vulkan_swapchain* arg ) -> void
         );
     });
     *arg = vulkan_swapchain {};
+}
+
+PROC vulkan_buffer_create(
+    fstring name,
+    i32 size,
+    VkBufferUsageFlags type, 
+    VkSharingMode sharing_mode
+)   -> vulkan_buffer
+{
+    vulkan_buffer result = {
+        .name = name,
+        .size = size,
+        .type = type,
+        .sharing_mode = sharing_mode
+    };
+
+    VkBufferCreateInfo buffer_args {};
+    buffer_args.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_args.size = u32(size);
+    buffer_args.usage = type;
+    buffer_args.sharingMode = sharing_mode;
+
+    auto buffer_bad = vkCreateBuffer(
+        g_vulkan->logical_device, &buffer_args, g_vulkan->vk_allocator, &result.buffer );
+    if (buffer_bad)
+    {   VULKAN_ERRORF( "Failed to create buffer '{}'", name );
+        return result;
+    }
+    result.id = uuid_generate(); // Valid objects have a non-zero UUID
+    vulkan_label_object( (u64)result.buffer, VK_OBJECT_TYPE_BUFFER, "name" );
+    return result;
+}
+
+PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
+{
+    if (arg->id.valid())
+    {   VULKAN_ERRORF( "Tried to initialize already initialized memory object {} {}",
+                       arg->id, arg->name );
+        return false;
+    }
+    /* SECTION: Create vertex buffer for describing a mesh
+
+       Here we create device memory to hold the data describing a mesh, like
+       vertecies and texture data. The buffer is created per mesh and is
+       completely seperate from the pipeline, which can service any number of mesh.
+
+       As per the Vulkan Specification Glossary- "memory", is a handle to the
+       actual physical memory or a memory allocation we are talking about.
+
+       A "buffer", is "a resource that represents a linear array of data in device
+       memory. Represented by a VkBuffer" object. A memory object must be bound to
+       a buffer to be used properly.
+    */
+    VkFormatProperties format_props {};
+    vkGetPhysicalDeviceFormatProperties(
+        g_vulkan->device, VK_FORMAT_B8G8R8A8_UNORM, &format_props );
+
+    /* SECTION: Create abunch of temporary buffers to test and fetch memory type
+       various default memory objects */
+    array<vulkan_buffer> requirement_buffers;
+    array<VkMemoryRequirements> requirement_results;
+    requirement_buffers.push_tail( vulkan_buffer_create( 
+        "requirements_transfer", 32, VK_BUFFER_USAGE_TRANSFER_SRC_BIT ));
+    requirement_buffers.push_tail( vulkan_buffer_create( 
+        "requirements_uniform_texel", 32, VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT ) );
+    requirement_buffers.push_tail( vulkan_buffer_create( 
+        "requirements_storage_texel", 32, VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT ) );
+    requirement_buffers.push_tail( vulkan_buffer_create( 
+        "requirements_uniform", 32, 
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT ) );
+    requirement_buffers.push_tail( vulkan_buffer_create( 
+        "requirements_storage", 32, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT ) );
+    requirement_buffers.push_tail( vulkan_buffer_create( 
+        "requirements_index", 32, VK_BUFFER_USAGE_INDEX_BUFFER_BIT ) );
+    requirement_buffers.push_tail( vulkan_buffer_create( 
+        "requirements_vertex", 32, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ) );
+    // NOTE: Everything after VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT not tested.
+
+    // Associate 'requirement_results' with 'requirement_buffers'
+    requirement_results.change_allocation( requirement_buffers.size() );
+    VkBuffer x_buffer {};
+    VkMemoryRequirements* x_requirements = nullptr;
+    for (i64 i=0; i < requirement_buffers.size(); ++i)
+    {
+        x_buffer = requirement_buffers[i].buffer;
+        if (x_buffer)
+        {   vkGetBufferMemoryRequirements( g_vulkan->logical_device, x_buffer, x_requirements );
+            // We can can just clean up the buffers immediately after getting the requirements.
+            vkDestroyBuffer( g_vulkan->logical_device, x_buffer, g_vulkan->vk_allocator );
+            requirement_buffers[i].buffer = VK_NULL_HANDLE;
+        }
+    }
+
+    // TODO: STUB
+    VkMemoryRequirements memory_requirements;
+    VkPhysicalDeviceMemoryProperties memory_props {};
+    vkGetPhysicalDeviceMemoryProperties( g_vulkan->device, &memory_props );
+
+    // TODO: Is HOST_COHERENT actually slower than DEVICE_LOCAL?
+    VkMemoryPropertyFlags memory_filter = arg->access_flags;
+
+    // Search through available memory types to get a valid type index
+    bool match = false;
+    i32 memory_type = 0;
+    for (i32 i=0; i < memory_props.memoryTypeCount; ++i)
+    {
+        // TYON_BREAK();
+        match = false;
+        bool requirement_fulfilled = memory_requirements.memoryTypeBits & (1 << i);
+        bool filter_match = (memory_props.memoryTypes[i].propertyFlags & memory_filter);
+        match = (requirement_fulfilled && filter_match);
+        if (match) { memory_type = i; }
+    }
+    if (match == false)
+    {   VULKAN_ERRORF( "Couldn't find suitible memory type for memory object {} '{}' ",
+                       arg->id, arg->name );
+        return false;
+    }
+
+    VkMemoryAllocateInfo memory_args {};
+    memory_args.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memory_args.allocationSize = memory_requirements.size;
+    memory_args.memoryTypeIndex = memory_type;
+    auto memory_bad = vkAllocateMemory(
+        g_vulkan->logical_device, &memory_args, g_vulkan->vk_allocator, &arg->memory);
+    if (memory_bad)
+    {   VULKAN_ERROR( "Failed to allocate general memory object" );
+        return false;
+    }
+    VkDeviceMemory _memory = arg->memory;
+    g_vulkan->resources.push_cleanup( [_memory] {
+        VULKAN_LOG( "Destroying memory object" );
+        vkFreeMemory( g_vulkan->logical_device, _memory, g_vulkan->vk_allocator );
+    });
+    return true;
+}
+
+PROC vulkan_memory_init( vulkan_memory* arg ) -> fresult
+{
+
+
+    return true;
+}
+
+PROC vulkan_mesh_init( mesh* arg ) -> fresult
+{
+    bool init_ok = mesh_init( arg );
+    if(init_ok == false)
+    {   return false;
+    }
+
+    // TODO: This tiny part is used for setting up a new buffer
+    // VkMemoryRequirements memory_requirements;
+    // vkGetBufferMemoryRequirements( g_vulkan->logical_device, g_vulkan->test_triangle_buffer,
+    //                                &memory_requirements );
+
+    // Mandated by the spec when setting vertex bindings
+    // bool vertex_buffer_ok = format_props.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
+    // if (!vertex_buffer_ok)
+    // { VULKAN_ERROR( "Format feature vertex buffer not supported for specified format" ); }
+
+    // VkBufferCreateInfo buffer_args {};
+    // buffer_args.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    // buffer_args.size = sizeof(f32) * g_vulkan->test_triangle_data.size();
+    // buffer_args.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    // buffer_args.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    // auto triangle_buffer_bad = vkCreateBuffer(
+    //     g_vulkan->logical_device, &buffer_args, g_vulkan->vk_allocator, &g_vulkan->test_triangle_buffer);
+    // if (triangle_buffer_bad)
+    // {   VULKAN_ERROR( "Failed to create test triangle buffer" );
+    //     return false;
+    // }
+    // vulkan_label_object(
+    // (u64)g_vulkan->test_triangle_buffer, VK_OBJECT_TYPE_BUFFER, "test_triangle_buffer" );
+    // g_vulkan->resources.push_cleanup( [] {
+    //     VULKAN_LOG( "Destroying test triangle buffer" );
+    //     vkDestroyBuffer( g_vulkan->logical_device, g_vulkan->test_triangle_buffer,
+    //                      g_vulkan->vk_allocator );
+    // } );
+
+    // // vkBindBufferMemory( g_vulkan->logical_device, g_vulkan->test_triangle_buffer, arg->memory, 0 );
+
+    // void* data;
+    // vkMapMemory( g_vulkan->logical_device, arg->memory, 0, buffer_args.size, 0, &data );
+    // memcpy( data, g_vulkan->test_triangle_data.data, size_t(buffer_args.size) );
+    // // TODO: Pretty sure we can just unmap this immediately right?
+    // // g_vulkan->resources.push_cleanup([=] {
+    // vkUnmapMemory( g_vulkan->logical_device, arg->memory );
+    // // });
+
+    // // Flush memory to make sure its used
+    // VkMappedMemoryRange range {
+    //     .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+    //     .memory = arg->memory,
+    //     .offset = 0,
+    //     .size = buffer_args.size,
+    // };
+    // TODO: remove before flight
+    // vkFlushMappedMemoryRanges( g_vulkan->logical_device, 1, range );
+    return true;
 }
 
 PROC vulkan_init() -> fresult
@@ -1051,110 +1252,26 @@ PROC vulkan_init() -> fresult
             });
     }
 
-    /* SECTION: Create vertex buffer for describing a mesh
-
-       Here we create device memory to hold the data describing a mesh, like
-       vertecies and texture data. The buffer is created per mesh and is
-       completely seperate from the pipeline, which can service any number of mesh.
-
-       As per the Vulkan Specification Glossary- "memory", is a handle to the
-       actual physical memory or a memory allocation we are talking about.
-
-       A "buffer", is "a resource that represents a linear array of data in device
-       memory. Represented by a VkBuffer" object. A memory object must be bound to
-       a buffer to be used properly.
-
-       TODO: This will have to be removed in future to account for mesh swapping */
-    VkFormatProperties format_props {};
-    vkGetPhysicalDeviceFormatProperties(
-        g_vulkan->device, VK_FORMAT_B8G8R8A8_UNORM, &format_props );
-    // Mandated by the spec when setting vertex bindings
-    bool vertex_buffer_ok = format_props.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
-    if (!vertex_buffer_ok)
-    { VULKAN_ERROR( "Format feature vertex buffer not supported for specified format" ); }
-
-    // Create vertex buffer for describing a mesh
-    VkDeviceMemory& vertex_memory = g_vulkan->vertex_memory;
-    VkBufferCreateInfo buffer_args {};
-    buffer_args.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_args.size = sizeof(f32) * self->test_triangle_data.size();
-    buffer_args.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    buffer_args.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    auto triangle_buffer_bad = vkCreateBuffer(
-        self->logical_device, &buffer_args, g_vulkan->vk_allocator, &self->test_triangle_buffer);
-    if (triangle_buffer_bad)
-    {   VULKAN_ERROR( "Failed to create test triangle buffer" );
-        return false;
-    }
-    vulkan_label_object(
-        (u64)self->test_triangle_buffer, VK_OBJECT_TYPE_BUFFER, "test_triangle_buffer" );
-    g_vulkan->resources.push_cleanup( [] {
-        VULKAN_LOG( "Destroying test triangle buffer" );
-        vkDestroyBuffer( g_vulkan->logical_device, g_vulkan->test_triangle_buffer,
-                         g_vulkan->vk_allocator );
-    } );
-
-    VkMemoryRequirements memory_requirements;
-    vkGetBufferMemoryRequirements( self->logical_device, self->test_triangle_buffer,
-                                   &memory_requirements );
-
-    VkPhysicalDeviceMemoryProperties memory_props {};
-    vkGetPhysicalDeviceMemoryProperties( self->device, &memory_props );
-
-    VkMemoryPropertyFlags memory_filter = (
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    bool match = false;
-    i32 memory_type = 0;
-    for (i32 i=0; i < memory_props.memoryTypeCount; ++i)
-    {
-        // TYON_BREAK();
-        match = false;
-        bool requirement_fulfilled = memory_requirements.memoryTypeBits & (1 << i);
-        bool filter_match = (memory_props.memoryTypes[i].propertyFlags & memory_filter);
-        match = (requirement_fulfilled && filter_match);
-        if (match) { memory_type = i; }
-    }
-    if (match == false)
-    {   VULKAN_ERROR( "Couldn't find suitible memory type for test_triangle_buffer" );
-        return false;
-    }
-
-    VkMemoryAllocateInfo memory_args {};
-    memory_args.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memory_args.allocationSize = memory_requirements.size;
-    memory_args.memoryTypeIndex = memory_type;
-    auto memory_bad = vkAllocateMemory(
-        self->logical_device, &memory_args, g_vulkan->vk_allocator, &g_vulkan->vertex_memory);
-    if (memory_bad)
-    {   VULKAN_ERROR( "Failed to allocate memory for triangle buffer" );
-        return false;
-    }
-    g_vulkan->resources.push_cleanup( [] {
-        VULKAN_LOG( "Destroying memory allocated for test triangle" );
-        vkFreeMemory( g_vulkan->logical_device, g_vulkan->vertex_memory,
-                      g_vulkan->vk_allocator );
-    });
-    vkBindBufferMemory( self->logical_device, self->test_triangle_buffer, vertex_memory, 0 );
-
-    void* data;
-    vkMapMemory( self->logical_device, vertex_memory, 0, buffer_args.size, 0, &data );
-    memcpy( data, self->test_triangle_data.data, size_t(buffer_args.size) );
-    // TODO: Pretty sure we can just unmap this immediately right?
-    // self->resources.push_cleanup([=] {
-    vkUnmapMemory( self->logical_device, vertex_memory );
-    // });
-
-    // Flush memory to make sure its used
-    VkMappedMemoryRange range {
-        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = vertex_memory,
-        .offset = 0,
-        .size = buffer_args.size,
+    // Initialize test mesh data
+    g_vulkan->test_triangle = mesh {
+        .name = "test_triangle",
+        .vertexes = {{-0.5f, -0.4330127019f, 0.0f},
+                     {0.5f, -0.4330127019f, 0.0f },
+                     {0.0f,  0.4330127019f, 0.0f }},
+        .vertex_colors = {{ 0.f, 0.f, 1.f, 0.f },
+                          { 0.f, 1.f, 0.f, 0.f },
+                          { 1.f, 0.f, 0.f, 0.f }}
     };
-    // TODO: remove before flight
-    // vkFlushMappedMemoryRanges( self->logical_device, 1, range );
+    mesh_init( &g_vulkan->test_triangle );
+    vulkan_mesh_init( &g_vulkan->test_triangle );
+    // TODO: Create memory object here
+    g_vulkan->device_memory = {
+        .name = "global",
+        .size = g_vulkan->device_memory_chunk_size,
+        // TODO: Is HOST_COHERENT actually slower than DEVICE_LOCAL?
+        .access_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    };
+    vulkan_memory_init( &g_vulkan->device_memory );
 
     /* SECTION: Render Pass - "An object that represents a set of
        framebuffer attachments and phases of rendering using those
@@ -1398,14 +1515,19 @@ PROC vulkan_draw() -> void
     vkCmdSetViewport( command_buffer, 0, 1, &viewport_config );
     vkCmdSetScissor( command_buffer, 0, 1, &scissor_config );
 
+    // SECTION: Select mesh for drawing
+    mesh* draw_mesh = &g_vulkan->test_triangle;
+
+
     // Bind vertex/ data to pipeline data slots
     VkBuffer vertex_buffers[] = { self->test_triangle_buffer };
     VkDeviceSize offsets[] = {0};
     u32 n_buffers = 1;
     vkCmdBindVertexBuffers( command_buffer, 0, n_buffers, vertex_buffers, offsets );
+
     // Draw an actual mesh
     auto mesh_args = vulkan_mesh_draw_args {
-        .n_vertexes = 3,
+        .n_vertexes = u32(draw_mesh->vertexes_n),
         .n_instances = 1,
         .first_vertex = 0,
         .first_instance = 0
