@@ -23,10 +23,10 @@ struct vec2
 
 struct v3f final
 {
-    // f32 x, y, z;
-    union {
-    struct { f32 x, y, z; };
-    };
+    f32 x, y, z;
+    // union {
+    // struct { f32 x, y, z; };
+    // };
 
     /** Default Worldspace Normal Vectors
         This is based on the Unreal Engine coordinate system which is left handed **/
