@@ -726,14 +726,21 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
     requirement_results.change_allocation( requirement_buffers.size() );
     VkBuffer x_buffer {};
     VkMemoryRequirements* x_requirements = nullptr;
+    VULKAN_LOG( "Testing buffers for memory type compatability" );
     for (i64 i=0; i < requirement_buffers.size(); ++i)
     {
         x_buffer = requirement_buffers[i].buffer;
+        x_requirements = requirement_results.address(i);
         if (x_buffer)
         {   vkGetBufferMemoryRequirements( g_vulkan->logical_device, x_buffer, x_requirements );
             // We can can just clean up the buffers immediately after getting the requirements.
             vkDestroyBuffer( g_vulkan->logical_device, x_buffer, g_vulkan->vk_allocator );
             requirement_buffers[i].buffer = VK_NULL_HANDLE;
+            
+            // Print reported memory types
+            fstring_view name = requirement_buffers[i].name;
+            std::bitset<32> type_bits = x_requirements->memoryTypeBits;
+            VULKAN_LOGF( "memoryTypeBits {} '{}'", type_bits, name );
         }
     }
 
@@ -783,7 +790,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
 
 PROC vulkan_memory_init( vulkan_memory* arg ) -> fresult
 {
-
+    vulkan_memory_allocate( arg );
 
     return true;
 }
