@@ -17,8 +17,41 @@ PROC vulkan_debug_callback(
     void* user_data ) -> VkBool32
 {
     PROFILE_SCOPE_FUNCTION();
-    TYON_BASE_LOGF( "Vulkan Validation", "{}", callback_data->pMessage );
 
+    fstring type_name;
+    switch (message_type) {
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
+            type_name = "General"; break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
+            type_name = "Validation"; break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+            type_name = "Performance"; break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT:
+            type_name = "Device Address Binding"; break;
+        default:
+            type_name = "unknown_message_type";
+    }
+
+    fstring _category = fmt::format( "Vulkan {}", type_name );
+    cstring category = _category.c_str();
+    switch (message_severity)
+    {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+            TYON_BASE_LOGF( category, "[Verbose] {}", callback_data->pMessage );
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            TYON_BASE_LOGF( category, "[Info] {}", callback_data->pMessage );
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+            TYON_BASE_LOGF( category, "[Warning] {}", callback_data->pMessage );
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            TYON_BASE_ERRORF( category, "{}", callback_data->pMessage );
+            TYON_BREAK();
+            break;
+        default:
+            TYON_BASE_LOGF( "Vulkan unknown_debug_category", "{}", callback_data->pMessage );
+    }
     return VK_FALSE;
 }
 
@@ -911,6 +944,7 @@ PROC vulkan_init() -> fresult
     app_info.applicationVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
     app_info.pEngineName = "Tachyon Engine";
     app_info.engineVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
+    // app_info.apiVersion = VK_MAKE_API_VERSION( 0, 1, 0, 0 );;
     app_info.apiVersion = 0;
 
     VkDebugUtilsMessengerCreateInfoEXT messenger_args {};
@@ -1119,6 +1153,7 @@ PROC vulkan_init() -> fresult
     VkPhysicalDeviceFeatures device_features {
         // for multisampling support
         .sampleRateShading = true,
+        .logicOp = true
     };
 
     // Setup the final logical device args struct

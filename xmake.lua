@@ -59,9 +59,11 @@ target( "tachyon_engine" )
 
     -- asan must be linked first
     if has_config( "address_sanitizer" ) then
-       -- add_links( "asan" )
-       add_links( "ubsan" )
+       print( "ENABLED Address sanitizer")
+       -- add_links( "ubsan" )
     end
+    add_links( "asan" )
+
 
     -- Linux --
     add_links( "dl", "X11", "GL", "uuid", "vulkan" )
@@ -159,7 +161,7 @@ target( "tachyon_engine" )
                   {tools = "clang" }
                    )
     if has_config( "address_sanitizer" ) then
-       -- add_cxxflags( "-fsanitize=address" )
+       add_cxxflags( "-fsanitize=address" )
 
        -- add_cxxflags( "-fsanitize=memory", "-fPIE", "-pie" )
     end
