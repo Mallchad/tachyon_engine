@@ -778,7 +778,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
     }
 
     // TODO: STUB
-    VkMemoryRequirements memory_requirements;
+    VkMemoryRequirements memory_requirements {};
     VkPhysicalDeviceMemoryProperties memory_props {};
     vkGetPhysicalDeviceMemoryProperties( g_vulkan->device, &memory_props );
 
@@ -944,8 +944,7 @@ PROC vulkan_init() -> fresult
     app_info.applicationVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
     app_info.pEngineName = "Tachyon Engine";
     app_info.engineVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
-    // app_info.apiVersion = VK_MAKE_API_VERSION( 0, 1, 0, 0 );;
-    app_info.apiVersion = 0;
+    app_info.apiVersion = VK_API_VERSION_1_0;
 
     VkDebugUtilsMessengerCreateInfoEXT messenger_args {};
     messenger_args.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;

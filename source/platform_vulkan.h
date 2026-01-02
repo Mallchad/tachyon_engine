@@ -68,7 +68,7 @@ struct vulkan_memory
     uid id;
     // Arguments
     // Name of the device memory region
-    fstring name;
+    fstring name = "unnamed";
     i64 size {};
     VkMemoryPropertyFlags access_flags;
     // State
