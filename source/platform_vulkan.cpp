@@ -756,7 +756,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
     // NOTE: Everything after VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT not tested.
 
     // Associate 'requirement_results' with 'requirement_buffers'
-    requirement_results.change_allocation( requirement_buffers.size() );
+    requirement_results.resize( requirement_buffers.size() );
     VkBuffer x_buffer {};
     VkMemoryRequirements* x_requirements = nullptr;
     VULKAN_LOG( "Testing buffers for memory type compatability" );
@@ -777,15 +777,20 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
         }
     }
 
-    // TODO: STUB
-    VkMemoryRequirements memory_requirements {};
+    // SECTION: Search through available memory types to get a valid type index
+    if (requirement_results[0].memoryTypeBits)
+    {   VULKAN_ERROR( "Couldn't get generic memory requirements for vertex buffer type, "
+                      "bailing memory allocation" );
+        return false;
+    }
+    // Just use vertex traits for now buffer
+    VkMemoryRequirements memory_requirements = requirement_results[0];
     VkPhysicalDeviceMemoryProperties memory_props {};
     vkGetPhysicalDeviceMemoryProperties( g_vulkan->device, &memory_props );
 
     // TODO: Is HOST_COHERENT actually slower than DEVICE_LOCAL?
     VkMemoryPropertyFlags memory_filter = arg->access_flags;
 
-    // Search through available memory types to get a valid type index
     bool match = false;
     i32 memory_type = 0;
     for (i32 i=0; i < memory_props.memoryTypeCount; ++i)
@@ -818,6 +823,8 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
         VULKAN_LOG( "Destroying memory object" );
         vkFreeMemory( g_vulkan->logical_device, _memory, g_vulkan->vk_allocator );
     });
+    VULKAN_LOGF( "Allocated memory object. ID: {} Name: '{}' Size: {}",
+                 arg->id, arg->name, arg->size );
     return true;
 }
 
@@ -946,6 +953,18 @@ PROC vulkan_init() -> fresult
     app_info.engineVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
     app_info.apiVersion = VK_API_VERSION_1_0;
 
+    // for (i64 i=0; i<1)
+    VULKAN_LOG( "Enabling Vulkan Layers:" );
+    enabled_layers.map_procedure( []( cstring arg ) {
+        VULKAN_LOGF( "    {}", arg );
+    });
+    VULKAN_LOG( "" );
+    VULKAN_LOG( "Enabling Vulkan Instance Extensions:" );
+    enabled_extensions.map_procedure( []( cstring arg ) {
+        VULKAN_LOGF( "    {}", arg );
+    });
+    VULKAN_LOG( "" );
+
     VkDebugUtilsMessengerCreateInfoEXT messenger_args {};
     messenger_args.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     messenger_args.messageSeverity = (
@@ -976,6 +995,7 @@ PROC vulkan_init() -> fresult
         VULKAN_ERROR( "Failed to create Vulkan instance" );
         return false;
     }
+    VULKAN_LOG( "Created Vulkan instance" );
     g_vulkan->resources.push_cleanup( []{
         VULKAN_LOG( "Destroying Vulkan instance" );
         vkDestroyInstance( g_vulkan->instance, g_vulkan->vk_allocator );
@@ -1152,8 +1172,12 @@ PROC vulkan_init() -> fresult
     VkPhysicalDeviceFeatures device_features {
         // for multisampling support
         .sampleRateShading = true,
-        .logicOp = true
+        // .logicOp = true
     };
+
+    // Query features supported by the device
+    VkPhysicalDeviceFeatures supported_features {};
+    vkGetPhysicalDeviceFeatures( g_vulkan->device, &supported_features );
 
     // Setup the final logical device args struct
     VkDeviceCreateInfo device_args = {};
@@ -1171,6 +1195,12 @@ PROC vulkan_init() -> fresult
     device_args.enabledLayerCount = enabled_layers.size();
     device_args.ppEnabledExtensionNames = device_extensions.data;
     device_args.enabledExtensionCount = device_extensions.size();
+
+    VULKAN_LOG( "Enabling Vulkan Instance Extensions:" );
+    device_extensions.map_procedure( []( cstring arg ) {
+        VULKAN_LOGF( "    {}", arg );
+    });
+    VULKAN_LOG( "" );
 
     // Actually create logical device
     auto device_ok = vkCreateDevice(
