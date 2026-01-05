@@ -759,6 +759,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
     requirement_results.resize( requirement_buffers.size() );
     VkBuffer x_buffer {};
     VkMemoryRequirements* x_requirements = nullptr;
+    u32 shared_bits = ~0;
     VULKAN_LOG( "Testing buffers for memory type compatability" );
     for (i64 i=0; i < requirement_buffers.size(); ++i)
     {
@@ -773,14 +774,19 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
             // Print reported memory types
             fstring_view name = requirement_buffers[i].name;
             std::bitset<32> type_bits = x_requirements->memoryTypeBits;
+            /* Check if all requirements are the same This will collapse on 0 if
+               atleast 1 bit isn't identical across all buffer's memory
+               requirement types. */
+            shared_bits &= x_requirements->memoryTypeBits;
             VULKAN_LOGF( "memoryTypeBits {} '{}'", type_bits, name );
         }
     }
 
     // SECTION: Search through available memory types to get a valid type index
-    if (requirement_results[0].memoryTypeBits)
-    {   VULKAN_ERROR( "Couldn't get generic memory requirements for vertex buffer type, "
-                      "bailing memory allocation" );
+    bool no_shared_bits = (shared_bits == 0);
+    if (no_shared_bits)
+    {   VULKAN_ERROR( "not all buffer types support the same memory, seperate types"
+                      " are not supported yet. bailing memory allocation" );
         return false;
     }
     // Just use vertex traits for now buffer
