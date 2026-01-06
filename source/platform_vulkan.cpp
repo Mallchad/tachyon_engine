@@ -1100,8 +1100,8 @@ PROC vulkan_init() -> fresult
 
         /* Seriously... Why. you have to reference the queue family by an
          * arbitrary index. you get whilst looping through */
-        bool graphics_queue_unfulfilled = false;
-        bool present_queue_unfulfilled = false;
+        bool graphics_queue_unfulfilled = true;
+        bool present_queue_unfulfilled = true;
         for (int i_queue=0; i_queue < families.size(); ++i_queue)
         {
             VkBool32 present_support = false;
@@ -1112,18 +1112,24 @@ PROC vulkan_init() -> fresult
             VULKAN_LOGF( "        Graphics Support: {}", graphics_support );
             VULKAN_LOGF( "        Presentation Support: {}", bool(present_support) );
 
-            // TODO: Check does present family also need graphics family??
-            graphics_queue_unfulfilled = (x_graphics_family < 0);
-            present_queue_unfulfilled = (x_present_family < 0);
             /* HACK TODO: Hardcoded to select graphics first because 3080 is
                setup to have graphics queue first But we can't actually assume
                that so this needs to be fixed */
-            if (graphics_support && graphics_queue_unfulfilled)
+            bool both_queues_unfulfilled = (graphics_queue_unfulfilled && present_queue_unfulfilled);
+            if (both_queues_unfulfilled && graphics_support && present_support)
+            {   x_graphics_family = i_queue;
+                x_present_family = i_queue;
+            }
+            else if (graphics_support && graphics_queue_unfulfilled)
             {   x_graphics_family = i_queue;
             }
             else if (present_support && present_queue_unfulfilled)
             {   x_present_family = i_queue;
             }
+            // TODO: Check does present family also need graphics family??
+            // Do this at the end in case it's the last family it will not be run
+            graphics_queue_unfulfilled = (x_graphics_family < 0);
+            present_queue_unfulfilled = (x_present_family < 0);
         }
         bool suitible_queues = (x_graphics_family >= 0 && x_present_family >= 0);
         if (suitible_queues)
