@@ -1100,6 +1100,8 @@ PROC vulkan_init() -> fresult
 
         /* Seriously... Why. you have to reference the queue family by an
          * arbitrary index. you get whilst looping through */
+        bool graphics_queue_unfulfilled = false;
+        bool present_queue_unfulfilled = false;
         for (int i_queue=0; i_queue < families.size(); ++i_queue)
         {
             VkBool32 present_support = false;
@@ -1111,8 +1113,8 @@ PROC vulkan_init() -> fresult
             VULKAN_LOGF( "        Presentation Support: {}", bool(present_support) );
 
             // TODO: Check does present family also need graphics family??
-            bool graphics_queue_unfulfilled = (x_graphics_family < 0);
-            bool present_queue_unfulfilled = (x_present_family < 0);
+            graphics_queue_unfulfilled = (x_graphics_family < 0);
+            present_queue_unfulfilled = (x_present_family < 0);
             /* HACK TODO: Hardcoded to select graphics first because 3080 is
                setup to have graphics queue first But we can't actually assume
                that so this needs to be fixed */
@@ -1123,9 +1125,11 @@ PROC vulkan_init() -> fresult
             {   x_present_family = i_queue;
             }
         }
-        bool suitible_queues = (x_graphics_family >= 0 || x_present_family >= 0);
+        bool suitible_queues = (x_graphics_family >= 0 && x_present_family >= 0);
         if (suitible_queues)
         {   suitible = true;
+            VULKAN_LOG("        Device has a suitible graphics and present queue family." );
+
         }
         else
         {   VULKAN_LOG("        Failed to find suitible graphics or present queue family for device" );
@@ -1184,7 +1188,8 @@ PROC vulkan_init() -> fresult
     present_queue_args.queueFamilyIndex = present_queue_family;
     present_queue_args.queueCount = 1;
     present_queue_args.pQueuePriorities = &queue_priority;
-    queues.push_tail( present_queue_args );
+    // NOTE: I don't think we need this all the time if we can use the same queue family twice
+    // queues.push_tail( present_queue_args );
 
     VkPhysicalDeviceFeatures device_features {
         // for multisampling support
@@ -1233,6 +1238,8 @@ PROC vulkan_init() -> fresult
         vkDestroyDevice( g_vulkan->logical_device, g_vulkan->vk_allocator );
         g_vulkan->logical_device =  VK_NULL_HANDLE;
     } );
+    // NOTE: the first graphics queue family often supports present as well
+    // So we can make a present queue from the same family.
     vkGetDeviceQueue( g_vulkan->logical_device, graphics_queue_family, 0, &graphics_queue );
     vkGetDeviceQueue( g_vulkan->logical_device, graphics_queue_family, 0, &present_queue );
 
