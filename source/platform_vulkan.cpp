@@ -1037,14 +1037,14 @@ PROC vulkan_init() -> fresult
         surface_args.flags = 0x0;
         surface_args.window = g_x11->window;
 
-        VULKAN_LOG( "Creating Vulkan/Xlib drawing surface" );
+        VULKAN_LOG( "Creating X11 Xlib WSI drawing surface" );
         VkResult surface_ok = vkCreateXlibSurfaceKHR(
             g_vulkan->instance,
             &surface_args,
             g_vulkan->vk_allocator,
             &g_vulkan->surface
         );
-        ERROR_GUARD( surface_ok == VK_SUCCESS, "Vulkan/xlib Surface creation error" );
+        ERROR_GUARD( surface_ok == VK_SUCCESS, "X11 Xlib WSI Surface creation error" );
         VULKAN_LOG( "Tachyon Vulkan", "Vulkan Instance created" );
         g_vulkan->resources.push_cleanup( [] {
             VULKAN_LOGF( "Destroying surface 0x{:x}", u64(g_vulkan->surface) );
@@ -1071,7 +1071,7 @@ PROC vulkan_init() -> fresult
     {
         VkPhysicalDevice x_device = devices[i];
         VkPhysicalDeviceProperties props;
-        bool suitible = true;
+        bool suitible = false;
         bool dedicated_graphics = false;
         vkGetPhysicalDeviceProperties( x_device, &props );
         VULKAN_LOGF( "Enumerated physical device: {} | {:x}:{:x}",
@@ -1096,37 +1096,37 @@ PROC vulkan_init() -> fresult
         vkGetPhysicalDeviceQueueFamilyProperties( x_device, &n_families, families.data );
         VULKAN_LOG( "Queue Family Count: ", n_families );
 
-        // HACK: Just autofill first queue family
-        // if (n_families)
-        // {   self->graphics_queue_family = 0;
-        //     self->present_queue_family = 0;
-        // }
-
         /* Seriously... Why. you have to reference the queue family by an
          * arbitrary index. you get whilst looping through */
         for (int i_queue=0; i_queue < families.size(); ++i_queue)
         {
             VkBool32 present_support = false;
-            bool graphics_queue = (families[ i_queue ].queueFlags & VK_QUEUE_GRAPHICS_BIT);
+            bool graphics_support = (families[ i_queue ].queueFlags & VK_QUEUE_GRAPHICS_BIT);
             vkGetPhysicalDeviceSurfaceSupportKHR(
                 x_device, i_queue, g_vulkan->surface, &present_support );
-            if (graphics_queue && graphics_queue_family < 0)
-            {   suitible &= true;
-                graphics_queue_family = i_queue;
-            }
-            else if (present_support && present_queue_family < 0)
-            {   suitible &= true;
-                present_queue_family = i_queue;
-            }
-        }
-        if (graphics_queue_family < 0 || graphics_queue_family < 0)
-        {   VULKAN_ERROR( "Failed to find suitible queue family for device"
-                          "Vulkan initialized failed" );
-            return false;
-        }
+            VULKAN_LOGF( "    Queue Family Index {}", i_queue );
+            VULKAN_LOGF( "        Graphics Support: {}", graphics_support );
+            VULKAN_LOGF( "        Presentation Support: {}", bool(present_support) );
 
-        if (global->graphics_llvmpipe)
-        {
+            // TODO: Check does present family also need graphics family??
+            bool graphics_queue_unfulfilled = (graphics_queue_family < 0);
+            bool present_queue_unfulfilled = (present_queue_family < 0);
+            /* HACK TODO: Hardcoded to select graphics first because 3080 is
+               setup to have graphics queue first But we can't actually assume
+               that so this needs to be fixed */
+            if (graphics_support && graphics_queue_unfulfilled)
+            {   graphics_queue_family = i_queue;
+            }
+            else if (present_support && present_queue_unfulfilled)
+            {   present_queue_family = i_queue;
+            }
+        }
+        bool suitible_queues = (graphics_queue_family >= 0 || present_queue_family >= 0);
+        if (suitible_queues)
+        {   suitible = true;
+        }
+        else
+        {   VULKAN_LOG("        Failed to find suitible graphics or present queue family for device" );
         }
 
         // Use llvmpipe exclusively if selected, otherwise prefer dedicated
@@ -1140,10 +1140,17 @@ PROC vulkan_init() -> fresult
         bool more_preferred_device = (prefer_llvm || prefer_dedicated);
         bool select_device = (
             suitible && (more_preferred_device || g_vulkan->device == VK_NULL_HANDLE));
+
+        if (global->graphics_llvmpipe)
+        {   VULKAN_LOG( "llvmpipe requested on the command line, "
+                        "lavapipe for Vulkan is available. Trying to use lavapipe." );
+        }
         if (select_device)
         {
             g_vulkan->device = x_device;
-            VULKAN_LOG( "Changed primary graphics device to", props.deviceName );
+            VULKAN_LOGF( "Selected primary graphics device: '{}'", props.deviceName );
+            VULKAN_LOGF( "    Graphics Queue: {} Present Queue: {}",
+                         graphics_queue_family, present_queue_family );
         }
         VULKAN_LOG( "" );
     }
