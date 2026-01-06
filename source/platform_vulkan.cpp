@@ -910,8 +910,8 @@ PROC vulkan_init() -> fresult
     VkInstanceCreateInfo instance_args = {};
     VkApplicationInfo app_info = {};
     VkXlibSurfaceCreateInfoKHR surface_args = {};
-    i32 graphics_queue_family = self->graphics_queue_family;
-    i32 present_queue_family = self->present_queue_family;
+    i32& graphics_queue_family = self->graphics_queue_family;
+    i32& present_queue_family = self->present_queue_family;
 
     g_vulkan->allocator_callback = vulkan_allocator_create_callbacks(
         g_vulkan->allocator.get() );
@@ -1071,6 +1071,8 @@ PROC vulkan_init() -> fresult
     {
         VkPhysicalDevice x_device = devices[i];
         VkPhysicalDeviceProperties props;
+        i32 x_graphics_family = -1;
+        i32 x_present_family = -1;
         bool suitible = false;
         bool dedicated_graphics = false;
         vkGetPhysicalDeviceProperties( x_device, &props );
@@ -1109,19 +1111,19 @@ PROC vulkan_init() -> fresult
             VULKAN_LOGF( "        Presentation Support: {}", bool(present_support) );
 
             // TODO: Check does present family also need graphics family??
-            bool graphics_queue_unfulfilled = (graphics_queue_family < 0);
-            bool present_queue_unfulfilled = (present_queue_family < 0);
+            bool graphics_queue_unfulfilled = (x_graphics_family < 0);
+            bool present_queue_unfulfilled = (x_present_family < 0);
             /* HACK TODO: Hardcoded to select graphics first because 3080 is
                setup to have graphics queue first But we can't actually assume
                that so this needs to be fixed */
             if (graphics_support && graphics_queue_unfulfilled)
-            {   graphics_queue_family = i_queue;
+            {   x_graphics_family = i_queue;
             }
             else if (present_support && present_queue_unfulfilled)
-            {   present_queue_family = i_queue;
+            {   x_present_family = i_queue;
             }
         }
-        bool suitible_queues = (graphics_queue_family >= 0 || present_queue_family >= 0);
+        bool suitible_queues = (x_graphics_family >= 0 || x_present_family >= 0);
         if (suitible_queues)
         {   suitible = true;
         }
@@ -1148,6 +1150,8 @@ PROC vulkan_init() -> fresult
         if (select_device)
         {
             g_vulkan->device = x_device;
+            g_vulkan->graphics_queue_family = x_graphics_family;
+            g_vulkan->present_queue_family = x_present_family;
             VULKAN_LOGF( "Selected primary graphics device: '{}'", props.deviceName );
             VULKAN_LOGF( "    Graphics Queue: {} Present Queue: {}",
                          graphics_queue_family, present_queue_family );
