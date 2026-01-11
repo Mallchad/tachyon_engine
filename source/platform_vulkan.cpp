@@ -798,7 +798,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
     VkMemoryPropertyFlags memory_filter = arg->access_flags;
 
     bool match = false;
-    i32 memory_type = 0;
+    i32 memory_type_index = 0;
     for (i32 i=0; i < memory_props.memoryTypeCount; ++i)
     {
         // TYON_BREAK();
@@ -806,7 +806,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
         bool requirement_fulfilled = memory_requirements.memoryTypeBits & (1 << i);
         bool filter_match = (memory_props.memoryTypes[i].propertyFlags & memory_filter);
         match = (requirement_fulfilled && filter_match);
-        if (match) { memory_type = i; }
+        if (match) { memory_type_index = i; }
     }
     if (match == false)
     {   VULKAN_ERRORF( "Couldn't find suitible memory type for memory object {} '{}' ",
@@ -814,14 +814,41 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
         return false;
     }
 
+    /* NOTE: We're just directly using the memory heap as the chunk size since we don't get a choice.
+       NOTE: We have no clue at all which heap will be used by this particular call.
+       NOTE: We have to use the found memory type index to find the heap it uses */
+    VkMemoryType memory_type = memory_props.memoryTypes[ memory_type_index ];
+    VkMemoryHeap heap = memory_props.memoryHeaps[ memory_type.heapIndex ];
+    fstring heap_stats = fmt::format(
+        "Required Heap Stats: Heap Index: [{}] Heap Size : [{}] Heap Flags: [{:b}]",
+        memory_type.heapIndex, heap.size, heap.flags
+    );
+
+    if (arg->size == -1)
+    {   VULKAN_LOG( "-1 Allocation size requested, Using max available heap size" );
+        arg->size = heap.size - 1000; // Magic number that seems to work. Chunk sizes or something?
+
+    }
+    else if (arg->size > heap.size)
+    {   VULKAN_ERRORF(
+            "Memory allocation Name: '{}' Size: [{}] requested is larger than the required device heap",
+            arg->name, arg->size
+        );
+        VULKAN_LOG( heap_stats );
+        return false;
+    }
+
+    VULKAN_LOG( "Allocating memory from device heap" );
+    VULKAN_LOG( heap_stats );
     VkMemoryAllocateInfo memory_args {};
     memory_args.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memory_args.allocationSize = memory_requirements.size;
-    memory_args.memoryTypeIndex = memory_type;
+    memory_args.allocationSize = arg->size;
+    memory_args.memoryTypeIndex = memory_type_index;
     auto memory_bad = vkAllocateMemory(
         g_vulkan->logical_device, &memory_args, g_vulkan->vk_allocator, &arg->memory);
     if (memory_bad)
-    {   VULKAN_ERROR( "Failed to allocate general memory object" );
+    {   VULKAN_ERRORF( "Failed to allocate general memory object: {}",
+                       string_VkResult( memory_bad ) );
         return false;
     }
     VkDeviceMemory _memory = arg->memory;
@@ -847,6 +874,23 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
     if(init_ok == false)
     {   return false;
     }
+
+    vulkan_mesh* vk_mesh = &g_vulkan->meshes.push_tail( {} );
+    vk_mesh->id = uuid_generate();
+    vk_mesh->vertex_buffer = vulkan_buffer_create(
+        arg->name, arg->vertexes_n * sizeof(v3) + 100, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+    );
+
+    // TODO: temporary test
+    // VkMemoryRequirements vertex_requirements {};
+    // vkGetBufferMemoryRequirements( g_vulkan->logical_device, vk_mesh->vertex_buffer.vertex_buffer,
+    //                              &vertex_requirements );
+    vkBindBufferMemory(
+        g_vulkan->logical_device,
+        vk_mesh->vertex_buffer.buffer,
+        g_vulkan->device_memory.memory,
+        0
+    );
 
     // TODO: This tiny part is used for setting up a new buffer
     // VkMemoryRequirements memory_requirements;
@@ -897,6 +941,7 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
     // };
     // TODO: remove before flight
     // vkFlushMappedMemoryRanges( g_vulkan->logical_device, 1, range );
+    return false;
     return true;
 }
 
@@ -1363,16 +1408,20 @@ PROC vulkan_init() -> fresult
                           { 0.f, 1.f, 0.f, 0.f },
                           { 1.f, 0.f, 0.f, 0.f }}
     };
-    // Don't need to initialize mesh, vulkan_mesh does it automatically
-    vulkan_mesh_init( &g_vulkan->test_triangle );
+
     // TODO: Create memory object here
     g_vulkan->device_memory = {
         .name = "global",
-        .size = g_vulkan->device_memory_chunk_size,
+        // -1 means max memory size
+        .size = -1,
         // TODO: Is HOST_COHERENT actually slower than DEVICE_LOCAL?
         .access_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
     };
     vulkan_memory_init( &g_vulkan->device_memory );
+
+    // Don't need to initialize mesh, vulkan_mesh does it automatically.
+    // Needs to run after vulkan_memory_init.
+    vulkan_mesh_init( &g_vulkan->test_triangle );
 
     /* SECTION: Render Pass - "An object that represents a set of
        framebuffer attachments and phases of rendering using those
@@ -1618,10 +1667,14 @@ PROC vulkan_draw() -> void
 
     // SECTION: Select mesh for drawing
     mesh* draw_mesh = &g_vulkan->test_triangle;
+    auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
+        return arg.id == draw_mesh->id; } );
+    vulkan_mesh* vk_draw_mesh = mesh_result.match;
+    ERROR_GUARD( mesh_result.match_found, "" );
 
 
     // Bind vertex/ data to pipeline data slots
-    VkBuffer vertex_buffers[] = { self->test_triangle_buffer };
+    VkBuffer vertex_buffers[] = { vk_draw_mesh->vertex_buffer.buffer };
     VkDeviceSize offsets[] = {0};
     u32 n_buffers = 1;
     vkCmdBindVertexBuffers( command_buffer, 0, n_buffers, vertex_buffers, offsets );

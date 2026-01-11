@@ -8,16 +8,7 @@ int main( int argc, char** argv )
     globals _global = {}; global = &_global;
     global->program_epoch = get_time();
 
-
     {
-        // TODO: Remove before flight
-        // Random dumb tests
-        uid id = uuid_generate();
-        TYON_LOGF( "Generated UUID as presented {}", id );
-        char* str = memory_allocate_raw( 20 );
-        platform::uuid_unparse( raw_pointer(&id.uuid), str );
-        TYON_LOGF( "Expected {}", str );
-
         test_allocators();
     }
 

@@ -46,12 +46,6 @@ struct vulkan_pipeline
 
 };
 
-struct vulkan_mesh
-{
-    uid id;
-    VkBuffer buffer;
-};
-
 struct vulkan_device_memory_entry
 {
     VkBuffer buffer {};
@@ -92,6 +86,15 @@ struct vulkan_buffer
     // State
     VkBuffer buffer {};
 };
+
+struct vulkan_mesh
+{
+    uid id;
+    vulkan_buffer vertex_buffer;
+    vulkan_buffer vertex_indicies_buffer;
+    vulkan_buffer color_buffer;
+};
+
 
 struct vulkan_mesh_draw_args
 {
@@ -144,10 +147,10 @@ struct vulkan_context
     VkAllocationCallbacks allocator_callback {};
     // A pointer to the callback, may be null to turn it off
     VkAllocationCallbacks* vk_allocator = nullptr;
-    i32 frame_max_inflight = 2;
+    i32 frame_max_inflight = 3;
     vulkan_swapchain swapchain;
 
-    vulkan_mesh meshes;
+    array<vulkan_mesh> meshes;
     vulkan_memory device_memory;
 
     // Test Data

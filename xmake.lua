@@ -25,9 +25,11 @@ target( "tachyon_engine" )
     set_toolchains( "clang" )
     set_policy("build.ccache", true)
 
+    local tachyon_lib_source = "external/tachyon_lib/source/"
     if has_config( "unity_build_enabled" ) then
        add_files(
-          "source/build_control/unity.cpp"
+          "source/build_control/unity.cpp",
+          tachyon_lib_source.."build_control/tachyon_lib_unity_core.cpp"
           -- "source/modules/*.mpp"
        )
     else
