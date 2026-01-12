@@ -53,7 +53,7 @@ struct vulkan_device_memory_entry
     i64 position {};
     i64 size {};
     i64 alignment {};
-    VkBufferUsageFlagBits usage_flag;
+    VkBufferUsageFlags usage_flag;
 };
 
 /* Devie memory managed by the platform layer */
@@ -91,7 +91,7 @@ struct vulkan_mesh
 {
     uid id;
     vulkan_buffer vertex_buffer;
-    vulkan_buffer vertex_indicies_buffer;
+    vulkan_buffer vertex_indexes_buffer;
     vulkan_buffer color_buffer;
 };
 

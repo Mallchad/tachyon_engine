@@ -826,7 +826,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
 
     if (arg->size == -1)
     {   VULKAN_LOG( "-1 Allocation size requested, Using max available heap size" );
-        arg->size = heap.size - 1000; // Magic number that seems to work. Chunk sizes or something?
+        arg->size = heap.size * 0.7; // Magic number that seems to work. Chunk sizes or something?
 
     }
     else if (arg->size > heap.size)
@@ -868,6 +868,38 @@ PROC vulkan_memory_init( vulkan_memory* arg ) -> fresult
     return true;
 }
 
+// Returns location of suballlocated memory
+PROC vulkan_memory_suballocate_buffer( vulkan_memory* arg, vulkan_buffer* buffer ) -> fresult
+{
+    bool capacity_exceeded = (arg->head_size + buffer->size > arg->size);
+    if (capacity_exceeded)
+    {   VULKAN_ERRORF( "No memory left in physical memory '{}', requested size: {}",
+                       arg->name, buffer->size );
+        return false;
+    }
+    VkMemoryRequirements requirements {};
+    vkGetBufferMemoryRequirements( g_vulkan->logical_device, buffer->buffer, &requirements );
+
+    vulkan_device_memory_entry entry;
+    entry.buffer = buffer->buffer;
+    entry.position = arg->head_size + binary_padding( requirements.alignment, arg->head_size );
+    entry.size = buffer->size;
+    entry.alignment = requirements.alignment;
+    entry.usage_flag = buffer->type;
+
+    arg->head_size += entry.size;
+    arg->used.push_tail( entry );
+
+    vkBindBufferMemory(
+        g_vulkan->logical_device,
+        buffer->buffer,
+        arg->memory,
+        entry.position
+    );
+
+    return true;
+}
+
 PROC vulkan_mesh_init( mesh* arg ) -> fresult
 {
     bool init_ok = mesh_init( arg );
@@ -876,21 +908,33 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
     }
 
     vulkan_mesh* vk_mesh = &g_vulkan->meshes.push_tail( {} );
-    vk_mesh->id = uuid_generate();
-    vk_mesh->vertex_buffer = vulkan_buffer_create(
-        arg->name, arg->vertexes_n * sizeof(v3) + 100, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
-    );
+    vk_mesh->id.uuid = arg->id.uuid;
+    // TODO: What is the buffer type of this supposed to be????
+    // vk_mesh->color_buffer = vulkan_buffer_create(
+        // arg->name, arg->vertexes_n * sizeof(v3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+    // );
+
+    if (arg->vertexes_n)
+    {   vk_mesh->vertex_buffer = vulkan_buffer_create(
+             arg->name, arg->vertexes_n * sizeof(v3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+         );
+        vulkan_memory_suballocate_buffer( &g_vulkan->device_memory, &vk_mesh->vertex_buffer );
+    }
+    if (arg->vertex_indexes_n)
+    {   vk_mesh->vertex_indexes_buffer = vulkan_buffer_create(
+            arg->name, arg->vertex_indexes_n * sizeof(i32), VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+        );
+        vulkan_memory_suballocate_buffer( &g_vulkan->device_memory, &vk_mesh->vertex_indexes_buffer );
+    }
+    // if (arg->vertex_colors.size() > 0)
+    // {   vulkan_memory_suballocate_buffer( g_vulkan->device_memory, vk_mesh->color_buffer );
+    // }
+
 
     // TODO: temporary test
     // VkMemoryRequirements vertex_requirements {};
     // vkGetBufferMemoryRequirements( g_vulkan->logical_device, vk_mesh->vertex_buffer.vertex_buffer,
     //                              &vertex_requirements );
-    vkBindBufferMemory(
-        g_vulkan->logical_device,
-        vk_mesh->vertex_buffer.buffer,
-        g_vulkan->device_memory.memory,
-        0
-    );
 
     // TODO: This tiny part is used for setting up a new buffer
     // VkMemoryRequirements memory_requirements;
