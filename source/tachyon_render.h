@@ -13,7 +13,7 @@ struct mesh
     fstring name;
     array<v3> vertexes;
     array<i32> vertex_indexes;
-    vector<v4> vertex_colors;
+    array<v4> vertex_colors;
 
     // These are used as statistics/convenience variables
 

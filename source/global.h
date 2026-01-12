@@ -47,6 +47,8 @@ public:
     e_render_backend render_backend = e_render_backend::vulkan;
     // prefer llvmpipe software renderer, either OpenGL or Vulkan
     bool graphics_llvmpipe = false;
+    // Insert breakpoint on errors
+    bool debugger_mode = false;
 
     /// Try to gracefully quit the program
     bool kill_program = false;

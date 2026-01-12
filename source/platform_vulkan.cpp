@@ -47,7 +47,9 @@ PROC vulkan_debug_callback(
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             TYON_BASE_ERRORF( category, "{}", callback_data->pMessage );
-            TYON_BREAK();
+            if (global->debugger_mode)
+            {   TYON_BREAK();
+            }
             break;
         default:
             TYON_BASE_LOGF( "Vulkan unknown_debug_category", "{}", callback_data->pMessage );
@@ -918,8 +920,9 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
     // );
 
     if (arg->vertexes_n)
-    {   vk_mesh->vertex_buffer = vulkan_buffer_create(
-             arg->name, arg->vertexes_n * sizeof(v3), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+    {   // Allocate for both vertexes and colours
+        vk_mesh->vertex_buffer = vulkan_buffer_create(
+             arg->name, arg->vertexes_n * sizeof(v3) * 2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
          );
         vulkan_memory_suballocate_buffer( &g_vulkan->device_memory, &vk_mesh->vertex_buffer );
     }
@@ -929,11 +932,12 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
         );
         vulkan_memory_suballocate_buffer( &g_vulkan->device_memory, &vk_mesh->vertex_indexes_buffer );
     }
+    // Shares buffer with vertexies
     // if (arg->vertex_colors.size() > 0)
     // {   vulkan_memory_suballocate_buffer( g_vulkan->device_memory, vk_mesh->color_buffer );
     // }
 
-    void* data;
+    void* _data {};
     VkResult vertex_map_ok = vkMapMemory(
         g_vulkan->logical_device,
         g_vulkan->device_memory.memory,
@@ -941,20 +945,36 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
         vk_mesh->vertex_buffer.size,
         // No known useful flags for this function
         0,
-        &data
+        &_data
     );
-    // TODO: transform into compatible format
-    // for ()
-    if (vertex_map_ok)
-    {   array<v3> vertex_transformed;
-        memcpy( data, vertex_transformed.data, size_t(vk_mesh->vertex_buffer.size) );
-    // TODO do this for indicies and color buffer
-    // TODO: Pretty sure we can just unmap this immediately right?
-    // g_vulkan->resources.push_cleanup([=] {
+    if (vertex_map_ok == VK_SUCCESS)
+    {
+        // Transform buffers into compatible format
+        // NOTE: We're copying directly into the mapped range and skipping intermediaries
+        raw_pointer data = _data;
+        v3* vertex_readhead = arg->vertexes.data;
+        v4* color_readhead = arg->vertex_colors.data;
+        v3* color_writehead = raw_pointer(arg->vertexes.data);
+        i64 color_offset = 0;
+        i64 vertex_offset = (sizeof(v3) * 3);
+        raw_pointer writehead = data;
+        for (int i_triangle = 0; i_triangle < arg->vertexes_n; ++i_triangle)
+        {
+            // 3 vctor3 colors 9 vector3 of xyz vertex coordinates == 12
+            writehead = data + (12 * sizeof(v3) * i_triangle);
+            // Grab 3 and a time and copy it into the current triangle position
+            vertex_readhead = arg->vertexes.address( i_triangle * 3 );
+            color_readhead = arg->vertex_colors.address(i_triangle * 3);
+            // Convert vector4 color to vector3 color
+            color_writehead = (writehead + color_offset);
+            color_writehead[0] = color_readhead[0];
+            color_writehead[1] = color_readhead[1];
+            color_writehead[2] = color_readhead[2];
+            memory_copy<v3>( writehead + vertex_offset, vertex_readhead, 3 );
+        }
 
-    // Unmaps all ranges at once
+        // NOTE: Unmaps all ranges associated with the memory at once
         vkUnmapMemory( g_vulkan->logical_device, g_vulkan->device_memory.memory );
-    // });
     }
 
     // Flush memory to make sure its used

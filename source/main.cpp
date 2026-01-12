@@ -32,7 +32,9 @@ int main( int argc, char** argv )
         else if (x_arg == "--opengl")
         { global->render_backend = e_render_backend::opengl; }
         else if (x_arg == "--graphics-llvmpipe")
-        { global-> graphics_llvmpipe = true; }
+        { global->graphics_llvmpipe = true; }
+        else if (x_arg == "--debugger-mode")
+        { global->debugger_mode = true; }
     }
 
 

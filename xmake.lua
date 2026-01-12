@@ -63,8 +63,8 @@ target( "tachyon_engine" )
     if has_config( "address_sanitizer" ) then
        print( "ENABLED Address sanitizer")
        -- add_links( "ubsan" )
+       add_links( "asan" )
     end
-    add_links( "asan" )
 
 
     -- Linux --
