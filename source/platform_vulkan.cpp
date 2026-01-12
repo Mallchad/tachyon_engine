@@ -681,8 +681,8 @@ PROC vulkan_swapchain_destroy( vulkan_swapchain* arg ) -> void
 
 PROC vulkan_buffer_create(
     fstring name,
-    i32 size,
-    VkBufferUsageFlags type, 
+    i64 size,
+    VkBufferUsageFlags type,
     VkSharingMode sharing_mode
 )   -> vulkan_buffer
 {
@@ -880,6 +880,7 @@ PROC vulkan_memory_suballocate_buffer( vulkan_memory* arg, vulkan_buffer* buffer
     VkMemoryRequirements requirements {};
     vkGetBufferMemoryRequirements( g_vulkan->logical_device, buffer->buffer, &requirements );
 
+    // Create memory entry
     vulkan_device_memory_entry entry;
     entry.buffer = buffer->buffer;
     entry.position = arg->head_size + binary_padding( requirements.alignment, arg->head_size );
@@ -888,7 +889,9 @@ PROC vulkan_memory_suballocate_buffer( vulkan_memory* arg, vulkan_buffer* buffer
     entry.usage_flag = buffer->type;
 
     arg->head_size += entry.size;
+    // Copy to important places
     arg->used.push_tail( entry );
+    buffer->memory = entry;
 
     vkBindBufferMemory(
         g_vulkan->logical_device,
@@ -930,62 +933,40 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
     // {   vulkan_memory_suballocate_buffer( g_vulkan->device_memory, vk_mesh->color_buffer );
     // }
 
+    void* data;
+    VkResult vertex_map_ok = vkMapMemory(
+        g_vulkan->logical_device,
+        g_vulkan->device_memory.memory,
+        vk_mesh->vertex_buffer.memory.position,
+        vk_mesh->vertex_buffer.size,
+        // No known useful flags for this function
+        0,
+        &data
+    );
+    // TODO: transform into compatible format
+    // for ()
+    if (vertex_map_ok)
+    {   array<v3> vertex_transformed;
+        memcpy( data, vertex_transformed.data, size_t(vk_mesh->vertex_buffer.size) );
+    // TODO do this for indicies and color buffer
+    // TODO: Pretty sure we can just unmap this immediately right?
+    // g_vulkan->resources.push_cleanup([=] {
 
-    // TODO: temporary test
-    // VkMemoryRequirements vertex_requirements {};
-    // vkGetBufferMemoryRequirements( g_vulkan->logical_device, vk_mesh->vertex_buffer.vertex_buffer,
-    //                              &vertex_requirements );
+    // Unmaps all ranges at once
+        vkUnmapMemory( g_vulkan->logical_device, g_vulkan->device_memory.memory );
+    // });
+    }
 
-    // TODO: This tiny part is used for setting up a new buffer
-    // VkMemoryRequirements memory_requirements;
-    // vkGetBufferMemoryRequirements( g_vulkan->logical_device, g_vulkan->test_triangle_buffer,
-    //                                &memory_requirements );
-
-    // Mandated by the spec when setting vertex bindings
-    // bool vertex_buffer_ok = format_props.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
-    // if (!vertex_buffer_ok)
-    // { VULKAN_ERROR( "Format feature vertex buffer not supported for specified format" ); }
-
-    // VkBufferCreateInfo buffer_args {};
-    // buffer_args.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    // buffer_args.size = sizeof(f32) * g_vulkan->test_triangle_data.size();
-    // buffer_args.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    // buffer_args.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    // auto triangle_buffer_bad = vkCreateBuffer(
-    //     g_vulkan->logical_device, &buffer_args, g_vulkan->vk_allocator, &g_vulkan->test_triangle_buffer);
-    // if (triangle_buffer_bad)
-    // {   VULKAN_ERROR( "Failed to create test triangle buffer" );
-    //     return false;
-    // }
-    // vulkan_label_object(
-    // (u64)g_vulkan->test_triangle_buffer, VK_OBJECT_TYPE_BUFFER, "test_triangle_buffer" );
-    // g_vulkan->resources.push_cleanup( [] {
-    //     VULKAN_LOG( "Destroying test triangle buffer" );
-    //     vkDestroyBuffer( g_vulkan->logical_device, g_vulkan->test_triangle_buffer,
-    //                      g_vulkan->vk_allocator );
-    // } );
-
-    // // vkBindBufferMemory( g_vulkan->logical_device, g_vulkan->test_triangle_buffer, arg->memory, 0 );
-
-    // void* data;
-    // vkMapMemory( g_vulkan->logical_device, arg->memory, 0, buffer_args.size, 0, &data );
-    // memcpy( data, g_vulkan->test_triangle_data.data, size_t(buffer_args.size) );
-    // // TODO: Pretty sure we can just unmap this immediately right?
-    // // g_vulkan->resources.push_cleanup([=] {
-    // vkUnmapMemory( g_vulkan->logical_device, arg->memory );
-    // // });
-
-    // // Flush memory to make sure its used
-    // VkMappedMemoryRange range {
-    //     .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-    //     .memory = arg->memory,
-    //     .offset = 0,
-    //     .size = buffer_args.size,
-    // };
+    // Flush memory to make sure its used
+    VkMappedMemoryRange range {
+        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = g_vulkan->device_memory.memory,
+        .offset = 0,
+        .size = u64(vk_mesh->vertex_buffer.size),
+    };
     // TODO: remove before flight
-    // vkFlushMappedMemoryRanges( g_vulkan->logical_device, 1, range );
-    return false;
+    // vkFlushMappedMemoryRanges( g_vulkan->logical_device, 1, &range );
+    // return false;
     return true;
 }
 

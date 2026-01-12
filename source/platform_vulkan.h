@@ -79,12 +79,14 @@ struct vulkan_buffer
     uid id;
     // Arguments
     fstring name;
-    i32 size = 0;
+    i64 size = 0;
     VkBufferUsageFlags type = VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
     VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE;
 
     // State
     VkBuffer buffer {};
+    // Associated memory allocated from device
+    vulkan_device_memory_entry memory;
 };
 
 struct vulkan_mesh
@@ -215,7 +217,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
 
 PROC vulkan_buffer_create(
     fstring name,
-    i32 size,
+    i64 size,
     VkBufferUsageFlags type,
     VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE
 )   -> vulkan_buffer;
