@@ -159,6 +159,7 @@ FUNCTION read_stl_file( fpath target )
             std::memcpy( &vertex_3, 60+ x_writehead, 12 );
 
             winding_alignment = 0;
+            // TODO: ngl I think this normal calculation is broken. like. BROKEN.
             normal_calculated = normalize( cross( vertex_2-vertex_1, vertex_3-vertex_1 ) );
             winding_alignment = dot( normal, normal_calculated );
 

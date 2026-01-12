@@ -288,7 +288,7 @@ target( "tachyon_shaders" )
 
     add_installfiles( "build/shaders/*spv", {prefixdir = "share/tachyon_engine/shaders"} )
 
-    before_build( function( target )
+    after_build( function( target )
           import("core.project.config")
           output_dir = (target:targetdir() or "") .. "/shaders"
           build_root = config.get("buildir")
@@ -297,6 +297,7 @@ target( "tachyon_shaders" )
           -- Copy shaders into build directory so it can find them more easily per-build mode
 
           shader_dir = build_root.."/shaders/"
+          os.tryrm( output_dir )
           error = os.trycp( shader_dir, output_dir )
           print("Copy binary shaders to output directory success:", error )
     end )

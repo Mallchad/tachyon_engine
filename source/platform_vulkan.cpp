@@ -249,15 +249,15 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
      2 - Texture Interpolated Diffuse Colour
     */
     array<VkVertexInputBindingDescription> bindings {
-        // {   // Vertex Normal binding
-        //     .binding = 0, // vertex attribute binding/slot. leave as 0
-        //     .stride = 4 * 6, // 3 32-bit vertexes + 3 colours 32-bit
-        //     // Not sure what this is. think it means pulling from instance wide stuffs?
-        //     .inputRate = VK_VERTEX_INPUT_RATE_INSTANCE,
-        // },
+        {   // Vertex Normal binding
+            .binding = 0, // vertex attribute binding/slot. leave as 0
+            .stride = 4 * 6, // 1 v3 color, 1 v3 vertex
+            // Not sure what this is. think it means pulling from instance wide stuffs?
+            .inputRate = VK_VERTEX_INPUT_RATE_INSTANCE,
+        },
         {   // Vertex Binding
             .binding = 0, // vertex attribute binding/slot. leave as 0
-            .stride = 4 * 6, // 3 32-bit vertexes + 3 colours 32-bit
+            .stride = 4 * 6, // 1 v3 color, 1 v3 vertex
             // Not sure what this is. think it means pulling from instance wide stuffs?
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
         }
@@ -265,7 +265,7 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
 
     array<VkVertexInputAttributeDescription> vertex_attributes {
         {
-            .location = 2, // shader specific binding location
+            .location = 0, // shader specific binding location
             .binding = 0,
             // This uses the color format for some strange reason. This is a 32-bit vec3
             .format = VK_FORMAT_R32G32B32_SFLOAT,
@@ -276,7 +276,7 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
             .binding = 0,
             // This uses the color format for some strange reason. This is a 32-bit vec3
             .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset = 4 * 3, // 3 32-bit normals to vertex data
+            .offset =  4 * 3, // 3 32-bit normals to vertex data
         }
     };
 
@@ -953,24 +953,17 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
         // NOTE: We're copying directly into the mapped range and skipping intermediaries
         raw_pointer data = _data;
         v3* vertex_readhead = arg->vertexes.data;
-        v4* color_readhead = arg->vertex_colors.data;
-        v3* color_writehead = raw_pointer(arg->vertexes.data);
-        i64 color_offset = 0;
-        i64 vertex_offset = (sizeof(v3) * 3);
+        i64 vertex_offset = (sizeof(v3));
+        i64 vertex_stride = (sizeof(v3) * 2);
         raw_pointer writehead = data;
-        for (int i_triangle = 0; i_triangle < arg->vertexes_n; ++i_triangle)
+        for (int i_vertex = 0; i_vertex < arg->vertexes_n; ++i_vertex)
         {
-            // 3 vctor3 colors 9 vector3 of xyz vertex coordinates == 12
-            writehead = data + (12 * sizeof(v3) * i_triangle);
+            // TODO: Fill in normals
+            writehead = data + (vertex_stride * i_vertex);
             // Grab 3 and a time and copy it into the current triangle position
-            vertex_readhead = arg->vertexes.address( i_triangle * 3 );
-            color_readhead = arg->vertex_colors.address(i_triangle * 3);
-            // Convert vector4 color to vector3 color
-            color_writehead = (writehead + color_offset);
-            color_writehead[0] = color_readhead[0];
-            color_writehead[1] = color_readhead[1];
-            color_writehead[2] = color_readhead[2];
-            memory_copy<v3>( writehead + vertex_offset, vertex_readhead, 3 );
+            vertex_readhead = arg->vertexes.address( i_vertex );
+            // memory_copy<v3>( writehead + 0, normal_readhead, 1 );
+            memory_copy<v3>( writehead + vertex_offset, vertex_readhead, 1 );
         }
 
         // NOTE: Unmaps all ranges associated with the memory at once
