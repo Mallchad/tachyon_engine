@@ -873,6 +873,10 @@ PROC vulkan_memory_init( vulkan_memory* arg ) -> fresult
 // Returns location of suballlocated memory
 PROC vulkan_memory_suballocate_buffer( vulkan_memory* arg, vulkan_buffer* buffer ) -> fresult
 {
+    if (arg->memory == nullptr)
+    {   VULKAN_ERRORF( "No memory device in object '{}'", arg->name );
+        return false;
+    }
     bool capacity_exceeded = (arg->head_size + buffer->size > arg->size);
     if (capacity_exceeded)
     {   VULKAN_ERRORF( "No memory left in physical memory '{}', requested size: {}",
@@ -908,7 +912,8 @@ PROC vulkan_memory_suballocate_buffer( vulkan_memory* arg, vulkan_buffer* buffer
 PROC vulkan_mesh_init( mesh* arg ) -> fresult
 {
     bool init_ok = mesh_init( arg );
-    if(init_ok == false)
+    bool mesh_uninitialized = (init_ok == false && arg->id.valid() == false);
+    if(mesh_uninitialized)
     {   return false;
     }
 
@@ -937,6 +942,9 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
     // {   vulkan_memory_suballocate_buffer( g_vulkan->device_memory, vk_mesh->color_buffer );
     // }
 
+    if ( g_vulkan->device_memory.memory == nullptr)
+    {   return false;
+    }
     void* _data {};
     VkResult vertex_map_ok = vkMapMemory(
         g_vulkan->logical_device,
