@@ -719,6 +719,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
                        arg->id, arg->name );
         return false;
     }
+    arg->id = uuid_generate();
     /* SECTION: Create vertex buffer for describing a mesh
 
        Here we create device memory to hold the data describing a mesh, like
@@ -741,7 +742,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
     array<vulkan_buffer> requirement_buffers;
     array<VkMemoryRequirements> requirement_results;
     requirement_buffers.push_tail( vulkan_buffer_create( 
-        "requirements_transfer", 32, VK_BUFFER_USAGE_TRANSFER_SRC_BIT ));
+        "requirements_transfer", 1_GiB, VK_BUFFER_USAGE_TRANSFER_SRC_BIT ));
     requirement_buffers.push_tail( vulkan_buffer_create( 
         "requirements_uniform_texel", 32, VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT ) );
     requirement_buffers.push_tail( vulkan_buffer_create( 
@@ -782,6 +783,9 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
             shared_bits &= x_requirements->memoryTypeBits;
             VULKAN_LOGF( "memoryTypeBits {} '{}'", type_bits, name );
         }
+        else
+        {   VULKAN_LOG( "Failed to even create a buffer" );
+        }
     }
 
     // SECTION: Search through available memory types to get a valid type index
@@ -800,15 +804,29 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
     VkMemoryPropertyFlags memory_filter = arg->access_flags;
 
     bool match = false;
+    bool x_match = false;
     i32 memory_type_index = 0;
     for (i32 i=0; i < memory_props.memoryTypeCount; ++i)
     {
-        // TYON_BREAK();
-        match = false;
+        VkMemoryType x_memory_type = memory_props.memoryTypes[ i ];
+        VkMemoryHeap x_heap = memory_props.memoryHeaps[ x_memory_type.heapIndex ];
+
+        x_match = false;
         bool requirement_fulfilled = memory_requirements.memoryTypeBits & (1 << i);
-        bool filter_match = (memory_props.memoryTypes[i].propertyFlags & memory_filter);
-        match = (requirement_fulfilled && filter_match);
-        if (match) { memory_type_index = i; }
+        bool filter_match = (x_memory_type.propertyFlags & memory_filter);
+        x_match = (requirement_fulfilled && filter_match);
+
+        // Print heap statistics
+        VULKAN_LOGF( "Memory Type Property Flags: {:b}", x_memory_type.propertyFlags );
+        VULKAN_LOGF(
+            "Heap Stats: Heap Index: [{}] Heap Size : [{}] Heap Flags: [{:b}]",
+            i, x_heap.size, x_heap.flags
+        );
+
+        if (x_match && match == false)
+        {   memory_type_index = i;
+            match = true;
+        }
     }
     if (match == false)
     {   VULKAN_ERRORF( "Couldn't find suitible memory type for memory object {} '{}' ",
@@ -828,8 +846,8 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
 
     if (arg->size == -1)
     {   VULKAN_LOG( "-1 Allocation size requested, Using max available heap size" );
-        arg->size = heap.size * 0.7; // Magic number that seems to work. Chunk sizes or something?
-
+        arg->size = heap.size-1
+;
     }
     else if (arg->size > heap.size)
     {   VULKAN_ERRORF(
@@ -1455,12 +1473,25 @@ PROC vulkan_init() -> fresult
                           { 1.f, 0.f, 0.f, 0.f }}
     };
 
+    fstring utah_teapot_file = linux_search_file(
+        // "utah_teapot.stl", { std::filesystem::path( global->project_root ) / "assets" } );
+        "articulated_whale_shark.stl", { std::filesystem::path( global->project_root ) / "assets" } );
+    fmesh test_utah_teapot = read_stl_file( utah_teapot_file );
+    g_vulkan->test_teapot = {
+        .name = "test_utah_teapot",
+        .vertexes = test_utah_teapot.vertex_buffer,
+        .faces_n = i32(test_utah_teapot.face_count),
+        .vertexes_n = i32(test_utah_teapot.vertex_count),
+        .vertex_indexes_n = i32(test_utah_teapot.index_count)
+    };
+
     // TODO: Create memory object here
     g_vulkan->device_memory = {
         .name = "global",
         // -1 means max memory size
-        .size = -1,
+        .size = 1_GiB,
         // TODO: Is HOST_COHERENT actually slower than DEVICE_LOCAL?
+        // .access_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         .access_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
     };
     vulkan_memory_init( &g_vulkan->device_memory );
@@ -1468,6 +1499,7 @@ PROC vulkan_init() -> fresult
     // Don't need to initialize mesh, vulkan_mesh does it automatically.
     // Needs to run after vulkan_memory_init.
     vulkan_mesh_init( &g_vulkan->test_triangle );
+    vulkan_mesh_init( &g_vulkan->test_teapot );
 
     /* SECTION: Render Pass - "An object that represents a set of
        framebuffer attachments and phases of rendering using those
@@ -1713,6 +1745,7 @@ PROC vulkan_draw() -> void
 
     // SECTION: Select mesh for drawing
     mesh* draw_mesh = &g_vulkan->test_triangle;
+    // mesh* draw_mesh = &g_vulkan->test_teapot;
     auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
         return arg.id == draw_mesh->id; } );
     vulkan_mesh* vk_draw_mesh = mesh_result.match;

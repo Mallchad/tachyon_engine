@@ -7,11 +7,13 @@ struct render_context
     v2 window_size = { 1920.0f, 1080.0f };
 };
 
-struct mesh
+struct
+mesh
 {
     uid id;
     fstring name;
     array<v3> vertexes;
+    array<v3> vertex_normals;
     array<i32> vertex_indexes;
     array<v4> vertex_colors;
 

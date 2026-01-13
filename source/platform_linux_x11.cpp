@@ -125,7 +125,7 @@ FUNCTION x11_window_open()
 
 PROC x11_window_close( window_id target )
 {
-    Window target_window = g_x11->window_list[ target.cast() ];
+    Window target_window = g_x11->window_list[ target.cast() ].id;
     XUnmapWindow( g_x11->server, target_window );
     XDestroyWindow( g_x11->server, target_window );
     return true;
