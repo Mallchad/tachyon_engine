@@ -3,6 +3,8 @@
 
 vulkan_context* g_vulkan = nullptr;
 
+// TODO: Need to setup uniform so that we can chuck worldspce things into the test teapot
+
 namespace dyn
 {
     PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
@@ -1481,24 +1483,42 @@ PROC vulkan_init() -> fresult
         "utah_teapot.stl", { std::filesystem::path( global->project_root ) / "assets" } );
     fstring whale_file = linux_search_file(
         "articulated_whale_shark.stl", { std::filesystem::path( global->project_root ) / "assets" } );
-    fmesh test_utah_teapot = read_stl_file( utah_teapot_file );
+    fmesh teapot = read_stl_file( utah_teapot_file );
     fmesh whale = read_stl_file( whale_file );
     g_vulkan->test_teapot = {
         .name = "test_utah_teapot",
-        .vertexes = test_utah_teapot.vertex_buffer,
-        .faces_n = i32(test_utah_teapot.face_count),
-        .vertexes_n = i32(test_utah_teapot.vertex_count),
-        .vertex_indexes_n = i32(test_utah_teapot.index_count)
+        .vertexes {},
+        .vertex_normals {},
+        .faces_n = i32(teapot.face_count),
+        .vertexes_n = i32(teapot.vertex_count),
+        .vertex_indexes_n = i32(teapot.index_count)
     };
 
     g_vulkan->test_whale = {
         .name = "test_articulated_whale",
-        .vertexes = whale.vertex_buffer,
+        .vertexes {},
+        .vertex_normals {},
         .faces_n = i32(whale.face_count),
         .vertexes_n = i32(whale.vertex_count),
         .vertex_indexes_n = i32(whale.index_count)
     };
 
+    {
+        mesh& teapot_ = g_vulkan->test_teapot;
+        mesh& whale_ = g_vulkan->test_whale;
+        teapot_.vertexes.resize( teapot.vertex_count );
+        teapot_.vertex_indexes.resize( teapot.vertex_count );
+        whale_.vertexes.resize( whale.vertex_count );
+        whale_.vertex_indexes.resize( whale.vertex_count );
+        for (int i_vertex=0; i_vertex < teapot.vertex_count; ++i_vertex)
+        {   teapot_.vertexes[ i_vertex ] = teapot.vertex_buffer[ i_vertex *2 +1 ];
+            teapot_.vertex_normals[ i_vertex ] = teapot.vertex_buffer[ i_vertex *2 ];
+        }
+        for (int i_vertex=0; i_vertex < whale.vertex_count; ++i_vertex)
+        {   whale_.vertexes[ i_vertex ] = whale.vertex_buffer[ i_vertex *2 +1 ];
+            whale_.vertex_normals[ i_vertex ] = whale.vertex_buffer[ i_vertex *2 ];
+        }
+    }
     // TODO: Create memory object here
     g_vulkan->device_memory = {
         .name = "global",
@@ -1759,9 +1779,9 @@ PROC vulkan_draw() -> void
     vkCmdSetScissor( command_buffer, 0, 1, &scissor_config );
 
     // SECTION: Select mesh for drawing
-    mesh* draw_mesh = &g_vulkan->test_triangle;
+    // mesh* draw_mesh = &g_vulkan->test_triangle;
     // mesh* draw_mesh = &g_vulkan->test_whale;
-    // mesh* draw_mesh = &g_vulkan->test_teapot;
+    mesh* draw_mesh = &g_vulkan->test_teapot;
     auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
         return arg.id == draw_mesh->id; } );
     vulkan_mesh* vk_draw_mesh = mesh_result.match;
