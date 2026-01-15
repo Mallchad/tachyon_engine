@@ -160,6 +160,7 @@ struct vulkan_context
     VkBuffer test_triangle_buffer {};
     mesh test_triangle;
     mesh test_teapot;
+    mesh test_whale;
     array<f32> test_triangle_data = {
         0.f, 0.f, 1.f, // TODO: Remove temporary colour
         -0.5f, -0.4330127019f, 0.0f,

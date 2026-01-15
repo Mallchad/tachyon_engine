@@ -64,8 +64,15 @@ PROC mesh_init( mesh* arg ) -> fresult
     }
 
     arg->id = uuid_generate();
-    arg->faces_n = arg->vertexes.size();
-    arg->vertexes_n = arg->vertexes.size() * 3;
+    arg->faces_n = arg->vertexes.size() / 3;
+    arg->vertexes_n = arg->vertexes.size();
     arg->vertex_indexes_n = arg->vertex_indexes.size();
+
+    TYON_LOG( "Created mesh: ")
+    TYON_LOGF( "    ID: {}", arg->id );
+    TYON_LOGF( "    Name: {}", arg->name );
+    TYON_LOGF( "    Faces: {}", arg->faces_n );
+    TYON_LOGF( "    Vertexes: {}", arg->vertexes_n );
+    TYON_LOGF( "    Vertex Indexes: {}", arg->vertex_indexes_n );
     return true;
 }

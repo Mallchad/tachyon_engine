@@ -32,7 +32,7 @@ layout(std140, binding = 0) uniform frame_data
 
 const vec3 arbitrary_axis = vec3( 0.662f, 0.2f, 0.722f );
 
-const float scale = 1;
+const float scale = 1.0;
 // Translation
 vec3 trans = vec3( 0.0, 50.0, 0.0 );
 
@@ -183,6 +183,11 @@ void main()
     v_normal = normalize(norm).xyz;
 
     v_position = vertex.xyz;
+    // TODO: DEBUG
+    // v_position = vert.xyz;
+    // gl_Position = vec4( vert, 1.0 );
+
+    // v_normal = vec3( 0.0, 0.0, 1.0 );
     v_color = vec4( 0.8, 0.0, 0.0 , 1.0 ) ;
     world_matrix = projection * cam;
 

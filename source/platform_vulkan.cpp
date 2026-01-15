@@ -249,12 +249,7 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
      2 - Texture Interpolated Diffuse Colour
     */
     array<VkVertexInputBindingDescription> bindings {
-        {   // Vertex Normal binding
-            .binding = 0, // vertex attribute binding/slot. leave as 0
-            .stride = 4 * 6, // 1 v3 color, 1 v3 vertex
-            // Not sure what this is. think it means pulling from instance wide stuffs?
-            .inputRate = VK_VERTEX_INPUT_RATE_INSTANCE,
-        },
+        /** NOTE: If we're only using 1 buffer to represent multiple values we only need 1 binding */
         {   // Vertex Binding
             .binding = 0, // vertex attribute binding/slot. leave as 0
             .stride = 4 * 6, // 1 v3 color, 1 v3 vertex
@@ -264,13 +259,13 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
     };
 
     array<VkVertexInputAttributeDescription> vertex_attributes {
-        {
-            .location = 0, // shader specific binding location
-            .binding = 0,
-            // This uses the color format for some strange reason. This is a 32-bit vec3
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset = 0, // 3 32-bit normals to vertex data
-        },
+        // {
+        //     .location = 0, // shader specific binding location
+        //     .binding = 0,
+        //     // This uses the color format for some strange reason. This is a 32-bit vec3
+        //     .format = VK_FORMAT_R32G32B32_SFLOAT,
+        //     .offset = 0, // 3 32-bit normals to vertex data
+        // },
         {
             .location = 1, // shader specific binding location
             .binding = 0,
@@ -300,6 +295,8 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
     raster_args.polygonMode = VK_POLYGON_MODE_FILL;
     raster_args.lineWidth = 1.0f;
     raster_args.cullMode = VK_CULL_MODE_BACK_BIT;
+    // TODO: TEST no cull mode
+    // raster_args.cullMode = VK_CULL_MODE_NONE;
     raster_args.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     raster_args.depthBiasEnable = VK_FALSE;
     raster_args.depthBiasConstantFactor = 0.0f;         // Optional
@@ -708,7 +705,7 @@ PROC vulkan_buffer_create(
         return result;
     }
     result.id = uuid_generate(); // Valid objects have a non-zero UUID
-    vulkan_label_object( (u64)result.buffer, VK_OBJECT_TYPE_BUFFER, "name" );
+    vulkan_label_object( (u64)result.buffer, VK_OBJECT_TYPE_BUFFER, name );
     return result;
 }
 
@@ -943,9 +940,10 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
     // );
 
     if (arg->vertexes_n)
-    {   // Allocate for both vertexes and colours
+    {   // Space require for both normals and vertexes in the same buffer,
+        i64 total_size = (arg->vertexes_n * sizeof(v3) *2);
         vk_mesh->vertex_buffer = vulkan_buffer_create(
-             arg->name, arg->vertexes_n * sizeof(v3) * 2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+             arg->name, total_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
          );
         vulkan_memory_suballocate_buffer( &g_vulkan->device_memory, &vk_mesh->vertex_buffer );
     }
@@ -1434,11 +1432,11 @@ PROC vulkan_init() -> fresult
     vulkan_shader fragment_shader {};
 
     vertex_shader.name = "test_triangle";
-    vertex_shader.code.filename = "shaders/test_triangle.vert.spv";
+    vertex_shader.code.filename = "shaders/test_utah_teapot.vert.spv";
     vertex_shader.code_binary = true;
     vertex_shader.stage_flag = VK_SHADER_STAGE_VERTEX_BIT;
     fragment_shader.name = "test_triangle";
-    fragment_shader.code.filename = "shaders/test_triangle.frag.spv";
+    fragment_shader.code.filename = "shaders/test_utah_teapot.frag.spv";
     fragment_shader.code_binary = true;
     fragment_shader.stage_flag = VK_SHADER_STAGE_FRAGMENT_BIT;
 
@@ -1465,24 +1463,40 @@ PROC vulkan_init() -> fresult
     // Initialize test mesh data
     g_vulkan->test_triangle = mesh {
         .name = "test_triangle",
-        .vertexes = {{-0.5f, -0.4330127019f, 0.0f},
-                     {0.5f, -0.4330127019f, 0.0f },
-                     {0.0f,  0.4330127019f, 0.0f }},
+        // Opengl Coordinates
+        // .vertexes = {{-0.5f, -0.4330127019f, 0.0f},
+        //              {0.5f, -0.4330127019f, 0.0f },
+        //              {0.0f,  0.4330127019f, 0.0f }},
+        // Z up Unreal coordinates
+        .vertexes = {{-0.5f, 0.0f, -0.4330127019f },
+                     {0.5f, 0.0f,  -0.4330127019f },
+                     {0.0f,  0.0f, 0.4330127019f  }},
+
         .vertex_colors = {{ 0.f, 0.f, 1.f, 0.f },
                           { 0.f, 1.f, 0.f, 0.f },
                           { 1.f, 0.f, 0.f, 0.f }}
     };
 
     fstring utah_teapot_file = linux_search_file(
-        // "utah_teapot.stl", { std::filesystem::path( global->project_root ) / "assets" } );
+        "utah_teapot.stl", { std::filesystem::path( global->project_root ) / "assets" } );
+    fstring whale_file = linux_search_file(
         "articulated_whale_shark.stl", { std::filesystem::path( global->project_root ) / "assets" } );
     fmesh test_utah_teapot = read_stl_file( utah_teapot_file );
+    fmesh whale = read_stl_file( whale_file );
     g_vulkan->test_teapot = {
         .name = "test_utah_teapot",
         .vertexes = test_utah_teapot.vertex_buffer,
         .faces_n = i32(test_utah_teapot.face_count),
         .vertexes_n = i32(test_utah_teapot.vertex_count),
         .vertex_indexes_n = i32(test_utah_teapot.index_count)
+    };
+
+    g_vulkan->test_whale = {
+        .name = "test_articulated_whale",
+        .vertexes = whale.vertex_buffer,
+        .faces_n = i32(whale.face_count),
+        .vertexes_n = i32(whale.vertex_count),
+        .vertex_indexes_n = i32(whale.index_count)
     };
 
     // TODO: Create memory object here
@@ -1500,6 +1514,7 @@ PROC vulkan_init() -> fresult
     // Needs to run after vulkan_memory_init.
     vulkan_mesh_init( &g_vulkan->test_triangle );
     vulkan_mesh_init( &g_vulkan->test_teapot );
+    vulkan_mesh_init( &g_vulkan->test_whale );
 
     /* SECTION: Render Pass - "An object that represents a set of
        framebuffer attachments and phases of rendering using those
@@ -1745,6 +1760,7 @@ PROC vulkan_draw() -> void
 
     // SECTION: Select mesh for drawing
     mesh* draw_mesh = &g_vulkan->test_triangle;
+    // mesh* draw_mesh = &g_vulkan->test_whale;
     // mesh* draw_mesh = &g_vulkan->test_teapot;
     auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
         return arg.id == draw_mesh->id; } );
@@ -1754,7 +1770,9 @@ PROC vulkan_draw() -> void
 
     // Bind vertex/ data to pipeline data slots
     VkBuffer vertex_buffers[] = { vk_draw_mesh->vertex_buffer.buffer };
-    VkDeviceSize offsets[] = {0};
+    /** NOTE: This is the offset for the binding being described by the
+     * buffer. NOT the buffer in a memory object. */
+    VkDeviceSize offsets[] = { u64(0) };
     u32 n_buffers = 1;
     vkCmdBindVertexBuffers( command_buffer, 0, n_buffers, vertex_buffers, offsets );
 
