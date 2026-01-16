@@ -11,8 +11,11 @@
 
 
 // Platform Dependencies
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
+#include "../external/xorg_xlib/include/X11/Xlib.h"
+#include "../external/xorg_xlib/include/X11/Xlib.h"
+#include "../external/xorg_proto/include/X11/Xatom.h"
+#include "../external/opengl/api/GL/glcorearb.h"
+#include "../external/opengl/api/GL/glext.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wkeyword-macro"
