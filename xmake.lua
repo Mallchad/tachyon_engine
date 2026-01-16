@@ -70,7 +70,10 @@ target( "tachyon_engine" )
     -- Linux --
     add_links( "dl", "X11", "GL", "uuid", "vulkan" )
 
-    add_defines( 'TRIANGULATE_PROJECT_ROOT="$(projectdir)"' )
+    add_defines(
+       'TRIANGULATE_PROJECT_ROOT="$(projectdir)"',
+       "TYON_LIB_MERGED_UNITY=0"
+    )
     set_policy("check.auto_ignore_flags", false)
 
     if is_mode( "release" ) then

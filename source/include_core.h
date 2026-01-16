@@ -25,10 +25,9 @@
 
 struct fmesh;
 
-#include <tachyon_code_helpers.h>
 #include "core.hpp"
 
-#include "include_tachyon_lib_core.h"
+#include "../external/tachyon_lib/source/include_tachyon_lib_core.h"
 using namespace tyon;
 
 #include "global.h"
