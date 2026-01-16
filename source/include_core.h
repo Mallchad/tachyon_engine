@@ -31,7 +31,6 @@ struct fmesh;
 using namespace tyon;
 
 #include "global.h"
-#include "table.h"
 #include "memory.hpp"
 #include "string.hpp"
 #include "error.hpp"

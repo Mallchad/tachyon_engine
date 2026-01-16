@@ -13,7 +13,6 @@
 #include "../tachyon_render.cpp"
 #include "../renderer.cpp"
 #include "../string.cpp"
-#include "../table.cpp"
 #include "../time.cpp"
 
 #ifndef TYON_LIB_MERGED_UNITY

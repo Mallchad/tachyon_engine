@@ -53,21 +53,6 @@ int main( int argc, char** argv )
 
         render_init();
 
-        // Initialize lua related things
-        // Make C libraries available to Lua
-        luaL_openlibs( lua );
-        TYON_BASE_LOG( "lua", "Lua VM Initialized" );
-        if (luaL_dofile( lua, "/mnt/tmp/repos/tachyon_engine/content/options.lua" ))
-        { throw 1; };
-
-        // Test Lua Stuff
-        lua_table options;
-        options.name = "options";
-        options.lua = lua;
-        options["foo"] = 42002.f;
-        if (luaL_dofile( lua, "/mnt/tmp/repos/tachyon_engine/content/early_start.lua" ))
-        { throw 1; };
-
         while ( global->kill_program == false )
         {
             auto epoch_elapsed = std::chrono::steady_clock::now() - global->program_epoch;
