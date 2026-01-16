@@ -4,3 +4,12 @@
 [submodule "external/tachyon_lib"]
 	path = external/tachyon_lib
 	url = https://github.com/Mallchad/tachyon_lib
+[submodule "external/opengl"]
+	path = external/opengl
+	url = https://github.com/KhronosGroup/OpenGL-Registry.git
+[submodule "external/xorg_xlib1"]
+	path = external/xorg_xlib
+	url = https://gitlab.freedesktop.org/xorg/lib/libx11.git
+[submodule "external/xorg_proto"]
+	path = external/xorg_proto
+	url = https://gitlab.freedesktop.org/xorg/proto/xorgproto.git

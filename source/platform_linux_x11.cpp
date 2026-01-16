@@ -6,6 +6,8 @@ namespace tyon
 
 x11_context* g_x11 = nullptr;
 
+#if TYON_X11_ON
+
 PROC x11_input_init() -> void
 {
 
@@ -251,5 +253,16 @@ PROC x11_tick()
     if (g_x11 == nullptr) { return; }
     x11_event_process();
 }
+
+#endif //  TYON_X11_ON
+
+void
+x11_init() {}
+
+void
+x11_destroy() {}
+
+window_id
+x11_window_open() { return {}; }
 
 }

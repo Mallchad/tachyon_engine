@@ -1,15 +1,22 @@
 
 #include "include_core.h"
 
-#include <GL/gl.h>
-#include <GL/glx.h>
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
+// #include <GL/gl.h>
+// #include <GL/glx.h>
+#include "../external/xorg_xlib/include/X11/Xlib.h"
+#include "../external/xorg_xlib/include/X11/Xlib.h"
+#include "../external/xorg_proto/include/X11/Xatom.h"
+#include "../external/opengl/api/GL/glcorearb.h"
+#include "../external/opengl/api/GL/glext.h"
+
+
+// #include <X11/Xlib.h>
+// #include <X11/Xatom.h>
 
 // GL Function Prototypes
-#include <GL/glcorearb.h>
-#include <GL/glext.h>
-#include <GL/glxext.h>
+// #include <GL/glcorearb.h>
+// #include <GL/glext.h>
+// #include <GL/glxext.h>
 
 using namespace tyon;
 using namespace std::chrono_literals;
@@ -115,200 +122,200 @@ fresult
 FUNCTION def::initialize()
 {
     TIME_SCOPED_FUNCTION();
-    signal(SIGINT, sigterm_handler);
-    global = globals::get_primary();
-    if (global == nullptr)
-    {
-        std::cout << "Could not aquire global database, cannot manage program safely \n";
-        throw(1);
+    // signal(SIGINT, sigterm_handler);
+    // global = globals::get_primary();
+    // if (global == nullptr)
+    // {
+    //     std::cout << "Could not aquire global database, cannot manage program safely \n";
+    //     throw(1);
 
-    }
+    // }
 
-    vglx_context_list.reserve(100);
+    // vglx_context_list.reserve(100);
 
-                                // -- GLX and X11 Initialization --
-    ld::glXCreateContextAttribsARB = ptr_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
-       glXGetProcAddress(            ptr_cast<const GLubyte*>( "glXCreateContextAttribsARB" )));
-    ld::glXChooseFBConfig          = ptr_cast<PFNGLXCHOOSEFBCONFIGPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXChooseFBConfig" )));
-    ld::glXSwapIntervalMESA        = ptr_cast<PFNGLXSWAPINTERVALMESAPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalMESA" )));
-    ld::glXSwapIntervalEXT         = ptr_cast<PFNGLXSWAPINTERVALEXTPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalEXT" )));
-    ld::glXSwapIntervalSGI        = ptr_cast<PFNGLXSWAPINTERVALSGIPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalSGI" )));
+    //                             // -- GLX and X11 Initialization --
+    // ld::glXCreateContextAttribsARB = ptr_cast<PFNGLXCREATECONTEXTATTRIBSARBPROC>(
+    //    glXGetProcAddress(            ptr_cast<const GLubyte*>( "glXCreateContextAttribsARB" )));
+    // ld::glXChooseFBConfig          = ptr_cast<PFNGLXCHOOSEFBCONFIGPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXChooseFBConfig" )));
+    // ld::glXSwapIntervalMESA        = ptr_cast<PFNGLXSWAPINTERVALMESAPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalMESA" )));
+    // ld::glXSwapIntervalEXT         = ptr_cast<PFNGLXSWAPINTERVALEXTPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalEXT" )));
+    // ld::glXSwapIntervalSGI        = ptr_cast<PFNGLXSWAPINTERVALSGIPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glXSwapIntervalSGI" )));
 
-    ld::glBindBuffer               = ptr_cast<PFNGLBINDBUFFERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindBuffer" )));
-    ld::glBindBufferBase           = ptr_cast<PFNGLBINDBUFFERBASEPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindBufferBase" )));
-    ld::glGenBuffers               = ptr_cast<PFNGLGENBUFFERSPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGenBuffers" )));
-    ld::glBufferData               = ptr_cast<PFNGLBUFFERDATAPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBufferData" )));
-    ld::glUniformBlockBinding      = ptr_cast<PFNGLUNIFORMBLOCKBINDINGPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glUniformBlockBinding" )));
-    ld::glCreateShader             = ptr_cast<PFNGLCREATESHADERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glCreateShader" )));
-    ld::glShaderSource             = ptr_cast<PFNGLSHADERSOURCEPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glShaderSource" )));
-    ld::glCompileShader            = ptr_cast<PFNGLCOMPILESHADERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glCompileShader" )));
+    // ld::glBindBuffer               = ptr_cast<PFNGLBINDBUFFERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindBuffer" )));
+    // ld::glBindBufferBase           = ptr_cast<PFNGLBINDBUFFERBASEPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindBufferBase" )));
+    // ld::glGenBuffers               = ptr_cast<PFNGLGENBUFFERSPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGenBuffers" )));
+    // ld::glBufferData               = ptr_cast<PFNGLBUFFERDATAPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBufferData" )));
+    // ld::glUniformBlockBinding      = ptr_cast<PFNGLUNIFORMBLOCKBINDINGPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glUniformBlockBinding" )));
+    // ld::glCreateShader             = ptr_cast<PFNGLCREATESHADERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glCreateShader" )));
+    // ld::glShaderSource             = ptr_cast<PFNGLSHADERSOURCEPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glShaderSource" )));
+    // ld::glCompileShader            = ptr_cast<PFNGLCOMPILESHADERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glCompileShader" )));
 
-    ld::glGetShaderiv              = ptr_cast<PFNGLGETSHADERIVPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetShaderiv" )));
-    ld::glGetShaderInfoLog         = ptr_cast<PFNGLGETSHADERINFOLOGPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetShaderInfoLog" )));
-    ld::glCreateProgram            = ptr_cast<PFNGLCREATEPROGRAMPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glCreateProgram" )));
-    ld::glDeleteProgram            = ptr_cast<PFNGLDELETEPROGRAMPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDeleteProgram" )));
-    ld::glAttachShader             = ptr_cast<PFNGLATTACHSHADERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glAttachShader" )));
-    ld::glDetachShader             = ptr_cast<PFNGLATTACHSHADERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDetachShader" )));
-    ld::glDeleteShader             = ptr_cast<PFNGLDELETESHADERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDeleteShader" )));
-    ld::glIsShader                 = ptr_cast<PFNGLISSHADERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glIsShader" )));
+    // ld::glGetShaderiv              = ptr_cast<PFNGLGETSHADERIVPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetShaderiv" )));
+    // ld::glGetShaderInfoLog         = ptr_cast<PFNGLGETSHADERINFOLOGPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetShaderInfoLog" )));
+    // ld::glCreateProgram            = ptr_cast<PFNGLCREATEPROGRAMPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glCreateProgram" )));
+    // ld::glDeleteProgram            = ptr_cast<PFNGLDELETEPROGRAMPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDeleteProgram" )));
+    // ld::glAttachShader             = ptr_cast<PFNGLATTACHSHADERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glAttachShader" )));
+    // ld::glDetachShader             = ptr_cast<PFNGLATTACHSHADERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDetachShader" )));
+    // ld::glDeleteShader             = ptr_cast<PFNGLDELETESHADERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDeleteShader" )));
+    // ld::glIsShader                 = ptr_cast<PFNGLISSHADERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glIsShader" )));
 
-    ld::glLinkProgram              = ptr_cast<PFNGLLINKPROGRAMPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glLinkProgram" )));
-    ld::glGetProgramiv             = ptr_cast<PFNGLGETPROGRAMIVPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetProgramiv" )));
-    ld::glUseProgram               = ptr_cast<PFNGLUSEPROGRAMPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glUseProgram" )));
-    ld::glGetProgramInfoLog        = ptr_cast<PFNGLGETPROGRAMINFOLOGPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetProgramInfoLog" )));
-    ld::glIsProgram                = ptr_cast<PFNGLISPROGRAMPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glIsProgram" )));
+    // ld::glLinkProgram              = ptr_cast<PFNGLLINKPROGRAMPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glLinkProgram" )));
+    // ld::glGetProgramiv             = ptr_cast<PFNGLGETPROGRAMIVPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetProgramiv" )));
+    // ld::glUseProgram               = ptr_cast<PFNGLUSEPROGRAMPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glUseProgram" )));
+    // ld::glGetProgramInfoLog        = ptr_cast<PFNGLGETPROGRAMINFOLOGPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetProgramInfoLog" )));
+    // ld::glIsProgram                = ptr_cast<PFNGLISPROGRAMPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glIsProgram" )));
 
-    ld::glVertexAttribPointer     =  ptr_cast<PFNGLVERTEXATTRIBPOINTERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glVertexAttribPointer" )));
-    ld::glGenVertexArrays         =  ptr_cast<PFNGLGENVERTEXARRAYSPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGenVertexArrays" ) ));
-    ld::glEnableVertexAttribArray =  ptr_cast<PFNGLENABLEVERTEXATTRIBARRAYPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glEnableVertexAttribArray" )));
-    ld::glEnableVertexArrayAttrib =  ptr_cast<PFNGLENABLEVERTEXARRAYATTRIBPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glEnableVertexArrayAttrib" )));
-    ld::glBindVertexArray         =  ptr_cast<PFNGLBINDVERTEXARRAYPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindVertexArray" )));
-    ld::glMapBuffer               =  ptr_cast<PFNGLMAPBUFFERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glMapBuffer" )));
-    ld::glUnmapBuffer             =  ptr_cast<PFNGLUNMAPBUFFERPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glUnmapBuffer" )));
+    // ld::glVertexAttribPointer     =  ptr_cast<PFNGLVERTEXATTRIBPOINTERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glVertexAttribPointer" )));
+    // ld::glGenVertexArrays         =  ptr_cast<PFNGLGENVERTEXARRAYSPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGenVertexArrays" ) ));
+    // ld::glEnableVertexAttribArray =  ptr_cast<PFNGLENABLEVERTEXATTRIBARRAYPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glEnableVertexAttribArray" )));
+    // ld::glEnableVertexArrayAttrib =  ptr_cast<PFNGLENABLEVERTEXARRAYATTRIBPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glEnableVertexArrayAttrib" )));
+    // ld::glBindVertexArray         =  ptr_cast<PFNGLBINDVERTEXARRAYPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glBindVertexArray" )));
+    // ld::glMapBuffer               =  ptr_cast<PFNGLMAPBUFFERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glMapBuffer" )));
+    // ld::glUnmapBuffer             =  ptr_cast<PFNGLUNMAPBUFFERPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glUnmapBuffer" )));
 
-    ld::glDrawArrays              =  ptr_cast<PFNGLDRAWARRAYSPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDrawArrays" )));
-    ld::glDrawArraysEXT           =  ptr_cast<PFNGLDRAWARRAYSEXTPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDrawArraysEXT" )));
+    // ld::glDrawArrays              =  ptr_cast<PFNGLDRAWARRAYSPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDrawArrays" )));
+    // ld::glDrawArraysEXT           =  ptr_cast<PFNGLDRAWARRAYSEXTPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDrawArraysEXT" )));
 
-    ld::glObjectLabel             =  ptr_cast<PFNGLOBJECTLABELPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glObjectLabel" )));
-    ld::glGetString               =  ptr_cast<PFNGLGETSTRINGPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetString" )));
-    ld::glGetStringi              =  ptr_cast<PFNGLGETSTRINGIPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetStringi" )));
-    ld::glDebugMessageCallback    =  ptr_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
-        glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDebugMessageCallback" )));
+    // ld::glObjectLabel             =  ptr_cast<PFNGLOBJECTLABELPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glObjectLabel" )));
+    // ld::glGetString               =  ptr_cast<PFNGLGETSTRINGPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetString" )));
+    // ld::glGetStringi              =  ptr_cast<PFNGLGETSTRINGIPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glGetStringi" )));
+    // ld::glDebugMessageCallback    =  ptr_cast<PFNGLDEBUGMESSAGECALLBACKPROC>(
+    //     glXGetProcAddress(           ptr_cast<const GLubyte*>( "glDebugMessageCallback" )));
 
-    // -- Initialize OpenGL --
-    display_context_create();
-    vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
-    context_id glx_initial = context_create();
-    vx_window_id = window_create();
-    vx_window = vx_window_list[ vx_window_id.cast() ];
+    // // -- Initialize OpenGL --
+    // display_context_create();
+    // vglx_extensions_string = glXQueryExtensionsString( rx_display, DefaultScreen(rx_display) );
+    // context_id glx_initial = context_create();
+    // vx_window_id = window_create();
+    // vx_window = vx_window_list[ vx_window_id.cast() ];
 
-    std::cout << "Starting renderer\n" ;
+    // std::cout << "Starting renderer\n" ;
 
-    // Set primary thread local context
-    // BUG: Multiple OpenGL contexts is glichy on many platforms,
-    // this should probably never be used
-    vglx_context = vglx_context_list[ vglx_context_id.cast() ];
-    context_set_current( glx_initial );
+    // // Set primary thread local context
+    // // BUG: Multiple OpenGL contexts is glichy on many platforms,
+    // // this should probably never be used
+    // vglx_context = vglx_context_list[ vglx_context_id.cast() ];
+    // context_set_current( glx_initial );
 
-    // Enable debug output
-    // glEnable( GL_DEBUG_OUTPUT );
-    ld::glDebugMessageCallback( gl_debug_callback, nullptr );
+    // // Enable debug output
+    // // glEnable( GL_DEBUG_OUTPUT );
+    // ld::glDebugMessageCallback( gl_debug_callback, nullptr );
 
-    glGetIntegerv( GL_NUM_EXTENSIONS, &m_gl_extension_count );
-    std::cout << "OpenGL Implimentation Vendor: " << glGetString( GL_VENDOR ) <<
-        "\nOpenGL Renderer String: " << glGetString( GL_RENDERER ) <<
-        "\nOpenGL Version: " << glGetString( GL_VERSION ) <<
-        "\nOpenGL Shading Language Version: " << glGetString( GL_SHADING_LANGUAGE_VERSION ) <<
-        "\nOpenGL Extensions String: ";
-    for (fint32 i_extension=0; i_extension<m_gl_extension_count; i_extension += 3)
-    {
-        std::cout << ld::glGetStringi( GL_EXTENSIONS, 0+ i_extension ) << " ";
-        if (i_extension % 3) { std::cout << "\n"; };
-    }
-    std::cout << "\nGLX Extensions String: " << vglx_extensions_string << "\n";
+    // glGetIntegerv( GL_NUM_EXTENSIONS, &m_gl_extension_count );
+    // std::cout << "OpenGL Implimentation Vendor: " << glGetString( GL_VENDOR ) <<
+    //     "\nOpenGL Renderer String: " << glGetString( GL_RENDERER ) <<
+    //     "\nOpenGL Version: " << glGetString( GL_VERSION ) <<
+    //     "\nOpenGL Shading Language Version: " << glGetString( GL_SHADING_LANGUAGE_VERSION ) <<
+    //     "\nOpenGL Extensions String: ";
+    // for (fint32 i_extension=0; i_extension<m_gl_extension_count; i_extension += 3)
+    // {
+    //     std::cout << ld::glGetStringi( GL_EXTENSIONS, 0+ i_extension ) << " ";
+    //     if (i_extension % 3) { std::cout << "\n"; };
+    // }
+    // std::cout << "\nGLX Extensions String: " << vglx_extensions_string << "\n";
 
-    // Setup OpenGL Objects
-    ld::glGenVertexArrays( mattribute_limit, mattribute_names.data() );
-    ld::glGenBuffers( mbuffer_limit, mbuffer_names.data() );
+    // // Setup OpenGL Objects
+    // ld::glGenVertexArrays( mattribute_limit, mattribute_names.data() );
+    // ld::glGenBuffers( mbuffer_limit, mbuffer_names.data() );
 
-    uniform_frame_globals = mbuffer_count++;
-    ld::glBindBuffer( GL_UNIFORM_BUFFER, get_buffer( uniform_frame_globals ) );
-    // Allocate 512 bytes
-    ld::glBufferData( GL_UNIFORM_BUFFER, sizeof( frame_shader_global ), nullptr, GL_STATIC_DRAW );
+    // uniform_frame_globals = mbuffer_count++;
+    // ld::glBindBuffer( GL_UNIFORM_BUFFER, get_buffer( uniform_frame_globals ) );
+    // // Allocate 512 bytes
+    // ld::glBufferData( GL_UNIFORM_BUFFER, sizeof( frame_shader_global ), nullptr, GL_STATIC_DRAW );
 
-    // Disabled VSync for performance
-    enum
-    {
-        vsync_adaptive        = -1,
-        vsync_off             = 0,
-        vsync_double_buffered = 1,
-        vsync_triple_buffered = 2
-    };
-    // sync to vblank control
-    fint32 vsync_option = vsync_off;
-    if (vglx_extensions_string.find( "GLX_MESA_swap_control" ) != std::string::npos)
-    {
-        vsync_option = (vsync_option < 0 ? vsync_double_buffered : vsync_option);
-        ld::glXSwapIntervalMESA( vsync_option );
-        opengl_extensions.enable( "GLX_MESA_swap_control", extension_family::EXT_swap_control );
-        TYON_BASE_LOG( "OpenGL", "Mesa swap control" );
-    }
-    else if (vglx_extensions_string.find( "GLX_MESA_swap_control" ) != std::string::npos)
-    {
-        vsync_option = (vsync_option < 0 ? vsync_double_buffered : vsync_option);
-        ld::glXSwapIntervalMESA( vsync_option );
-        opengl_extensions.enable( "GLX_MESA_swap_control", extension_family::EXT_swap_control );
-        TYON_BASE_LOG( "OpenGL", "Mesa swap control" );
-    }
-    else if (vglx_extensions_string.find( "GLX_EXT_swap_control" ) != std::string::npos)
-    {
-        GLXDrawable drawable = glXGetCurrentDrawable();
-        ld::glXSwapIntervalEXT( rx_display, drawable, 0 );
-        opengl_extensions.enable( "GLX_EXT_swap_control", extension_family::EXT_swap_control );
-        TYON_BASE_LOG( "OpenGL", "EXT swap control" );
-    }
-    else
-    { TYON_ERROR( "No Gl swap_control extension detected, have no control over vsync" ); }
-    // Enable Z Buffering
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_STENCIL_TEST);
-    glStencilMask(0xFF); // each bit is written to the stencil buffer as is
+    // // Disabled VSync for performance
+    // enum
+    // {
+    //     vsync_adaptive        = -1,
+    //     vsync_off             = 0,
+    //     vsync_double_buffered = 1,
+    //     vsync_triple_buffered = 2
+    // };
+    // // sync to vblank control
+    // fint32 vsync_option = vsync_off;
+    // if (vglx_extensions_string.find( "GLX_MESA_swap_control" ) != std::string::npos)
+    // {
+    //     vsync_option = (vsync_option < 0 ? vsync_double_buffered : vsync_option);
+    //     ld::glXSwapIntervalMESA( vsync_option );
+    //     opengl_extensions.enable( "GLX_MESA_swap_control", extension_family::EXT_swap_control );
+    //     TYON_BASE_LOG( "OpenGL", "Mesa swap control" );
+    // }
+    // else if (vglx_extensions_string.find( "GLX_MESA_swap_control" ) != std::string::npos)
+    // {
+    //     vsync_option = (vsync_option < 0 ? vsync_double_buffered : vsync_option);
+    //     ld::glXSwapIntervalMESA( vsync_option );
+    //     opengl_extensions.enable( "GLX_MESA_swap_control", extension_family::EXT_swap_control );
+    //     TYON_BASE_LOG( "OpenGL", "Mesa swap control" );
+    // }
+    // else if (vglx_extensions_string.find( "GLX_EXT_swap_control" ) != std::string::npos)
+    // {
+    //     GLXDrawable drawable = glXGetCurrentDrawable();
+    //     ld::glXSwapIntervalEXT( rx_display, drawable, 0 );
+    //     opengl_extensions.enable( "GLX_EXT_swap_control", extension_family::EXT_swap_control );
+    //     TYON_BASE_LOG( "OpenGL", "EXT swap control" );
+    // }
+    // else
+    // { TYON_ERROR( "No Gl swap_control extension detected, have no control over vsync" ); }
+    // // Enable Z Buffering
+    // glEnable(GL_DEPTH_TEST);
+    // glEnable(GL_STENCIL_TEST);
+    // glStencilMask(0xFF); // each bit is written to the stencil buffer as is
 
-    // Enable Backface Culling
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    fint32 winding = 0;
-    glFrontFace( GL_CCW );
-    glGetIntegerv( GL_FRONT_FACE, &winding );
-    if ( winding == GL_CCW ) { std::cout << "[OpenGL] Face Winding is Counter-Clockwise \n"; }
-    else                     { std::cout << "[OpenGL] Face Winding is Clockwise \n"; }
+    // // Enable Backface Culling
+    // glEnable(GL_CULL_FACE);
+    // glCullFace(GL_BACK);
+    // fint32 winding = 0;
+    // glFrontFace( GL_CCW );
+    // glGetIntegerv( GL_FRONT_FACE, &winding );
+    // if ( winding == GL_CCW ) { std::cout << "[OpenGL] Face Winding is Counter-Clockwise \n"; }
+    // else                     { std::cout << "[OpenGL] Face Winding is Clockwise \n"; }
 
-    // Enable Alpha Blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // // Enable Alpha Blending
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 
-    glPolygonMode( GL_FRONT, GL_FILL ); // Normal Mode
-    // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-    // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-    // glPolygonMode( GL_BACK, GL_LINE ); // Disabled front or back only disabled in core profile
+    // glPolygonMode( GL_FRONT, GL_FILL ); // Normal Mode
+    // // glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    // // glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    // // glPolygonMode( GL_BACK, GL_LINE ); // Disabled front or back only disabled in core profile
 
     return true;
 }
@@ -316,24 +323,24 @@ FUNCTION def::initialize()
 fresult
 FUNCTION def::deinitialize()
 {
-    XFree( vx_buffer_config );
-    XFree( glx_fbconfigurations );
-    for (Window x_xwindow : vx_window_list)
-    {
-        if (x_xwindow != 0)
-        {
-            XUnmapWindow( rx_display, x_xwindow );
-            XDestroyWindow( rx_display, x_xwindow );
-        }
-    }
-    for (GLXContext x_glx_context : vglx_context_list)
-    {
-        if (x_glx_context != nullptr)
-        {
-            glXDestroyContext( rx_display, x_glx_context );
-        }
-    }
-    XCloseDisplay( rx_display );
+    // XFree( vx_buffer_config );
+    // XFree( glx_fbconfigurations );
+    // for (Window x_xwindow : vx_window_list)
+    // {
+    //     if (x_xwindow != 0)
+    //     {
+    //         XUnmapWindow( rx_display, x_xwindow );
+    //         XDestroyWindow( rx_display, x_xwindow );
+    //     }
+    // }
+    // for (GLXContext x_glx_context : vglx_context_list)
+    // {
+    //     if (x_glx_context != nullptr)
+    //     {
+    //         glXDestroyContext( rx_display, x_glx_context );
+    //     }
+    // }
+    // XCloseDisplay( rx_display );
 
     return true;
 
@@ -342,17 +349,17 @@ FUNCTION def::deinitialize()
 display_id
 FUNCTION def::display_context_create()
 {
-    rx_display = XOpenDisplay(nullptr);
-    vx_connection_number = XConnectionNumber(rx_display);
-    vx_connection_string[0] = ':';
-    vx_connection_string[1] = '0' + static_cast<char>( vx_connection_number );
+    // rx_display = XOpenDisplay(nullptr);
+    // vx_connection_number = XConnectionNumber(rx_display);
+    // vx_connection_string[0] = ':';
+    // vx_connection_string[1] = '0' + static_cast<char>( vx_connection_number );
 
-    if (rx_display == nullptr)
-    {
-        std::cout << "Could not open X display" << std::endl;
-        return false;
-    }
-    XSetErrorHandler( x11_error_handler );
+    // if (rx_display == nullptr)
+    // {
+    //     std::cout << "Could not open X display" << std::endl;
+    //     return false;
+    // }
+    // XSetErrorHandler( x11_error_handler );
     return true;
 }
 
@@ -363,85 +370,85 @@ FUNCTION def::window_create()
 
     window_id window_new = 0;
 
-    vx_window_attributes.colormap = XCreateColormap( rx_display,
-                                                     RootWindow(rx_display,
-                                                                vx_buffer_config->screen),
-                                                     vx_buffer_config->visual, AllocNone );
-    vx_window_attributes.background_pixmap = None ;
-    vx_window_attributes.border_pixel      = 0;
-    vx_window_attributes.event_mask        = StructureNotifyMask;
-    vx_window_attributes.override_redirect = true;
+    // vx_window_attributes.colormap = XCreateColormap( rx_display,
+    //                                                  RootWindow(rx_display,
+    //                                                             vx_buffer_config->screen),
+    //                                                  vx_buffer_config->visual, AllocNone );
+    // vx_window_attributes.background_pixmap = None ;
+    // vx_window_attributes.border_pixel      = 0;
+    // vx_window_attributes.event_mask        = StructureNotifyMask;
+    // vx_window_attributes.override_redirect = true;
 
-    Window x_window_tmp = XCreateWindow( rx_display,
-                               RootWindow( rx_display, vx_buffer_config->screen ),
-                               500, 500, 500, 500, 0,
-                               vx_buffer_config->depth,
-                               InputOutput,
-                               vx_buffer_config->visual,
-                               CWBorderPixel|CWColormap|CWEventMask,
-                               &vx_window_attributes );
+    // Window x_window_tmp = XCreateWindow( rx_display,
+    //                            RootWindow( rx_display, vx_buffer_config->screen ),
+    //                            500, 500, 500, 500, 0,
+    //                            vx_buffer_config->depth,
+    //                            InputOutput,
+    //                            vx_buffer_config->visual,
+    //                            CWBorderPixel|CWColormap|CWEventMask,
+    //                            &vx_window_attributes );
 
-    vx_default_screen = DefaultScreen( rx_display );
+    // vx_default_screen = DefaultScreen( rx_display );
 
     // Fullscreen the window if allowed
-    wm_state      = XInternAtom( rx_display, "_NET_WM_STATE", true );
-    wm_state_fullscreen = XInternAtom( rx_display, "_NET_WM_STATE_FULLSCREEN", true );
-    wm_state_maximized_horz = XInternAtom( rx_display, "_NET_WM_STATE_MAXIMIZED_HORZ", true );
-    wm_state_maximized_vert = XInternAtom( rx_display, "_NET_WM_STATE_MAXIMIZED_VERT", true );
-    wm_state_above = XInternAtom( rx_display, "_NET_WM_STATE_ABOVE", true );
-    wm_allowed_actions = XInternAtom( rx_display, "_NET_WM_ALLOWED_ACTIONS", true );
+    // wm_state      = XInternAtom( rx_display, "_NET_WM_STATE", true );
+    // wm_state_fullscreen = XInternAtom( rx_display, "_NET_WM_STATE_FULLSCREEN", true );
+    // wm_state_maximized_horz = XInternAtom( rx_display, "_NET_WM_STATE_MAXIMIZED_HORZ", true );
+    // wm_state_maximized_vert = XInternAtom( rx_display, "_NET_WM_STATE_MAXIMIZED_VERT", true );
+    // wm_state_above = XInternAtom( rx_display, "_NET_WM_STATE_ABOVE", true );
+    // wm_allowed_actions = XInternAtom( rx_display, "_NET_WM_ALLOWED_ACTIONS", true );
 
-    Atom wm_state_new[] =
-    {
-        wm_state_fullscreen
-    };
-    if (wm_state != 0 && wm_state_fullscreen != 0 && wm_state_maximized_horz!= 0 &&
-        wm_state_maximized_vert != 0 && wm_state_above != 0)
-    {
+    // Atom wm_state_new[] =
+    // {
+    //     wm_state_fullscreen
+    // };
+    // if (wm_state != 0 && wm_state_fullscreen != 0 && wm_state_maximized_horz!= 0 &&
+    //     wm_state_maximized_vert != 0 && wm_state_above != 0)
+    // {
         // fullscreen = true;
         // XChangeProperty( rx_display, x_window_tmp,
         //                  wm_state, XA_ATOM, 32,
         //                  PropModeReplace,
         //                  reinterpret_cast<unsigned char*>( &wm_state_new ),
         //                  sizeof(wm_state_new) );
-    }
+    // }
 
-    // Set the window name
-    XStoreName( rx_display, x_window_tmp, "Tachyon Engine" );
-    XMapWindow( rx_display, x_window_tmp );
+    // // Set the window name
+    // XStoreName( rx_display, x_window_tmp, "Tachyon Engine" );
+    // XMapWindow( rx_display, x_window_tmp );
 
-    // Instruct window manager to permit self-cleanup
-    Atom test_atom = 0;
-    test_atom = XInternAtom( rx_display, "WM_DELETE_WINDOW", true );
-    if (test_atom != 0)
-    {
-        vx_wm_delete_window = test_atom;
-        vx_window_protocols.push_back(test_atom);
-        TYON_LOG( "WM_DELETE_WINDOW protocol loaded" );
-        XSetWMProtocols( rx_display, x_window_tmp, vx_window_protocols.data(), fuint32(vx_window_protocols.size()) );
-    }
+    // // Instruct window manager to permit self-cleanup
+    // Atom test_atom = 0;
+    // test_atom = XInternAtom( rx_display, "WM_DELETE_WINDOW", true );
+    // if (test_atom != 0)
+    // {
+    //     vx_wm_delete_window = test_atom;
+    //     vx_window_protocols.push_back(test_atom);
+    //     TYON_LOG( "WM_DELETE_WINDOW protocol loaded" );
+        // XSetWMProtocols( rx_display, x_window_tmp, vx_window_protocols.data(), fuint32(vx_window_protocols.size()) );
+    // }
 
-    vx_window_list.push_back( x_window_tmp );
-    window_new = vx_window_list.size() - 1;
+    // vx_window_list.push_back( x_window_tmp );
+    // window_new = vx_window_list.size() - 1;
     return window_new;
 }
 
 fresult def::window_destroy( window_id target )
 {
-    Window target_window = vx_window_list[ target.cast() ];
-    XUnmapWindow( rx_display, target_window );
-    XDestroyWindow( rx_display, target_window );
+    // Window target_window = vx_window_list[ target.cast() ];
+    // XUnmapWindow( rx_display, target_window );
+    // XDestroyWindow( rx_display, target_window );
     return true;
 }
 
 fresult
 FUNCTION def::display_context_destroy( display_id target )
 {
-    (void)(target);
-    XUnmapWindow( rx_display, vx_window );
-    XDestroyWindow( rx_display, vx_window );
-    XFree( vx_buffer_config );
-    XCloseDisplay( rx_display );
+    // (void)(target);
+    // XUnmapWindow( rx_display, vx_window );
+    // XDestroyWindow( rx_display, vx_window );
+    // XFree( vx_buffer_config );
+    // XCloseDisplay( rx_display );
     return true;
 }
 
@@ -513,7 +520,7 @@ FUNCTION def::context_create()
     { throw( "Could not get GL configurations from X Server" ); }
     vglx_fbselection = (glx_fbconfigurations ? glx_fbconfigurations[0] :
                         glx_simple_configurations[0]);
-    vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
+    // vx_buffer_config = glXGetVisualFromFBConfig(rx_display, vglx_fbselection);
 
     // context_tmp = glXCreateContextAttribs(rx_display, vglx_fbselection, GLA_RGBA_TYPE, 0, true);
     context_tmp = ld::glXCreateContextAttribsARB(rx_display, vglx_fbselection, nullptr, true, vglx_context_attribs);
@@ -526,8 +533,8 @@ FUNCTION def::context_create()
 fresult
 FUNCTION def::context_destroy(context_id target)
 {
-    GLXContext target_context = vglx_context_list[ target.cast() ];
-    glXDestroyContext( rx_display, target_context );
+    // GLXContext target_context = vglx_context_list[ target.cast() ];
+    // glXDestroyContext( rx_display, target_context );
     return true;
 }
 
@@ -535,7 +542,7 @@ fresult
 FUNCTION def::context_set_current(context_id target)
 {
     GLXContext target_context = vglx_context_list[ target.cast() ];
-    glXMakeCurrent( rx_display, vx_window, target_context );
+    // glXMakeCurrent( rx_display, vx_window, target_context );
     return true;
 }
 
@@ -1041,35 +1048,35 @@ FUNCTION def::frame_start()
 bool
 FUNCTION def::refresh( frame_shader_global& frame )
 {
-    // Map the render target to the window width
-    tyon::window_properties& window = global->window;
-    tyon::window_properties& req = global->window_requested;
+    // // Map the render target to the window width
+    // tyon::window_properties& window = global->window;
+    // tyon::window_properties& req = global->window_requested;
 
-    // draw_test_rectangle(mrectangle_color);
-    // draw_test_circle(mcircle_color);
-    // draw_test_triangle(mtriangle_color);
+    // // draw_test_rectangle(mrectangle_color);
+    // // draw_test_circle(mcircle_color);
+    // // draw_test_triangle(mtriangle_color);
 
-    // TODO: Time to 60 ms
-    if (req.width != window.width &&
-        req.height != window.height)
-    {
-        XWindowChanges settings = {};
-        settings.width = req.width;
-        settings.height = req.height;
-        // XConfigureWindow( rx_display, vx_window, CWWidth | CWHeight, &settings );
-        window.width = req.width;
-        window.height = req.height;
-        frame.screen_vh_aspect_ratio =
-        cast<float>( req.height ) / cast<float>( req.width );
-        glViewport( 0, 0, req.width, req.height );
-        if (fullscreen && (frame.screen_vh_aspect_ratio < .3f ||
-                           frame.screen_vh_aspect_ratio > .8f ))
-        {
-            std::cout << "[Renderer] WARNING: Strange screen aspect ratio found, "
-            "may not render properly \n";
-        }
-    } // Maybe stability improvement so it doesn't hang as bad during window resizing?
-    else { glXSwapBuffers ( rx_display, vx_window ); }
+    // // TODO: Time to 60 ms
+    // if (req.width != window.width &&
+    //     req.height != window.height)
+    // {
+    //     XWindowChanges settings = {};
+    //     settings.width = req.width;
+    //     settings.height = req.height;
+    //     // XConfigureWindow( rx_display, vx_window, CWWidth | CWHeight, &settings );
+    //     window.width = req.width;
+    //     window.height = req.height;
+    //     frame.screen_vh_aspect_ratio =
+    //     cast<float>( req.height ) / cast<float>( req.width );
+    //     glViewport( 0, 0, req.width, req.height );
+    //     if (fullscreen && (frame.screen_vh_aspect_ratio < .3f ||
+    //                        frame.screen_vh_aspect_ratio > .8f ))
+    //     {
+    //         std::cout << "[Renderer] WARNING: Strange screen aspect ratio found, "
+    //         "may not render properly \n";
+    //     }
+    // } // Maybe stability improvement so it doesn't hang as bad during window resizing?
+    // else { glXSwapBuffers ( rx_display, vx_window ); }
     return true;
 }
 

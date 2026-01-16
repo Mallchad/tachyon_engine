@@ -5,15 +5,15 @@ namespace tyon
 
 class input_xlib final
 {
-    globals* global = nullptr;
-    renderer_opengl* m_renderer = nullptr;
-    Display* m_display = nullptr;
-    Window m_window = 0;
+    // globals* global = nullptr;
+    // renderer_opengl* m_renderer = nullptr;
+    // Display* m_display = nullptr;
+    // Window m_window = 0;
 
-    Atom m_wm_delete_window = 0;
+    // Atom m_wm_delete_window = 0;
 
-    fint32 m_events_received = 0;
-    fint32 m_tmp_frame_count = 0;
+    // fint32 m_events_received = 0;
+    // fint32 m_tmp_frame_count = 0;
 public:
     CONSTRUCTOR input_xlib( renderer_opengl& display_handle );
 
