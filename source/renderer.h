@@ -1,6 +1,9 @@
 
 #pragma once
 
+namespace tyon
+{
+
 using renderer_backend = renderer_opengl;
 
 class renderer final
@@ -58,3 +61,5 @@ class renderer final
 
     void frame_update();
 };
+
+}

@@ -2,8 +2,7 @@
 
 namespace tyon
 {
-    using namespace std::chrono_literals;
-}
+using namespace std::chrono_literals;
 
 /// Return a timekeeping sensitive point timepoint
 // DO NOT use this as a way to reteive an actual date/time, ie, time since UNIX epoch
@@ -20,4 +19,6 @@ FUNCTION time_elapsed()
         std::chrono::duration<t_tick_interval> >( elapsed ).count();
 
     return elapsed_conversion;
+}
+
 }

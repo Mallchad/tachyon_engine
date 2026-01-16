@@ -1,6 +1,9 @@
 
 #pragma once
 
+namespace tyon
+{
+
 #define VULKAN_LOG( ... ) TYON_BASE_LOG( "Vulkan", __VA_ARGS__ );
 #define VULKAN_LOGF( FORMAT_, ... ) TYON_BASE_LOGF( "Vulkan", FORMAT_, __VA_ARGS__ );
 #define VULKAN_ERROR( ... ) TYON_BASE_ERROR( "Vulkan", __VA_ARGS__ );
@@ -240,3 +243,5 @@ PROC vulkan_tick() -> void;
 PROC vulkan_draw() -> void;
 
 extern vulkan_context* g_vulkan;
+
+}

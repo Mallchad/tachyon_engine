@@ -1,6 +1,9 @@
 
 #pragma once
 
+namespace tyon
+{
+
 struct render_context
 {
     // Primary window size
@@ -34,3 +37,5 @@ PROC render_init() -> void;
 PROC render_tick() -> void;
 
 PROC mesh_init( mesh* arg ) -> fresult;
+
+}

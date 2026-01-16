@@ -1,6 +1,15 @@
 
 #pragma once
 
+#ifndef TYON_LIB_MERGED_UNITY
+    #define TYON_LIB_MERGED_UNITY 1
+#endif
+
+#ifndef TYON_ENGINE_MAIN_STANDALONE
+    #define TYON_ENGINE_MAIN_STANDALONE 1
+#endif
+
+
 // Platform Dependencies
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
@@ -23,21 +32,13 @@
 /** --Vendored Dependencies-- */
 #include "include_tracy.h"
 
-struct fmesh;
-
+#include "../external/tachyon_lib/source/include_tachyon_lib_core.h"
 #include "core.hpp"
 
-#include "../external/tachyon_lib/source/include_tachyon_lib_core.h"
-using namespace tyon;
-
 #include "global.h"
-#include "memory.hpp"
-#include "string.hpp"
-#include "error.hpp"
 #include "time.hpp"
 #include "matrix.hpp"
 #include "math.hpp"
-#include "extensions.hpp"
 #include "file.hpp"
 
 // Old interface header

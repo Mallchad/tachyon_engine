@@ -1,5 +1,8 @@
 #pragma once
 
+namespace tyon
+{
+
 using input_backend = input_xlib;
 
 class input final
@@ -11,3 +14,5 @@ public:
     fresult
     FUNCTION frame_update( f32 epoch_elapsed );
 };
+
+}

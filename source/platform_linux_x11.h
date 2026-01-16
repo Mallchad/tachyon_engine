@@ -1,6 +1,9 @@
 
 #pragma once
 
+namespace tyon
+{
+
 struct x11_context
 {
     /** An x11 'display' can be thought of as more of a server connection,
@@ -38,3 +41,5 @@ window_id
 x11_window_open();
 
 extern x11_context* g_x11;
+
+}

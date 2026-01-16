@@ -1,5 +1,8 @@
 #pragma once
 
+namespace tyon
+{
+
 class input_xlib final
 {
     globals* global = nullptr;
@@ -22,3 +25,5 @@ public:
     fresult
     FUNCTION frame_update( f32 epoch_elapsed );
 };
+
+}

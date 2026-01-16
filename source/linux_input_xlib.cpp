@@ -1,7 +1,10 @@
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
-#include <include_core.h>
+#include "include_core.h"
+
+namespace tyon
+{
 
 using impl = input_xlib;
 using namespace tyon;
@@ -145,4 +148,6 @@ FUNCTION impl::frame_update( f32 epoch_elapsed )
     }
 
     return true;
+}
+
 }

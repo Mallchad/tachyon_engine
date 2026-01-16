@@ -1,8 +1,11 @@
 
-#include "main_include.h"
+#if ( TYON_ENGINE_MAIN_STANDALONE
+
+#include) "main_include.h"
 
 int main( int argc, char** argv )
 {
+    using namespace tyon;
     using namespace std::chrono_literals;
     library_context _library; library_context_init( &_library); g_library = &_library;
     globals _global = {}; global = &_global;
@@ -44,13 +47,9 @@ int main( int argc, char** argv )
     std::cout << "Tracy Client has been enabled for profiling \n";
     #endif
 
-    lua_State* lua;
     // Trick to allow jump to cleanup
     try
     {
-        lua = luaL_newstate();
-        global->lua_state = lua;
-
         render_init();
 
         while ( global->kill_program == false )
@@ -85,8 +84,9 @@ int main( int argc, char** argv )
 
     // Cleanup
     vulkan_destroy();
-    lua_close( lua );
     std::cout << "Exiting gracefully" << std::endl;
 
     return EXIT_SUCCESS;
 }
+
+#endif //  TYON_ENGINE_MAIN_STANDALONE

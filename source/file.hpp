@@ -1,5 +1,9 @@
 #pragma once
 
+namespace tyon
+{
+struct fmesh;
+
 /// Try to find a file by name by searching through a vector of provided directories
 // This can be provided as an initializer list of strings { "/foo/bar" }
 fpath
@@ -35,3 +39,5 @@ FUNCTION read_stl_file( fpath target, stl_format format );
 
 fstring
 FUNCTION linux_load_text_file( fpath target, std::vector<fpath> search_paths );
+
+}

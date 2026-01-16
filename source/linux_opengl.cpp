@@ -66,6 +66,9 @@ namespace ld
     INTERNAL PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback;
 }
 
+namespace tyon
+{
+
 // Try to temrinate gracefully after attempt to kill X window
 static void
 FUNCTION sigterm_handler(int sig)
@@ -644,7 +647,7 @@ FUNCTION def::shader_program_destroy( shader_program_id target )
 fresult
 FUNCTION def::shader_load( shader_id target, fpath shader_file, bool binary )
 {
-    unimplimented( "To be completed in the near future" );
+    // unimplimented( "To be completed in the near future" );
     target; shader_file; binary;
     return false;
 }
@@ -1081,4 +1084,6 @@ DESTRUCTOR def::~renderer_opengl()
     // Cleanup
     std::cout << "Renderer Cleanup" << std::endl;
     this->deinitialize();
+}
+
 }

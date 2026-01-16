@@ -1,6 +1,9 @@
 
 #include "include_core.h"
 
+namespace tyon
+{
+
 x11_context* g_x11 = nullptr;
 
 PROC x11_input_init() -> void
@@ -247,4 +250,6 @@ PROC x11_tick()
 {
     if (g_x11 == nullptr) { return; }
     x11_event_process();
+}
+
 }

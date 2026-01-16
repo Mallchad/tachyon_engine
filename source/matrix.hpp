@@ -1,6 +1,9 @@
 
 #pragma once
 
+namespace tyon
+{
+
 FORWARD struct v3f;
 FORWARD template <typename T> struct vector3_t;
 FORWARD template <typename T> struct vector4_t;
@@ -132,3 +135,5 @@ struct matrix
     matrix
     unreal_to_opengl();
 };
+
+}

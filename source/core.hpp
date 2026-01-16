@@ -5,6 +5,8 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
 
+namespace tyon
+{
 // Replaced for custom logger
 // For faster compile times
 // #define SPDLOG_COMPILED_LIB 1
@@ -145,3 +147,6 @@ using fid = internal_id<>;
 
 // Project Specific
 #define PROC auto
+
+    using std::vector;
+}

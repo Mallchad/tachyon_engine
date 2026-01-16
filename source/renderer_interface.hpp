@@ -29,6 +29,9 @@
 #define INTERFACE_RENDERER
 #endif
 
+namespace tyon
+{
+
 /// Underlying Display Server Handle, like an X11 'Display' or a GDI Handle
 using display_id        = internal_id<id_type::display>;
 /// Individual Created Window
@@ -295,3 +298,5 @@ public:
     }
 
 };
+
+}

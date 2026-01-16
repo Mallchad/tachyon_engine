@@ -1,6 +1,9 @@
 
 #include "include_core.h"
 
+namespace tyon
+{
+
 fpath
 FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths )
 {
@@ -247,7 +250,7 @@ FUNCTION read_stl_file( fpath target, stl_format format )
             {
                 std::cout << "[File] ERRROR buffer overflow whilst reading file \n";
                 out.resize(0);\
-                return out;
+//                 return out;
             }
             // 96 is an offset to the first vertex data
             x_memory = reinterpret_cast<v3*>( first_vertex_byte + file.data() +
@@ -278,4 +281,6 @@ FUNCTION linux_load_text_file( fpath target, std::vector<fpath> search_paths )
     std::memcpy( out.data(), loaded_file.data(), loaded_file.size() );
 
     return out;
+}
+
 }

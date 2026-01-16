@@ -1,25 +1,17 @@
 
 #pragma once
 
-extern "C"
+namespace tyon
 {
-    #include "lua.h"
-    #include "lualib.h"
-    #include "lauxlib.h"
-};
-
 #ifndef TRIANGULATE_PROJECT_ROOT
     static_assert( false, "TRIANGULATE_PROJECT_ROOT not defined" );
 #endif
 
-namespace tyon
+struct window_properties
 {
-    struct window_properties
-    {
-        int width;
-        int height;
-    };
-}
+    int width;
+    int height;
+};
 
 enum class e_render_backend : i32
 {
@@ -37,7 +29,6 @@ public:
     static globals* primary_database;
 
     std::chrono::time_point<std::chrono::steady_clock> program_epoch;
-    lua_State* lua_state;
 
     /// Search paths which serve as a root for a file reference
     std::vector<fstring> search_paths;
@@ -78,3 +69,5 @@ public:
 };
 
 extern globals* global;
+
+}

@@ -1,6 +1,9 @@
 
 #include "include_core.h"
 
+namespace tyon
+{
+
 vec2 operator+(const vec2& v1, const vec2& v2) {
     vec2 result;
     result.x = v1.x + v2.x;
@@ -80,7 +83,8 @@ pairwise_divide( vec2 lhs, vec2 rhs )
 { return { lhs.x / rhs.x, lhs.y / rhs.y }; }
 
 vec2 abs( vec2 arg )
-{ return vec2 { abs(arg.x), abs(arg.y) }; }
+{   return vec2 { std::abs( arg.x ), std::abs( arg.y) };
+}
 
 fstring
 format_as( vec2 arg )
@@ -209,4 +213,6 @@ matrix::unreal_to_opengl()
                                  0., -1., 0., 0.,
                                  0., 0., 0., 1. };
     return *this * conversion;
+}
+
 }

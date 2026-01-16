@@ -1,6 +1,8 @@
 
 #pragma once
 
+namespace tyon
+{
 
 // Gurantee vectors are packed tightly because of OpenGL functions
 #pragma pack(push, 1)
@@ -353,3 +355,5 @@ using rgba  = v4;
 using srgba = v4;
 
 using ftransform = transform;
+
+}

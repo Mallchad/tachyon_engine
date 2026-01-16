@@ -1,8 +1,6 @@
 
 #include "include_core.h"
 
-vulkan_context* g_vulkan = nullptr;
-
 // TODO: Need to setup uniform so that we can chuck worldspce things into the test teapot
 
 namespace dyn
@@ -10,6 +8,10 @@ namespace dyn
     PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = nullptr;
 }
+
+namespace tyon
+{
+vulkan_context* g_vulkan = nullptr;
 
 VKAPI_ATTR VKAPI_CALL
 PROC vulkan_debug_callback(
@@ -1862,4 +1864,6 @@ PROC vulkan_draw() -> void
     // TODO: Remove because useless now?
     // auto frame_timeout = vkWaitForFences(
     // self->logical_device, 1, &frame_end_fence, true, 1'000'000'000 );
+}
+
 }

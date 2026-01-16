@@ -1,6 +1,9 @@
 
 #include "include_core.h"
 
+namespace tyon
+{
+
 CONSTRUCTOR renderer::renderer()
 {
     // Generic initialization
@@ -123,7 +126,7 @@ FUNCTION renderer::frame_update()
 
     f32 tau = 6.283185307;
     transform camera_transform;
-    typed_zero( &camera_transform, 1 );
+    memory_zero( &camera_transform, 1 );
     camera_transform.rotation.x = tau * 0.25;
 
     if (global->action_left)
@@ -179,4 +182,6 @@ FUNCTION renderer::frame_update()
         time_elapsed<f32>() - frame_shader_globals.last_end_epoch;
     frame_shader_globals.last_end_epoch = time_elapsed<f32>();
     FrameMarkEnd( frame_label );
+}
+
 }

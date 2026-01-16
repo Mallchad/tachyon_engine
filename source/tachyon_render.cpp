@@ -1,6 +1,9 @@
 
 #include "include_core.h"
 
+namespace tyon
+{
+
 render_context* g_render = nullptr;
 renderer* tmp_opengl = nullptr;
 input* tmp_input = nullptr;
@@ -75,4 +78,6 @@ PROC mesh_init( mesh* arg ) -> fresult
     TYON_LOGF( "    Vertexes: {}", arg->vertexes_n );
     TYON_LOGF( "    Vertex Indexes: {}", arg->vertex_indexes_n );
     return true;
+}
+
 }
