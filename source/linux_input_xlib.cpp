@@ -1,6 +1,4 @@
 
-#include <X11/Xlib.h>
-#include <X11/keysym.h>
 #include "include_core.h"
 
 namespace tyon

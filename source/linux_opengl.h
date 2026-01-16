@@ -1,9 +1,6 @@
 
 #pragma once
 
-#include <X11/Xlib.h>
-#include <GL/glx.h>
-
 using std::unique_ptr;
 using std::make_unique;
 

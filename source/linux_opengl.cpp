@@ -1,12 +1,6 @@
 
 #include "include_core.h"
 
-#include "../external/xorg_xlib/include/X11/Xlib.h"
-#include "../external/xorg_xlib/include/X11/Xlib.h"
-#include "../external/xorg_proto/include/X11/Xatom.h"
-#include "../external/opengl/api/GL/glcorearb.h"
-#include "../external/opengl/api/GL/glext.h"
-
 using namespace tyon;
 using namespace std::chrono_literals;
 using std::initializer_list;

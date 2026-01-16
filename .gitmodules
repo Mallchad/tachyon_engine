@@ -13,3 +13,6 @@
 [submodule "external/xorg_proto"]
 	path = external/xorg_proto
 	url = https://gitlab.freedesktop.org/xorg/proto/xorgproto.git
+[submodule "external/mesa"]
+	path = external/mesa
+	url = https://gitlab.freedesktop.org/mesa/mesa.git
