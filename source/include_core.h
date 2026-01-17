@@ -30,13 +30,14 @@
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 
 // Dumb fix for C++ conflict
-#define module module_
+// TODO: Testing manual fix on the header
+/* #define module vk_module */
 // Enable Assistance with loading function pointers from hpp
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 
 #include <vulkan/vulkan.h>
-/* #include "../external/hardcopy/include/vulkan/" */
-/* #include "../external/hardcopy/include/vulkan/" */
+/* #include "../external/hardcopy/include/vulkan/vulkan.core" */
+/* #include "../external/hardcopy/include/vulkan/vulkan.h" */
 // NOTE: I really don't use the hpp or even intend to use it
 // #include <vulkan/vulkan.hpp>
 
@@ -45,7 +46,7 @@
 #endif // TYON_X11_ON
 
 #include <vulkan/vk_enum_string_helper.h>
-#undef module
+/* #undef vk_module */
 #pragma clang diagnostic pop
 
 // -- stdlib / stl --

@@ -42,7 +42,7 @@ FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths )
 }
 
 byte_buffer
-FUNCTION compat_file_load_binary( const fpath target )
+FUNCTION compat_file_load_binary( const fstring target )
 {
     using namespace std::filesystem;
     byte_buffer out;

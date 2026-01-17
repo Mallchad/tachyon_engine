@@ -9,19 +9,16 @@ namespace dyn
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = nullptr;
 }
 
-namespace tyon
-{
-vulkan_context* g_vulkan = nullptr;
-
-VKAPI_ATTR VKAPI_CALL
-PROC vulkan_debug_callback(
+// TODO: Why dd I use this attribute in the first place?
+// VKAPI_ATTR VKAPI_CALL
+auto vulkan_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
     VkDebugUtilsMessageTypeFlagsEXT message_type,
     const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
     void* user_data ) -> VkBool32
 {
     PROFILE_SCOPE_FUNCTION();
-
+    using namespace tyon;
     fstring type_name;
     switch (message_type) {
         case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
@@ -60,6 +57,12 @@ PROC vulkan_debug_callback(
     }
     return VK_FALSE;
 }
+
+namespace tyon
+{
+vulkan_context* g_vulkan = nullptr;
+
+using vulkan_bool = u32;
 
 PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
 {
@@ -237,7 +240,7 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
         stages.push_tail( VkPipelineShaderStageCreateInfo {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = x_shader.stage_flag,
-                .module_ = x_shader.platform_module,
+                .vk_module = x_shader.platform_module,
                 .pName = x_shader.entry_point.c_str()
             });
     }
@@ -1461,7 +1464,7 @@ PROC vulkan_init() -> fresult
         stages.push_tail( VkPipelineShaderStageCreateInfo {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = x_shader.stage_flag,
-                .module_ = x_shader.platform_module,
+                .vk_module = x_shader.platform_module,
                 .pName = x_shader.entry_point.c_str()
             });
     }
@@ -1484,9 +1487,13 @@ PROC vulkan_init() -> fresult
     };
 
     fstring utah_teapot_file = linux_search_file(
-        "utah_teapot.stl", { std::filesystem::path( global->project_root ) / "assets" } );
+      "utah_teapot.stl",
+      { global->project_root.string() + "/assets" }
+    ).string();
     fstring whale_file = linux_search_file(
-        "articulated_whale_shark.stl", { std::filesystem::path( global->project_root ) / "assets" } );
+      "articulated_whale_shark.stl",
+      { global->project_root.string() + "/assets" }
+    ).string();
     fmesh teapot = read_stl_file( utah_teapot_file );
     fmesh whale = read_stl_file( whale_file );
     g_vulkan->test_teapot = {
