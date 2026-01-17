@@ -5,8 +5,6 @@ namespace tyon
 {
 
 render_context* g_render = nullptr;
-renderer* tmp_opengl = nullptr;
-input* tmp_input = nullptr;
 
 
 PROC render_init() -> void
@@ -27,9 +25,7 @@ PROC render_init() -> void
             break;
         case e_render_backend::opengl:
             // opengl_ok = opengl_init(); break;
-            tmp_opengl = new renderer();
-            tmp_input = new input( tmp_opengl->platform );
-            void(0);
+            TYON_BREAK();
             break;
         default: break;
 
@@ -46,9 +42,7 @@ PROC render_tick() -> void
             vulkan_tick();
             break;
         case e_render_backend::opengl:
-            tmp_input->frame_update( 0 );
-            tmp_opengl->frame_update();
-            void(0);
+            TYON_BREAK();
             break;
         default: break;
     }

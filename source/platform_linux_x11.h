@@ -4,6 +4,8 @@
 namespace tyon
 {
 
+#if (TYON_X11_ON)
+
 struct x11_context
 {
     /** An x11 'display' can be thought of as more of a server connection,
@@ -30,6 +32,9 @@ struct x11_context
     Atom wm_allowed_actions = 0;
 };
 
+extern x11_context* g_x11;
+
+#endif // TYON_X11_ON
 
 void
 x11_init();
@@ -37,9 +42,7 @@ x11_init();
 void
 x11_destroy();
 
-window_id
+uid
 x11_window_open();
-
-extern x11_context* g_x11;
 
 }

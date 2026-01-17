@@ -4,9 +4,9 @@
 namespace tyon
 {
 
-x11_context* g_x11 = nullptr;
+#if (TYON_X11_ON)
 
-#if TYON_X11_ON
+x11_context* g_x11 = nullptr;
 
 PROC x11_input_init() -> void
 {
@@ -262,7 +262,7 @@ x11_init() {}
 void
 x11_destroy() {}
 
-window_id
+uid
 x11_window_open() { return {}; }
 
 }
