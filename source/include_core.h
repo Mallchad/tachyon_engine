@@ -69,11 +69,5 @@
 #include "tachyon_render.h"
 #include "platform_vulkan.h"
 
-// Old stuff
-#include "linux_opengl.h"
-#include "linux_input_xlib.h"
-#include "renderer.h"
-#include "input.h"
-
 // Experimental module support
 // import platform_vulkan;
