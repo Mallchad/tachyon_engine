@@ -35,6 +35,8 @@
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 
 #include <vulkan/vulkan.h>
+/* #include "../external/hardcopy/include/vulkan/" */
+/* #include "../external/hardcopy/include/vulkan/" */
 // NOTE: I really don't use the hpp or even intend to use it
 // #include <vulkan/vulkan.hpp>
 
