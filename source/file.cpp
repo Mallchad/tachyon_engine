@@ -117,7 +117,7 @@ FUNCTION read_stl_file( fpath target )
     bool flipped_message_sent = false;
 
 
-    file = compat_file_load_binary( target );
+    file = compat_file_load_binary( target.string() );
     bool file_read_fail = file.size() <= 0;
     if ( file_read_fail ) { return out; }
 
@@ -233,7 +233,7 @@ FUNCTION read_stl_file( fpath target, stl_format format )
     constexpr fint32 triangle_stride_normal = 50;
 
 
-    file = compat_file_load_binary( target );
+    file = compat_file_load_binary( target.string() );
     bool file_read_fail = file.size() <= 0;
     if ( file_read_fail ) { return out; }
 
@@ -276,7 +276,7 @@ FUNCTION linux_load_text_file( fpath target, std::vector<fpath> search_paths )
     target_path = linux_search_file( target, search_paths );
     if (target_path.empty()) return "";
 
-    loaded_file = compat_file_load_binary( target_path );
+    loaded_file = compat_file_load_binary( target_path.string() );
     out.resize( loaded_file.size() );
     std::memcpy( out.data(), loaded_file.data(), loaded_file.size() );
 

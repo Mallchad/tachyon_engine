@@ -17,7 +17,7 @@ FUNCTION linux_search_file( fpath target, std::vector<fpath> search_paths );
  Returns a zero length byte_buffer if it failed
 */
 byte_buffer
-FUNCTION compat_file_load_binary( const fpath target );
+FUNCTION compat_file_load_binary( const fstring target );
 
 /// Deprecreated. Use the new function load_file_binary
 byte_buffer
