@@ -35,9 +35,10 @@
 // Enable Assistance with loading function pointers from hpp
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 
-#include <vulkan/vulkan.h>
-/* #include "../external/hardcopy/include/vulkan/vulkan.core" */
-/* #include "../external/hardcopy/include/vulkan/vulkan.h" */
+/* NOTE: This needs to use the hardcopy header version, it has been
+   edited to read the include paths instead of relative ones */
+#include "../external/hardcopy/include/vulkan/vulkan_core.h"
+#include "../external/hardcopy/include/vulkan/vulkan.h"
 // NOTE: I really don't use the hpp or even intend to use it
 // #include <vulkan/vulkan.hpp>
 
