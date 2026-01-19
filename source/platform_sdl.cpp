@@ -1,10 +1,23 @@
 
 namespace tyon
 {
+    sdl_context* g_sdl = nullptr;
 
     // Platform Hooks
     PROC sdl_init() -> fresult
-    {
+    {   TYON_LOG( "Initialization Start for Platform SDL" );
+        g_sdl = memory_allocate<sdl_context>( 1 );
+        // NOTE: SDL must not ever move threads
+        SDL_SetLogPriorities( SDL_LOG_PRIORITY_TRACE );
+        // TODO: Init more stuff here as you use more things
+        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD );
+
+        i32 major = 4;
+        i32 minor = 4;
+        SDL_GL_GetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, &major );
+        SDL_GL_GetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, &minor );
+
+        TYON_LOG( "Initialization Complete for Platform SDL" );
         return false;
     }
 
@@ -15,15 +28,41 @@ namespace tyon
 
     PROC sdl_destroy() -> fresult
     {
+        g_sdl->~sdl_context();
+        return true;
+    }
+
+    PROC sdl_window_open( window* arg ) -> fresult
+    {   PROFILE_SCOPE_FUNCTION();
+        TYON_LOG( "Opening Window using SDL platform" );
+
+        sdl_window platform_window;
+        arg->id = uuid_generate();
+        platform_window.id = arg->id;
+
+        // TODO: Temporarily hardcoded to Vulkan window type
+        platform_window.handle = SDL_CreateWindow(
+            arg->name.c_str(),
+            arg->size.x,
+            arg->size.y,
+            SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE );
+
+        if ( platform_window.handle == nullptr)
+        {   TYON_ERROR( "Failed to open SDL window" );
+            return false;
+        }
+        // TODO: Hardcoded main window
+        &g_sdl->windows.push_tail( platform_window );
+
+        SDL_ShowWindow( platform_window.handle );
+        if (arg->maximized)
+        {   SDL_MaximizeWindow( platform_window.handle );
+        }
+
         return false;
     }
 
-    PROC sdl_window_open() -> fresult
-    {
-        return false;
-    }
-
-    PROC sdl_window_close() -> fresult
+    PROC sdl_window_close( window* arg ) -> fresult
     {
         return false;
     }
@@ -34,6 +73,30 @@ namespace tyon
 
     }
 
+    PROC sdl_vulkan_surface_create(
+        window* arg,
+        VkInstance vk_instance,
+        const struct VkAllocationCallbacks* vk_allocator,
+        VkSurfaceKHR* surface
+    ) -> fresult
+    {
+        auto search = g_sdl->windows.linear_search( [=]( sdl_window& x ) {
+            return x.id == arg->id; } );
+        if (search.match_found == false)
+        {   return false;
+        }
+
+        auto platform_window = search.match;
+        bool create_ok = SDL_Vulkan_CreateSurface(
+            platform_window->handle, vk_instance, vk_allocator, surface );
+        if (create_ok == false)
+        {   TYON_ERROR( "Failed to create Vulkan surface using SDL Platform" );
+            return false;
+        }
+        TYON_LOG( "Created Vulkan surface using SDL Platform" );
+        return true;
+    }
+
     PROC sdl_platform_procs_create() -> platform_procs
     {
         platform_procs result = {
@@ -41,7 +104,8 @@ namespace tyon
             .tick = sdl_tick,
             .destroy = sdl_destroy,
             .window_open = sdl_window_open,
-            .window_close = sdl_window_close
+            .window_close = sdl_window_close,
+            .vulkan_surface_create = sdl_vulkan_surface_create
         };
         return result;
     }

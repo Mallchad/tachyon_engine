@@ -1023,7 +1023,6 @@ PROC vulkan_init() -> fresult
     auto& instance = g_vulkan->instance;
     VkInstanceCreateInfo instance_args = {};
     VkApplicationInfo app_info = {};
-    // VkXlibSurfaceCreateInfoKHR surface_args = {};
     i32& graphics_queue_family = self->graphics_queue_family;
     i32& present_queue_family = self->present_queue_family;
 
@@ -1144,32 +1143,24 @@ PROC vulkan_init() -> fresult
     dyn::vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)
     vkGetInstanceProcAddr( g_vulkan->instance, "vkSetDebugUtilsObjectNameEXT" );
 
-    // // -- Setup default window surfaces --
-    // if (g_x11->server && g_x11->window)
-    // {
-    //     // TODO: Need to chain a present struct to try scaling options
-    //     surface_args.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-    //     surface_args.dpy = g_x11->server;
-    //     surface_args.flags = 0x0;
-    //     surface_args.window = g_x11->window;
+    // -- Setup default window surfaces --
+    if (g_sdl)
+    {
+        auto sdl = tyon::sdl_platform_procs_create();
+        bool surface_ok = sdl.vulkan_surface_create(
+            g_sdl->main_window,
+            g_vulkan->instance,
+            g_vulkan->vk_allocator,
+            &g_vulkan->surface
+        );
 
-    //     VULKAN_LOG( "Creating X11 Xlib WSI drawing surface" );
-    //     VkResult surface_ok = vkCreateXlibSurfaceKHR(
-    //         g_vulkan->instance,
-    //         &surface_args,
-    //         g_vulkan->vk_allocator,
-    //         &g_vulkan->surface
-    //     );
-    //     ERROR_GUARD( surface_ok == VK_SUCCESS, "X11 Xlib WSI Surface creation error" );
-    //     VULKAN_LOG( "Tachyon Vulkan", "Vulkan Instance created" );
-    //     g_vulkan->resources.push_cleanup( [] {
-    //         VULKAN_LOGF( "Destroying surface 0x{:x}", u64(g_vulkan->surface) );
-    //         vkDestroySurfaceKHR(
-    //             g_vulkan->instance, g_vulkan->surface, g_vulkan->vk_allocator );
-    //     });
-    // }
-    // else
-    // { VULKAN_LOG( "Vulkan surface could not be created for platform Xlib" ); }
+        g_vulkan->resources.push_cleanup( [] {
+            vkDestroySurfaceKHR(
+                g_vulkan->instance, g_vulkan->surface, g_vulkan->vk_allocator );
+        });
+    }
+    else
+    { VULKAN_LOG( "Vulkan surface could not be created for platform SDL" ); }
 
     // -- Device Enumeration and Selection --
     array<VkPhysicalDevice> devices;
