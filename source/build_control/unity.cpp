@@ -3,6 +3,7 @@
 #include "../file.cpp"
 #include "../global.cpp"
 #include "../math.cpp"
+#include "../platform_sdl.cpp"
 #include "../platform_linux_x11.cpp"
 #include "../platform_vulkan.cpp"
 #include "../tachyon_render.cpp"
