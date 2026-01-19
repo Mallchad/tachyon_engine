@@ -69,6 +69,7 @@
 #include "renderer_interface.hpp"
 
 // New headers
+#include "platform_sdl.h"
 #include "platform_linux_x11.h"
 #include "tachyon_render.h"
 #include "platform_vulkan.h"
