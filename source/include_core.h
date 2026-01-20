@@ -9,6 +9,13 @@
     #define TYON_ENGINE_MAIN_STANDALONE 1
 #endif
 
+#ifndef TYON_X11_ON 
+    #define TYON_X11_ON REFLECTION_PLATFORM_LINUX
+#endif // TYON_X11_ON
+
+#ifndef TYON_WAYLAND_ON
+    #define TYON_WAYLAND_ON REFLECTION_PLATFORM_LINUX
+#endif // TYON_WAYLAND_ON
 
 // Platform Dependencies
 #if (TYON_X11_ON)
@@ -41,6 +48,15 @@
 #include "../external/hardcopy/include/vulkan/vulkan.h"
 // NOTE: I really don't use the hpp or even intend to use it
 // #include <vulkan/vulkan.hpp>
+
+#if (REFLECTION_PLATFORM_WINDOWS)
+#include <vulkan/vulkan_win32.h>
+#endif // REFLECTION_PLATFORM_WINDOWS
+
+// Wayland an X11 are not mutually exclusive.
+#if (TYON_WAYLAND_ON)
+#include <vulkan/vulkan_wayland.h>
+#endif // TYON_WAYLAND_ON
 
 #if (TYON_X11_ON)
     #include <vulkan/vulkan_xlib.h>

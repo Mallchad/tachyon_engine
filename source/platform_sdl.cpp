@@ -52,6 +52,7 @@ namespace tyon
             return false;
         }
         // TODO: Hardcoded main window
+        g_sdl->main_window = arg;
         &g_sdl->windows.push_tail( platform_window );
 
         SDL_ShowWindow( platform_window.handle );
@@ -80,6 +81,10 @@ namespace tyon
         VkSurfaceKHR* surface
     ) -> fresult
     {
+        if (arg == nullptr)
+        {   TYON_ERROR( "Window is nullptr" );
+            return false;
+        }
         auto search = g_sdl->windows.linear_search( [=]( sdl_window& x ) {
             return x.id == arg->id; } );
         if (search.match_found == false)

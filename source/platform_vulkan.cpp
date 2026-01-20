@@ -1047,8 +1047,39 @@ PROC vulkan_init() -> fresult
     vkEnumerateInstanceLayerProperties( &n_layers, nullptr );
 
     array<VkLayerProperties> layers;
-    layers.change_allocation( n_layers );
+    layers.resize( n_layers );
     VkResult enumerate_layer_ok = vkEnumerateInstanceLayerProperties( &n_layers, layers.data );
+
+    u32 available_extensions_n = 0;
+    array<VkExtensionProperties> available_extensions;
+    vkEnumerateInstanceExtensionProperties( nullptr, &available_extensions_n, nullptr );
+    available_extensions.resize( available_extensions_n );
+    vkEnumerateInstanceExtensionProperties(
+        nullptr, &available_extensions_n, available_extensions.data );
+
+
+    VULKAN_LOG( "Enumerating Available Instance Layers:" );
+    // TODO: Enumerate layer-specific extensions here
+    layers.map_procedure( []( VkLayerProperties& arg ) {
+        VULKAN_LOGF( "    {} {}.{}.{}",
+                     arg.layerName,
+                     VK_API_VERSION_MAJOR( arg.specVersion ),
+                     VK_API_VERSION_MINOR( arg.specVersion ),
+                     VK_API_VERSION_PATCH( arg.specVersion ),
+                     arg.description
+        );
+    });
+    VULKAN_LOG( "" );
+    VULKAN_LOG( "Enumerating Available Instance Extensions:" );
+    available_extensions.map_procedure( []( VkExtensionProperties& arg ) {
+        VULKAN_LOGF( "    {} {}.{}.{}",
+                     arg.extensionName,
+                     VK_API_VERSION_MAJOR( arg.specVersion ),
+                     VK_API_VERSION_MINOR( arg.specVersion ),
+                     VK_API_VERSION_PATCH( arg.specVersion )
+        );
+    });
+    VULKAN_LOG( "" );
 
     // -- Setup extensions and layers --
     array<cstring> enabled_layers = {
@@ -1058,9 +1089,6 @@ PROC vulkan_init() -> fresult
         // Surface for common window and compositing tasks
         VK_KHR_SURFACE_EXTENSION_NAME,
 
-        // xlib windowing extension
-        // VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
-
         // message callback and debug stuff
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
         // Dependency for 'vkDebugMarkerSetObjectNameEXT'
@@ -1068,6 +1096,21 @@ PROC vulkan_init() -> fresult
         // Promoted to debug_utils, might still required for older versions, but not modern nvidia
         // VK_EXT_DEBUG_MARKER_EXTENSION_NAME,
     };
+    /* NOTE: The instance will refuse to load if it doesn't support the enabled extensions
+       So we need to make extra sure it's actually supported before we make enable the extension */
+    // win32 Windowing
+    if (REFLECTION_PLATFORM_WINDOWS)
+    {   enabled_extensions.push_tail( "VK_KHR_win32_surface" );
+    }
+
+    // Wayland Windowing
+    if (TYON_WAYLAND_ON)
+    {   enabled_extensions.push_tail( "VK_KHR_wayland_surface" );
+    }
+    if (TYON_X11_ON)// xlib windowing extension
+    {   enabled_extensions.push_tail( "VK_KHR_xlib_surface" );
+    }
+
     app_info.pApplicationName = "Tachyon Engine";
     app_info.applicationVersion = VK_MAKE_API_VERSION( 0, 0, 1, 0 );
     app_info.pEngineName = "Tachyon Engine";
