@@ -178,7 +178,10 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
                  "Using init on a object that's already initialized can't possible make sense." );
     ERROR_GUARD( arg->code_binary, "Code provided must be binary SPIR-V currently" );
     arg->code = file_load_binary( arg->code.filename );
-    ERROR_GUARD( arg->code.file_loaded, "Failed to load file" );
+    if (arg->code.file_loaded == false)
+    {   VULKAN_ERRORF( "Failed to load SPIR-V code Name: '{}' File: '{}'", arg->name, arg->code.filename );
+        return false;
+    }
 
     arg->id = uuid_generate();
 
