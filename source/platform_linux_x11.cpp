@@ -35,7 +35,7 @@ FUNCTION x11_destroy()
     g_x11->~x11_context();
 }
 
-window_id
+uid
 FUNCTION x11_window_open()
 {
     window_id window_new = 0;
@@ -66,7 +66,7 @@ FUNCTION x11_window_open()
         &window_attributes
     );
     // New window becomes active window
-    g_x11->window = x_window_tmp;
+    g_x11->root_window = x_window_tmp;
 
     // Fullscreen the window if allowed
     g_x11->wm_state      = XInternAtom( g_x11->server, "_NET_WM_STATE", true );
@@ -118,14 +118,14 @@ FUNCTION x11_window_open()
         KeyPressMask | KeyReleaseMask |
         ButtonPressMask | PointerMotionMask | StructureNotifyMask
     );
-    XSelectInput( g_x11->server, g_x11->window, event_mask );
+    XSelectInput( g_x11->server, g_x11->root_window, event_mask );
 
     // Fix auto repeat smashing simeltaneous key input
     XAutoRepeatOn( g_x11->server );
 
     g_x11->window_list.push_back( x_window_tmp );
     window_new = g_x11->window_list.size() - 1;
-    return window_new;
+    return u32(window_new);
 }
 
 PROC x11_window_close( window_id target )
@@ -254,7 +254,7 @@ PROC x11_tick()
     x11_event_process();
 }
 
-#endif //  TYON_X11_ON
+#else
 
 void
 x11_init() {}
@@ -264,5 +264,8 @@ x11_destroy() {}
 
 uid
 x11_window_open() { return {}; }
+
+
+#endif //  TYON_X11_ON
 
 }

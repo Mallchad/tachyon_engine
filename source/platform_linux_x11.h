@@ -15,8 +15,6 @@ struct x11_context
     i32 server_connection_number = -1;
     i32 screen = -1;
     Window root_window = 0;
-    // Primary window being used
-    Window window = 0;
     array<Atom> window_protocols;
     array<uid> window_list;
 
