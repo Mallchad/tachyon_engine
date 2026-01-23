@@ -18,12 +18,13 @@ namespace tyon
         SDL_GL_GetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, &minor );
 
         TYON_LOG( "Initialization Complete for Platform SDL" );
-        return false;
+        return true;
     }
 
     PROC sdl_tick() -> fresult
     {
-        return false;
+        sdl_event_process();
+        return true;
     }
 
     PROC sdl_destroy() -> fresult
@@ -42,7 +43,7 @@ namespace tyon
 
         // TODO: Temporarily hardcoded to Vulkan window type
         platform_window.handle = SDL_CreateWindow(
-            arg->name.c_str(),
+            arg->title.c_str(),
             arg->size.x,
             arg->size.y,
             SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE );
@@ -55,12 +56,18 @@ namespace tyon
         g_sdl->main_window = arg;
         &g_sdl->windows.push_tail( platform_window );
 
+        TYON_LOG( "Showing SDL Window" );
         SDL_ShowWindow( platform_window.handle );
         if (arg->maximized)
         {   SDL_MaximizeWindow( platform_window.handle );
+            TYON_LOG( "Maximizing SDL window" );
         }
+        i32 window_width = 0;
+        i32 window_height = 0;
+        SDL_GetWindowSize( platform_window.handle, &window_width, &window_height );
+        TYON_LOGF( "Created window size, width: {} : height {}" , window_height, window_height );
 
-        return false;
+        return true;
     }
 
     PROC sdl_window_close( window* arg ) -> fresult
@@ -71,7 +78,7 @@ namespace tyon
     // Internal
     PROC sdl_event_process() -> void
     {
-
+        SDL_PumpEvents();
     }
 
     PROC sdl_vulkan_surface_create(

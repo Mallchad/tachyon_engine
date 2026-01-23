@@ -501,11 +501,17 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
     VkExtent2D min = surface_capabilities.minImageExtent;
     VkExtent2D max = surface_capabilities.maxImageExtent;
     VkExtent2D current = surface_capabilities.currentExtent;
+
     VULKAN_LOGF(
         "Present surface/image extent min: {} {} max: {} {} current {} {}",
         min.width, min.height, max.width, max.height, current.width, current.height
     );
-    VULKAN_LOG( "Current X11 window size: {}", g_render->window_size );
+
+    if (current.width == u32(-1) || current.height == u32(-1) )
+    {   VULKAN_LOG( "Found weird current surface size, we will try to request an appropriate size" );
+        arg->present_size.width = std::clamp( arg->present_size.width, min.width, max.width );
+        arg->present_size.height = std::clamp( arg->present_size.height, min.height, max.height );
+    }
 
     TracyCZoneEnd( zone_1 );
     TracyCZoneN( zone_2, "Zone 2", true );
@@ -1199,11 +1205,12 @@ PROC vulkan_init() -> fresult
             g_vulkan->vk_allocator,
             &g_vulkan->surface
         );
-
-        g_vulkan->resources.push_cleanup( [] {
-            vkDestroySurfaceKHR(
-                g_vulkan->instance, g_vulkan->surface, g_vulkan->vk_allocator );
-        });
+        if (surface_ok)
+        {   g_vulkan->resources.push_cleanup( [] {
+                vkDestroySurfaceKHR(
+                    g_vulkan->instance, g_vulkan->surface, g_vulkan->vk_allocator );
+            });
+        }
     }
     else
     { VULKAN_LOG( "Vulkan surface could not be created for platform SDL" ); }
@@ -1478,11 +1485,11 @@ PROC vulkan_init() -> fresult
     vulkan_shader fragment_shader {};
 
     vertex_shader.name = "test_triangle";
-    vertex_shader.code.filename = "shaders/test_utah_teapot.vert.spv";
+    vertex_shader.code.filename = "data/shaders/test_utah_teapot.vert.spv";
     vertex_shader.code_binary = true;
     vertex_shader.stage_flag = VK_SHADER_STAGE_VERTEX_BIT;
     fragment_shader.name = "test_triangle";
-    fragment_shader.code.filename = "shaders/test_utah_teapot.frag.spv";
+    fragment_shader.code.filename = "data/shaders/test_utah_teapot.frag.spv";
     fragment_shader.code_binary = true;
     fragment_shader.stage_flag = VK_SHADER_STAGE_FRAGMENT_BIT;
 
