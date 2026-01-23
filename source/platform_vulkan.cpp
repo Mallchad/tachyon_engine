@@ -1523,16 +1523,10 @@ PROC vulkan_init() -> fresult
                           { 1.f, 0.f, 0.f, 0.f }}
     };
 
-    fstring utah_teapot_file = linux_search_file(
-      "utah_teapot.stl",
-      { global->project_root.string() + "/assets" }
-    ).string();
-    fstring whale_file = linux_search_file(
-      "articulated_whale_shark.stl",
-      { global->project_root.string() + "/assets" }
-    ).string();
-    fmesh teapot = read_stl_file( utah_teapot_file );
-    fmesh whale = read_stl_file( whale_file );
+    file teapot_file = file_load_binary( "data/geometry/utah_teapot.stl" );
+    file whale_file = file_load_binary( "data/geometry/articulated_whale_shark.stl" );
+    fmesh teapot = read_stl_file( teapot_file.filename );
+    fmesh whale = read_stl_file( whale_file.filename );
     g_vulkan->test_teapot = {
         .name = "test_utah_teapot",
         .vertexes {},
