@@ -109,6 +109,13 @@ struct vulkan_mesh_draw_args
     u32 first_instance = 0;
 };
 
+struct vulkan_frame
+{
+    i32 index = -1;
+    vulkan_buffer general_uniform_buffer;
+    /* VkDeviceMemory general_uniform_memory; */
+    raw_pointer general_uniform_data;
+};
 
 struct vulkan_context
 {
@@ -152,10 +159,11 @@ struct vulkan_context
     VkAllocationCallbacks allocator_callback {};
     // A pointer to the callback, may be null to turn it off
     VkAllocationCallbacks* vk_allocator = nullptr;
-    i32 frame_max_inflight = 3;
+    i32 frames_inflight_count = 3;
     vulkan_swapchain swapchain;
 
     array<vulkan_mesh> meshes;
+    array<vulkan_frame> frames_inflight;
     vulkan_memory device_memory;
 
     // Test Data

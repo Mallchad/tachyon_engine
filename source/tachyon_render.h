@@ -10,8 +10,7 @@ struct render_context
     v2 window_size = { 1920.0f, 1080.0f };
 };
 
-struct
-mesh
+struct mesh
 {
     uid id;
     fstring name;
@@ -29,6 +28,31 @@ mesh
     // Number of vertex indices
     i32 vertex_indexes_n = 0;
 };
+
+#pragma pack(push, 1)
+struct frame_general_uniform
+{
+    // Timestamp of the very beginning of the program lifetime
+    f32 epoch = 0;
+    // Time elapsed since program epoch
+    f32 time_since_epoch = 0;
+    /// Time since epoch at the beginning of previous frame
+    f32 last_begin_epoch = 0;
+    /// Time since epoch at end of previous frame
+    f32 last_end_epoch = 0;
+    /// Time between last frame and current frame measured at unspecified time during frame
+    f32 delta_time = 0;
+    /// Time between last frame and current frame measured at beginning of each frame
+    f32 delta_time_begin = 0;
+    /// Time between last frame and current frame measured at beginning of each frame
+    f32 delta_time_end = 0;
+    // Screen aspect ratio given as vertical over horizontal
+    f32 screen_vh_aspect_ratio = 1080.f/1920.f;
+    // 32nd byte here. Already aligned, no padding required
+    // Primary activate camera
+    matrix camera;
+};
+#pragma pack(pop)
 
 extern render_context* g_render;
 

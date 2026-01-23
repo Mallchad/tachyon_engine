@@ -152,6 +152,7 @@ PROC vulkan_label_object( u64 handle, VkObjectType type, fstring name ) -> void
         .objectType = type,
         .objectHandle = handle,
         .pObjectName = s,
+        .pNext = 0
     };
     dyn::vkSetDebugUtilsObjectNameEXT( g_vulkan->logical_device, &name_args );
 }
@@ -244,7 +245,8 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = x_shader.stage_flag,
                 .vk_module = x_shader.platform_module,
-                .pName = x_shader.entry_point.c_str()
+                .pName = x_shader.entry_point.c_str(),
+                .pNext = nullptr
             });
     }
 
@@ -382,15 +384,34 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
     VkPipelineDynamicStateCreateInfo dynamic_state_args {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .dynamicStateCount = cast<u32>(dynamic_states_selected.size()),
-        .pDynamicStates = dynamic_states_selected.data
+        .pDynamicStates = dynamic_states_selected.data,
+        .pNext = nullptr
     };
 
-    // Set pipeline bindings here
+    /** Official Documentation: Descriptor Set
+
+        An object that resource descriptors are written into via the API, and that can be bound to a
+        command buffer such that the descriptors contained within it can be accessed from shaders.
+        Represented by a VkDescriptorSet object.
+    */
+
+    array<VkDescriptorSetLayoutBinding> resource_descriptors = {
+        {
+            // Generic data uniform
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            // if it's an array of resources we're sending to the shader.
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr
+        }
+    };
     VkDescriptorSetLayoutCreateInfo descriptor_layout_args {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .flags = 0x0,
-        .bindingCount = 0,
-        .pBindings = nullptr,
+        .bindingCount = u32(resource_descriptors.size()),
+        .pBindings = resource_descriptors.data,
+        .pNext = nullptr
     };
 
     /* Pipeline Layout: "An object defining the set of resources (via a
@@ -443,7 +464,7 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
     VkGraphicsPipelineCreateInfo pipeline_args {};
     pipeline_args.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipeline_args.pStages = stages.data;
-    pipeline_args.stageCount = stages.size();
+    pipeline_args.stageCount = u32(stages.size());
     pipeline_args.pVertexInputState = &vertex_args;
     pipeline_args.pInputAssemblyState = &input_args;
     pipeline_args.pViewportState = &viewport_args;
@@ -537,7 +558,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
 
     VkSwapchainCreateInfoKHR swapchain_args {};
     swapchain_args.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapchain_args.minImageCount = g_vulkan->frame_max_inflight;
+    swapchain_args.minImageCount = g_vulkan->frames_inflight_count;
     swapchain_args.surface = g_vulkan->surface;
     swapchain_args.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     // The format must match the physical surface formats
@@ -602,7 +623,8 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
         VkFenceCreateInfo fence_args {
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             // Start signalled
-            .flags = VK_FENCE_CREATE_SIGNALED_BIT
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+            .pNext = nullptr
         };
 
         fence_errors[i] = vkCreateFence(
@@ -722,6 +744,13 @@ PROC vulkan_buffer_create(
     }
     result.id = uuid_generate(); // Valid objects have a non-zero UUID
     vulkan_label_object( (u64)result.buffer, VK_OBJECT_TYPE_BUFFER, name );
+
+    // Set cleanup code
+    VkBuffer _buffer = result.buffer;
+    g_vulkan->resources.push_cleanup( [_buffer] {
+        vkDestroyBuffer( g_vulkan->logical_device, _buffer, g_vulkan->vk_allocator );
+    });
+
     return result;
 }
 
@@ -755,7 +784,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
     array<vulkan_buffer> requirement_buffers;
     array<VkMemoryRequirements> requirement_results;
     requirement_buffers.push_tail( vulkan_buffer_create( 
-        "requirements_transfer", 1_GiB, VK_BUFFER_USAGE_TRANSFER_SRC_BIT ));
+        "requirements_transfer", 32, VK_BUFFER_USAGE_TRANSFER_SRC_BIT ));
     requirement_buffers.push_tail( vulkan_buffer_create( 
         "requirements_uniform_texel", 32, VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT ) );
     requirement_buffers.push_tail( vulkan_buffer_create( 
@@ -1016,10 +1045,42 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
         .memory = g_vulkan->device_memory.memory,
         .offset = 0,
         .size = u64(vk_mesh->vertex_buffer.size),
+        .pNext = nullptr
     };
     // TODO: remove before flight
     // vkFlushMappedMemoryRanges( g_vulkan->logical_device, 1, &range );
     // return false;
+    return true;
+}
+
+PROC vulkan_frame_init( vulkan_frame* arg ) -> fresult
+{
+    arg->general_uniform_buffer = vulkan_buffer_create(
+        "frame_general_uniform",
+        sizeof( frame_general_uniform),
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+    );
+    fresult allocate_ok = vulkan_memory_suballocate_buffer(
+        &g_vulkan->device_memory, &arg->general_uniform_buffer );
+    if (allocate_ok == false)
+    {   return false;
+    }
+    void* data = nullptr;
+    /** WARNING: Please don't try to unmap memory suballocated from a buffer it
+        will immediately invalidate every buffer associated with the device
+        memory object. */
+    VkResult map_bad = vkMapMemory(
+        g_vulkan->logical_device,
+        g_vulkan->device_memory.memory,
+        arg->general_uniform_buffer.memory.position,
+        arg->general_uniform_buffer.size,
+        // No known useful flags for this function
+        0,
+        &data
+    );
+    if (map_bad)
+    {   return false;
+    }
     return true;
 }
 
@@ -1427,6 +1488,7 @@ PROC vulkan_init() -> fresult
 
     VkSemaphoreCreateInfo semaphore_args {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        .pNext = nullptr
     };
     bool semaphore_ok = true;
     semaphore_ok &= VK_SUCCESS == vkCreateSemaphore(
@@ -1462,9 +1524,9 @@ PROC vulkan_init() -> fresult
     command_args.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     command_args.commandPool = command_pool;
     command_args.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    command_args.commandBufferCount = self->frame_max_inflight;
+    command_args.commandBufferCount = self->frames_inflight_count;
 
-    self->commands.resize( self->frame_max_inflight );
+    self->commands.resize( self->frames_inflight_count );
     VkResult command_buffer_bad = vkAllocateCommandBuffers(
         g_vulkan->logical_device, &command_args, g_vulkan->commands.data );
     if (command_buffer_bad)
@@ -1475,7 +1537,7 @@ PROC vulkan_init() -> fresult
     g_vulkan->resources.push_cleanup( [] {
         vkFreeCommandBuffers(
             g_vulkan->logical_device, g_vulkan->command_pool,
-            g_vulkan->frame_max_inflight, g_vulkan->commands.data
+            g_vulkan->frames_inflight_count, g_vulkan->commands.data
         );
     } );
 
@@ -1509,7 +1571,8 @@ PROC vulkan_init() -> fresult
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = x_shader.stage_flag,
                 .vk_module = x_shader.platform_module,
-                .pName = x_shader.entry_point.c_str()
+                .pName = x_shader.entry_point.c_str(),
+                .pNext = nullptr
             });
     }
 
@@ -1641,7 +1704,13 @@ PROC vulkan_init() -> fresult
     g_vulkan->swapchain.name = "version_0";
     vulkan_swapchain_init( &g_vulkan->swapchain, VK_NULL_HANDLE );
 
+    // Create primary generic pipeline
     vulkan_pipeline_mesh_init( &pipeline );
+
+    // Create per-frame data, we may have more than one frame going at once and per-frame resources
+    g_vulkan->frames_inflight.resize( g_vulkan->frames_inflight_count );
+    g_vulkan->frames_inflight.map_procedure( []( vulkan_frame& arg ) {
+        vulkan_frame_init( &arg ); });
 
     result = true;
     g_vulkan->initialized = true;
@@ -1873,7 +1942,8 @@ PROC vulkan_draw() -> void
         .commandBufferCount = 1,
         .pCommandBuffers = &command_buffer,
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &self->queue_submit_semaphore
+        .pSignalSemaphores = &self->queue_submit_semaphore,
+        .pNext = nullptr
     };
 
     // VkResult sync_ok = vkWaitForFences(
@@ -1900,7 +1970,8 @@ PROC vulkan_draw() -> void
         .pSwapchains = present_swapchains,
         .pImageIndices = &image_index,
         // This can be used for storing results from each individual swapchain
-        .pResults = nullptr
+        .pResults = nullptr,
+        .pNext = nullptr
     };
     VkResult present_bad = vkQueuePresentKHR( self->present_queue, &present_args );
     if (present_bad)
