@@ -9,6 +9,12 @@ namespace tyon
         g_sdl = memory_allocate<sdl_context>( 1 );
         // NOTE: SDL must not ever move threads
         SDL_SetLogPriorities( SDL_LOG_PRIORITY_TRACE );
+
+        if (REFLECTION_PLATFORM_LINUX &&
+            (g_render->renderdoc_attached || g_render->nsight_attached))
+        {   SDL_SetHint( SDL_HINT_VIDEO_DRIVER, "x11" );
+            g_render->window_platform = e_window_platform::x11;
+        }
         // TODO: Init more stuff here as you use more things
         SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD );
 
@@ -17,6 +23,18 @@ namespace tyon
         SDL_GL_GetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, &major );
         SDL_GL_GetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, &minor );
 
+        // Enumerate video drivers
+        array<fstring> video_drivers;
+        TYON_LOG( "Enumerating SDL Video Drivers: " );
+        for (i32 i=0; i<100; ++i)
+        {
+            cstring x_driver = SDL_GetVideoDriver( i );
+            if (x_driver == nullptr) { break; }
+            TYON_LOGF( "    {}", video_drivers.push_tail( x_driver ) );
+        }
+
+        cstring video_driver = SDL_GetCurrentVideoDriver();
+        TYON_LOGF( "Current SDL selected video: {}", video_driver );
         TYON_LOG( "Initialization Complete for Platform SDL" );
         return true;
     }

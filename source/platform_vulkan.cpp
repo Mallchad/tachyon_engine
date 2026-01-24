@@ -1179,17 +1179,17 @@ PROC vulkan_init() -> fresult
     };
     /* NOTE: The instance will refuse to load if it doesn't support the enabled extensions
        So we need to make extra sure it's actually supported before we make enable the extension */
-    // win32 Windowing
-    if (REFLECTION_PLATFORM_WINDOWS)
-    {   enabled_extensions.push_tail( "VK_KHR_win32_surface" );
+    if (g_render->window_platform == e_window_platform::x11)
+    {   // xlib windowing extension
+        enabled_extensions.push_tail( "VK_KHR_xlib_surface" );
     }
-
-    // Wayland Windowing
-    if (TYON_WAYLAND_ON)
-    {   enabled_extensions.push_tail( "VK_KHR_wayland_surface" );
+    else if (g_render->window_platform == e_window_platform::wayland)
+    {   // Wayland Windowing
+        enabled_extensions.push_tail( "VK_KHR_wayland_surface" );
     }
-    if (TYON_X11_ON)// xlib windowing extension
-    {   enabled_extensions.push_tail( "VK_KHR_xlib_surface" );
+    else if (g_render->window_platform == e_window_platform::windows)
+    {   // win32 Windowing
+        enabled_extensions.push_tail( "VK_KHR_win32_surface" );
     }
 
     app_info.pApplicationName = "Tachyon Engine";
@@ -1237,7 +1237,7 @@ PROC vulkan_init() -> fresult
         &instance_args, g_vulkan->vk_allocator, &g_vulkan->instance );
     if (instance_ok != VK_SUCCESS)
     {
-        VULKAN_ERROR( "Failed to create Vulkan instance" );
+        VULKAN_ERROR( "Failed to create Vulkan instance", string_VkResult( instance_ok ) );
         return false;
     }
     VULKAN_LOG( "Created Vulkan instance" );

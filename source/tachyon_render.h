@@ -4,10 +4,22 @@
 namespace tyon
 {
 
+enum class e_window_platform : i32
+{
+    none = 0,
+    any = 1,
+    x11 = 2,
+    wayland = 3,
+    windows = 4
+};
+
 struct render_context
 {
     // Primary window size
     v2 window_size = { 1920.0f, 1080.0f };
+    e_window_platform window_platform = e_window_platform::none;
+    bool renderdoc_attached = false;
+    bool nsight_attached = false;
 };
 
 struct mesh

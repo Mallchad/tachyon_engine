@@ -6,12 +6,34 @@ namespace tyon
 
 render_context* g_render = nullptr;
 
+auto sdl = tyon::sdl_platform_procs_create();
 
 PROC render_init() -> void
 {
     PROFILE_SCOPE_FUNCTION();
 
     g_render = memory_allocate<render_context>( 1 );
+
+    /* If nsight or renderdoc is attached it will break with wayland, so we
+       should try to disable pre-emptively that if possible. */
+    if (REFLECTION_PLATFORM_LINUX)
+    {   char* renderdoc_env = std::getenv( "ENABLE_VULKAN_RENDERDOC_CAPTURE" );
+        if (renderdoc_env && renderdoc_env[0] == '1')
+        {   TYON_LOG( "Renderdoc is attached and doesn't support Wayland, falling back to X11" );
+            g_render->renderdoc_attached = true;
+        }
+    }
+
+    // SDL needs to setup after the render context but before vulkan init
+    sdl.init();
+
+    tyon::window default_window = {
+        .name = "VMEC | Spectral Renderer",
+        .size = tyon::v2 { 1920.0f, 1000.0f },
+        .position = tyon::v2 { 0.0f, 0.0f },
+        .maximized = true
+    };
+    sdl.window_open( &default_window );
 
     bool vulkan_ok = false;
     bool opengl_ok = false;
@@ -36,6 +58,7 @@ PROC render_tick() -> void
 {
     PROFILE_SCOPE_FUNCTION();
 
+    sdl.tick();
     switch (global->render_backend)
     {
         case e_render_backend::vulkan:
