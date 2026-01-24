@@ -44,6 +44,7 @@ struct vulkan_pipeline
 
     VkPipeline platform_pipeline {};
     VkPipelineLayout platform_layout {};
+    VkDescriptorPool vk_resource_pool {};
     VkDescriptorSetLayout platform_descriptor_layout {};
     VkRenderPass platform_render_pass {};
 
@@ -115,6 +116,8 @@ struct vulkan_frame
     vulkan_buffer general_uniform_buffer;
     /* VkDeviceMemory general_uniform_memory; */
     raw_pointer general_uniform_data;
+    /* VkDescriptorPool descriptor_resource_pool; */
+    VkDescriptorSet vk_resource;
 };
 
 struct vulkan_context
@@ -139,7 +142,7 @@ struct vulkan_context
     VkQueue graphics_queue;
     VkQueue present_queue;
 
-    VkDescriptorSetLayout descriptor_layout;
+
     VkPipelineLayout pipeline_layout;
 
     // Primary render pass

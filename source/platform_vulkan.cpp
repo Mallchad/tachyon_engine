@@ -432,11 +432,11 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
         g_vulkan->vk_allocator,
         &arg->platform_descriptor_layout
     );
-    g_vulkan->resources.push_cleanup( [] {
+    g_vulkan->resources.push_cleanup( [resource_layout = arg->platform_descriptor_layout] {
         VULKAN_LOG( "Destroying descriptor layout set" );
         vkDestroyDescriptorSetLayout(
             g_vulkan->logical_device,
-            g_vulkan->descriptor_layout,
+            resource_layout,
             g_vulkan->vk_allocator
         );
     });
@@ -1053,8 +1053,18 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
     return true;
 }
 
-PROC vulkan_frame_init( vulkan_frame* arg ) -> fresult
+PROC vulkan_frame_init( vulkan_frame* arg, vulkan_pipeline* pipeline ) -> fresult
 {
+    VkDescriptorSetAllocateInfo descriptor_resource_args {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .descriptorPool = pipeline->vk_resource_pool,
+        // Only allocating 1 frame at a time
+        .descriptorSetCount = 1,
+        .pSetLayouts = &pipeline->platform_descriptor_layout
+    };
+    vkAllocateDescriptorSets(
+        g_vulkan->logical_device, &descriptor_resource_args, arg->vk_resource );
+
     arg->general_uniform_buffer = vulkan_buffer_create(
         "frame_general_uniform",
         sizeof( frame_general_uniform),
@@ -1708,9 +1718,41 @@ PROC vulkan_init() -> fresult
     vulkan_pipeline_mesh_init( &pipeline );
 
     // Create per-frame data, we may have more than one frame going at once and per-frame resources
+    VkDescriptorPoolSize descriptor_size {
+        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount = u32(g_vulkan->frames_inflight_count)
+    };
+
+    VkDescriptorPoolCreateInfo descriptor_pool_args {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .flags = 0x0,
+        .maxSets = u32(g_vulkan->frames_inflight_count),
+        .poolSizeCount = 1,
+        .pPoolSizes = &descriptor_size
+    };
+
+    VkDescriptorPool frame_descriptor_pool;
+    VkResult descriptor_bad = vkCreateDescriptorPool(
+        g_vulkan->logical_device,
+        &descriptor_pool_args,
+        g_vulkan->vk_allocator,
+        &frame_descriptor_pool
+    );
+    if (descriptor_bad)
+    {   VULKAN_ERRORF( "Failed to create descriptor resource pool {}",
+                      string_VkResult( descriptor_bad ) );
+    }
+    else
+    {
+        g_vulkan->resources.push_cleanup( [frame_descriptor_pool] {
+            VULKAN_LOG( "Destroying descriptor set layout" );
+            vkDestroyDescriptorPool(
+                g_vulkan->logical_device, frame_descriptor_pool, g_vulkan->vk_allocator ); });
+    }
+
     g_vulkan->frames_inflight.resize( g_vulkan->frames_inflight_count );
     g_vulkan->frames_inflight.map_procedure( []( vulkan_frame& arg ) {
-        vulkan_frame_init( &arg ); });
+        vulkan_frame_init( &arg, &g_vulkan->mesh_pipeline ); });
 
     result = true;
     g_vulkan->initialized = true;
@@ -1755,7 +1797,7 @@ PROC vulkan_draw() -> void
     auto self = g_vulkan;
     auto& swapchain = self->swapchain;
     if (g_vulkan->initialized == false) { return; }
-    i64 current_frame = g_vulkan->frames_started;
+    i64 current_frame_i = g_vulkan->frames_started;
 
     // -- Pre-Draw Start Setup and Reset Tasks
     // Clear acquire fence if we skipped the last frame
@@ -1763,6 +1805,7 @@ PROC vulkan_draw() -> void
 
     // Set draw commands
     u32 image_index {};
+    u32 inflight_frame {};
     auto acquire_bad = vkAcquireNextImageKHR(
         g_vulkan->logical_device,
         g_vulkan->swapchain.platform_swapchain,
@@ -1771,6 +1814,7 @@ PROC vulkan_draw() -> void
         g_vulkan->frame_acquire_fence,
         &image_index
     );
+    inflight_frame = image_index;
 
     if (acquire_bad == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -1795,7 +1839,7 @@ PROC vulkan_draw() -> void
         );
         VkSwapchainKHR reuse_swapchain = g_vulkan->swapchain.platform_swapchain;
         vulkan_swapchain_destroy( &g_vulkan->swapchain );
-        g_vulkan->swapchain.name = fmt::format( "version_{}", current_frame );
+        g_vulkan->swapchain.name = fmt::format( "version_{}", current_frame_i );
         vulkan_swapchain_init( &g_vulkan->swapchain, reuse_swapchain );
 
         acquire_bad = vkAcquireNextImageKHR(
@@ -1833,7 +1877,7 @@ PROC vulkan_draw() -> void
     auto frame_timeout = vkWaitForFences(
         g_vulkan->logical_device, 1, &self->frame_acquire_fence, true, 16'666'666 );
     if (frame_timeout == VK_TIMEOUT)
-    {   VULKAN_ERRORF( "Frame: {}] | Missed frame!", current_frame ); return;
+    {   VULKAN_ERRORF( "Frame: {}] | Missed frame!", current_frame_i ); return;
     }
     else if (frame_timeout == VK_ERROR_DEVICE_LOST)
     {   VULKAN_ERROR( "Something really horrible happened, "
@@ -1841,13 +1885,18 @@ PROC vulkan_draw() -> void
         return;
     }
     else if (frame_timeout == VK_SUCCESS)
-    {   VULKAN_LOGF( "Frame: {} | Completed Frame.", current_frame ); }
+    {   VULKAN_LOGF( "Frame: {} | Completed Frame.", current_frame_i ); }
 
     VkCommandBuffer command_buffer = self->commands[ image_index ];
     vkResetCommandBuffer( command_buffer, 0x0 );
 
     // -- Get started on new frame --
     ++g_vulkan->frames_started;
+
+    // Collect relevant references
+    vulkan_frame* current_frame = g_vulkan->frames_inflight.address( image_index );
+
+
     // Start writing draw commands to command buffer
     VkCommandBufferBeginInfo begin_args {};
     begin_args.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1875,6 +1924,7 @@ PROC vulkan_draw() -> void
     // Must bind pipeline before using it
     vkCmdBindPipeline(
         command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_vulkan->mesh_pipeline.platform_pipeline );
+
 
     // Resize viewport and scissor
     VkViewport viewport_config {
@@ -1913,6 +1963,20 @@ PROC vulkan_draw() -> void
     VkDeviceSize offsets[] = { u64(0) };
     u32 n_buffers = 1;
     vkCmdBindVertexBuffers( command_buffer, 0, n_buffers, vertex_buffers, offsets );
+    u32 first_set_offset = 0;
+    u32 resource_n = 0;
+    const uint32_t* dynamic_offsets = nullptr;
+    u32 dynamic_offsets_n = 0;
+    vkCmdBindDescriptorSets(
+        command_buffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        g_vulkan->pipeline_layout,
+        first_set_offset,
+        resource_n,
+        &current_frame->descriptor_resource,
+        dynamic_offsets_n,
+        dynamic_offsets
+    );
 
     // Draw an actual mesh
     auto mesh_args = vulkan_mesh_draw_args {
