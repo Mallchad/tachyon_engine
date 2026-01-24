@@ -1091,6 +1091,7 @@ PROC vulkan_frame_init( vulkan_frame* arg, vulkan_pipeline* pipeline ) -> fresul
     if (map_bad)
     {   return false;
     }
+    arg->general_uniform_data = data;
     return true;
 }
 
@@ -1815,7 +1816,7 @@ PROC vulkan_draw() -> void
 
     // Set draw commands
     u32 image_index {};
-    u32 inflight_frame {};
+    u32 inflight_frame_i {};
     auto acquire_bad = vkAcquireNextImageKHR(
         g_vulkan->logical_device,
         g_vulkan->swapchain.platform_swapchain,
@@ -1824,7 +1825,7 @@ PROC vulkan_draw() -> void
         g_vulkan->frame_acquire_fence,
         &image_index
     );
-    inflight_frame = image_index;
+    inflight_frame_i = image_index;
 
     if (acquire_bad == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -1903,10 +1904,44 @@ PROC vulkan_draw() -> void
     // -- Get started on new frame --
     ++g_vulkan->frames_started;
 
-    // Collect relevant references
+    // SECTION: Set up some per frame data
     vulkan_frame* current_frame = g_vulkan->frames_inflight.address( image_index );
     vulkan_pipeline* current_pipeline = &g_vulkan->mesh_pipeline;
 
+    current_frame->draw_index = current_frame_i;
+    current_frame->inflight_index = inflight_frame_i;
+
+    // Setup Uniform
+    frame_general_uniform* current_uniform = &current_frame->uniform;
+    // current_uniform->epoch = tyon::g_program_epoch;
+    current_uniform->time_since_epoch = time_elapsed_seconds();
+
+     // (take copy on purpose for temporary camera data)
+    frame_general_uniform uniform_copy = *current_uniform;
+    uniform_copy.camera = current_uniform->camera.unreal_to_opengl().transpose();
+    memory_copy<frame_general_uniform>( current_frame->general_uniform_data, &uniform_copy, 1 );
+
+    // Update the descriptor resource associated with the uniform
+    VkDescriptorBufferInfo resource_buffer_info {
+        .buffer = current_frame->general_uniform_buffer.buffer,
+        .offset = 0,
+        .range = VK_WHOLE_SIZE
+    };
+
+    VkWriteDescriptorSet resource_write_args {
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext = nullptr,
+        .dstSet = current_frame->vk_resource,
+        .dstBinding = 0,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .pImageInfo = nullptr,
+        .pBufferInfo = &resource_buffer_info,
+        .pTexelBufferView = nullptr
+    };
+    // Finalize the copy. No error return.
+    vkUpdateDescriptorSets (g_vulkan->logical_device, 1, &resource_write_args, 0, nullptr );
 
     // Start writing draw commands to command buffer
     VkCommandBufferBeginInfo begin_args {};

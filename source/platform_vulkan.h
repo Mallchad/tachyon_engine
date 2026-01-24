@@ -112,7 +112,11 @@ struct vulkan_mesh_draw_args
 
 struct vulkan_frame
 {
-    i32 index = -1;
+    // The index of the frame drawn since program start
+    i64 draw_index = -1;
+    // Provided by vkAcquireNextImageKHR
+    i32 inflight_index = -1;
+    frame_general_uniform uniform;
     vulkan_buffer general_uniform_buffer;
     /* VkDeviceMemory general_uniform_memory; */
     raw_pointer general_uniform_data;
