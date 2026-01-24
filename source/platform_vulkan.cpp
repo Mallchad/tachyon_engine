@@ -1056,14 +1056,14 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
 PROC vulkan_frame_init( vulkan_frame* arg, vulkan_pipeline* pipeline ) -> fresult
 {
     VkDescriptorSetAllocateInfo descriptor_resource_args {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .descriptorPool = pipeline->vk_resource_pool,
         // Only allocating 1 frame at a time
         .descriptorSetCount = 1,
         .pSetLayouts = &pipeline->platform_descriptor_layout
     };
     vkAllocateDescriptorSets(
-        g_vulkan->logical_device, &descriptor_resource_args, arg->vk_resource );
+        g_vulkan->logical_device, &descriptor_resource_args, &arg->vk_resource );
 
     arg->general_uniform_buffer = vulkan_buffer_create(
         "frame_general_uniform",
@@ -1714,10 +1714,13 @@ PROC vulkan_init() -> fresult
     g_vulkan->swapchain.name = "version_0";
     vulkan_swapchain_init( &g_vulkan->swapchain, VK_NULL_HANDLE );
 
-    // Create primary generic pipeline
-    vulkan_pipeline_mesh_init( &pipeline );
-
-    // Create per-frame data, we may have more than one frame going at once and per-frame resources
+    /* NOTE Descriptor pools are fixed size, so they need to be created on
+     * demand. But some shaders use common resources, so we'll bind some common
+     * ones up front, and pass it to the pipeline, and then do per-pipeline
+     * resources later on where it's relevant
+     *
+     * TODO: Need to figure out if we can use descriptor resources from 2
+     * different pools in the same shader */
     VkDescriptorPoolSize descriptor_size {
         .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .descriptorCount = u32(g_vulkan->frames_inflight_count)
@@ -1740,7 +1743,7 @@ PROC vulkan_init() -> fresult
     );
     if (descriptor_bad)
     {   VULKAN_ERRORF( "Failed to create descriptor resource pool {}",
-                      string_VkResult( descriptor_bad ) );
+                       string_VkResult( descriptor_bad ) );
     }
     else
     {
@@ -1750,6 +1753,13 @@ PROC vulkan_init() -> fresult
                 g_vulkan->logical_device, frame_descriptor_pool, g_vulkan->vk_allocator ); });
     }
 
+
+    // Create primary generic pipeline
+    g_vulkan->mesh_pipeline.vk_resource_pool = frame_descriptor_pool;
+    vulkan_pipeline_mesh_init( &g_vulkan->mesh_pipeline );
+
+    /* Create per-frame data, we may have more than one frame going at once and per-frame resources
+     NOTE: Dependant on descriptor resource data and pipeline data, must run afterwards */
     g_vulkan->frames_inflight.resize( g_vulkan->frames_inflight_count );
     g_vulkan->frames_inflight.map_procedure( []( vulkan_frame& arg ) {
         vulkan_frame_init( &arg, &g_vulkan->mesh_pipeline ); });
@@ -1895,6 +1905,7 @@ PROC vulkan_draw() -> void
 
     // Collect relevant references
     vulkan_frame* current_frame = g_vulkan->frames_inflight.address( image_index );
+    vulkan_pipeline* current_pipeline = &g_vulkan->mesh_pipeline;
 
 
     // Start writing draw commands to command buffer
@@ -1923,7 +1934,7 @@ PROC vulkan_draw() -> void
     vkCmdBeginRenderPass( command_buffer, &render_pass_args, VK_SUBPASS_CONTENTS_INLINE );
     // Must bind pipeline before using it
     vkCmdBindPipeline(
-        command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_vulkan->mesh_pipeline.platform_pipeline );
+        command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, current_pipeline->platform_pipeline );
 
 
     // Resize viewport and scissor
@@ -1964,16 +1975,16 @@ PROC vulkan_draw() -> void
     u32 n_buffers = 1;
     vkCmdBindVertexBuffers( command_buffer, 0, n_buffers, vertex_buffers, offsets );
     u32 first_set_offset = 0;
-    u32 resource_n = 0;
+    u32 resource_n = 1;
     const uint32_t* dynamic_offsets = nullptr;
     u32 dynamic_offsets_n = 0;
     vkCmdBindDescriptorSets(
         command_buffer,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
-        g_vulkan->pipeline_layout,
+        current_pipeline->platform_layout,
         first_set_offset,
         resource_n,
-        &current_frame->descriptor_resource,
+        &current_frame->vk_resource,
         dynamic_offsets_n,
         dynamic_offsets
     );

@@ -142,8 +142,9 @@ struct vulkan_context
     VkQueue graphics_queue;
     VkQueue present_queue;
 
+    VkDescriptorPool common_resource_pool;
 
-    VkPipelineLayout pipeline_layout;
+    /* VkPipelineLayout pipeline_layout; */
 
     // Primary render pass
     VkRenderPass render_pass;
