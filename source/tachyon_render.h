@@ -13,6 +13,12 @@ enum class e_window_platform : i32
     windows = 4
 };
 
+struct scene_camera
+{
+    ftransform transform;
+    vec2 sensor_size;
+};
+
 struct render_context
 {
     // Primary window size
@@ -20,6 +26,8 @@ struct render_context
     e_window_platform window_platform = e_window_platform::none;
     bool renderdoc_attached = false;
     bool nsight_attached = false;
+
+    scene_camera main_camera;
 };
 
 struct mesh

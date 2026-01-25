@@ -1913,6 +1913,7 @@ PROC vulkan_draw() -> void
 
     current_frame->draw_index = current_frame_i;
     current_frame->inflight_index = inflight_frame_i;
+    current_frame->uniform.camera = g_render->main_camera.transform.transform_matrix();
 
     // Setup Uniform
     frame_general_uniform* current_uniform = &current_frame->uniform;

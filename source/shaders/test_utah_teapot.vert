@@ -155,7 +155,8 @@ void main()
     rot.x = 0.0;
     rot.z = -0.5;
     // rot.y = (0.0 + (time_since_epoch * rotation_speed)) * tau;
-    // rot.y = 0.0;    // rot.z = (0.0 + (time_since_epoch * rotation_speed)) * tau;
+    rot.y = 0.0;
+    rot.z = (0.0 + (time_since_epoch * rotation_speed)) * tau;
     // rot.z = 0.0;
     rot.w = 0.0;
 

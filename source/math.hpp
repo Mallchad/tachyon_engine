@@ -281,7 +281,7 @@ struct transform
 
     matrix
     transform_matrix()
-    { return {}; }
+    { return matrix::one(); }
 
 };
 
