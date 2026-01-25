@@ -10,11 +10,16 @@ namespace tyon
         // NOTE: SDL must not ever move threads
         SDL_SetLogPriorities( SDL_LOG_PRIORITY_TRACE );
 
-        if (REFLECTION_PLATFORM_LINUX &&
-            (g_render->renderdoc_attached || g_render->nsight_attached))
-        {   SDL_SetHint( SDL_HINT_VIDEO_DRIVER, "x11" );
-            g_render->window_platform = e_window_platform::x11;
+        if (REFLECTION_PLATFORM_LINUX)
+        {   fstring x11_env = std::getenv( "DISPLAY" );
+            fstring wayland_env = std::getenv( "WAYLAND_DISPLAY" );
+
+            if (g_render->renderdoc_attached || g_render->nsight_attached)
+            {   SDL_SetHint( SDL_HINT_VIDEO_DRIVER, "x11" );
+                g_render->window_platform = e_window_platform::x11;
+            }
         }
+
         // TODO: Init more stuff here as you use more things
         SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD );
 
@@ -33,7 +38,17 @@ namespace tyon
             TYON_LOGF( "    {}", video_drivers.push_tail( x_driver ) );
         }
 
-        cstring video_driver = SDL_GetCurrentVideoDriver();
+        fstring video_driver = SDL_GetCurrentVideoDriver();
+        if (video_driver == "x11")
+        {   g_render->window_platform = e_window_platform::x11;
+        }
+        else if (video_driver == "wayland")
+        {   g_render->window_platform = e_window_platform::wayland;
+        }
+        else if (video_driver == "windows")
+        {   g_render->window_platform = e_window_platform::windows;
+        }
+
         TYON_LOGF( "Current SDL selected video: {}", video_driver );
         TYON_LOG( "Initialization Complete for Platform SDL" );
         return true;

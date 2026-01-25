@@ -513,37 +513,40 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
     VkAllocationCallbacks allocator = vulkan_allocator_create_callbacks(
         g_vulkan->allocator.get() );
 
-    /* We need to know the capabilities of the surface associated with the physical device
-       So we retreive those capabilities */
-    VkSurfaceCapabilitiesKHR surface_capabilities {};
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        g_vulkan->device, g_vulkan->surface, &surface_capabilities );
-    arg->present_size = surface_capabilities.currentExtent;
-    VkExtent2D min = surface_capabilities.minImageExtent;
-    VkExtent2D max = surface_capabilities.maxImageExtent;
-    VkExtent2D current = surface_capabilities.currentExtent;
+    if  (g_vulkan->surface)
+    {
+        /* We need to know the capabilities of the surface associated with the physical device
+           So we retreive those capabilities */
+        VkSurfaceCapabilitiesKHR surface_capabilities {};
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+            g_vulkan->device, g_vulkan->surface, &surface_capabilities );
+        arg->present_size = surface_capabilities.currentExtent;
+        VkExtent2D min = surface_capabilities.minImageExtent;
+        VkExtent2D max = surface_capabilities.maxImageExtent;
+        VkExtent2D current = surface_capabilities.currentExtent;
 
-    VULKAN_LOGF(
-        "Present surface/image extent min: {} {} max: {} {} current {} {}",
-        min.width, min.height, max.width, max.height, current.width, current.height
-    );
+        VULKAN_LOGF(
+            "Present surface/image extent min: {} {} max: {} {} current {} {}",
+            min.width, min.height, max.width, max.height, current.width, current.height
+        );
 
-    if (current.width == u32(-1) || current.height == u32(-1) )
-    {   VULKAN_LOG( "Found weird current surface size, we will try to request an appropriate size" );
-        arg->present_size.width = std::clamp( arg->present_size.width, min.width, max.width );
-        arg->present_size.height = std::clamp( arg->present_size.height, min.height, max.height );
+        if (current.width == u32(-1) || current.height == u32(-1) )
+        {   VULKAN_LOG( "Found weird current surface size, we will try to request an appropriate size" );
+            arg->present_size.width = std::clamp( arg->present_size.width, min.width, max.width );
+            arg->present_size.height = std::clamp( arg->present_size.height, min.height, max.height );
+        }
+
+        TracyCZoneEnd( zone_1 );
+        TracyCZoneN( zone_2, "Zone 2", true );
+        // Also diagnostics for device formats
+        array<VkSurfaceFormatKHR> surface_formats;
+        u32 n_surfaces {};
+        vkGetPhysicalDeviceSurfaceFormatsKHR(
+            g_vulkan->device, g_vulkan->surface, &n_surfaces, nullptr );
+        surface_formats.resize( n_surfaces );
+        vkGetPhysicalDeviceSurfaceFormatsKHR(
+            g_vulkan->device, g_vulkan->surface, &n_surfaces, surface_formats.data );
     }
-
-    TracyCZoneEnd( zone_1 );
-    TracyCZoneN( zone_2, "Zone 2", true );
-    // Also diagnostics for device formats
-    array<VkSurfaceFormatKHR> surface_formats;
-    u32 n_surfaces {};
-    vkGetPhysicalDeviceSurfaceFormatsKHR(
-        g_vulkan->device, g_vulkan->surface, &n_surfaces, nullptr );
-    surface_formats.resize( n_surfaces );
-    vkGetPhysicalDeviceSurfaceFormatsKHR(
-        g_vulkan->device, g_vulkan->surface, &n_surfaces, surface_formats.data );
 
     TracyCZoneEnd( zone_2 );
     TracyCZoneNC( zone_3, "Zone 3", 0xA04040, true );
