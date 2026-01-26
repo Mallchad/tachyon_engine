@@ -108,33 +108,6 @@ mat4 create_rotation( vec4 euler )
     return rotation_matrix * arbitraty_matrix;
 }
 
-mat4 projection_create()
-{
-    float camera_width = 1.0;
-    float aspect_ratio_vh = screen_vh_aspect_ratio;
-    // Clip Plane Dimensions
-    // Near
-    float n = 1;
-    // Far
-    float f = 700.0;
-    // Right
-    float r = -(camera_width / 2.0) / aspect_ratio_vh;
-    // Left
-    float l = -r;
-    // Top
-    float t = (camera_width / 2.0);
-    // Bottom
-    float b = -t;
-
-    mat4 out_projection =
-        mat4( (2.*n) / (r-l),0.,                0.0,                0,
-              0.,            (2.*n) / (t-b),    0.0,                0,
-              (r+l) / (r-l), (t+b) / (t-b),     -(f+n) / (f-n),     -1,
-              0.,            0.,                -(2.*f*n) / (f-n),  0 );
-
-    return out_projection;
-}
-
 void main()
 {
     mat4 identity = mat4( 1., .0, .0, 0,
@@ -163,10 +136,6 @@ void main()
     // Normals don't particularly need or want scale and translation so we're skipping some
     // Add back camera rotation when its made available
     vec4 norm = projection * world_anim * local * vec4( normal, 1.0 );
-
-    // Perspective Projection
-    // This is mapping into screen coordinate system and skewing based on distance
-    projection = projection_create();
 
     vertex = projection * cam * world * world_anim * local * vertex;
     gl_Position = vertex;

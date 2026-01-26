@@ -97,4 +97,33 @@ PROC mesh_init( mesh* arg ) -> fresult
     return true;
 }
 
+
+matrix scene_camera::create_perspective_projection()
+{
+    f32 camera_width = std::round( sensor_size.x );
+    f32 aspect_ratio_vh = sensor_size.y / sensor_size.x;
+    // Clip Plane Dimensions
+    // Near
+    f32 n = this->near_clip;
+    // Far
+    f32 f = this->far_clip;
+    // Right
+    f32 r = -(camera_width / 2.0) / aspect_ratio_vh;
+    // Left
+    f32 l = -r;
+    // Top
+    f32 t = (camera_width / 2.0);
+    // Bottom
+    f32 b = -t;
+
+    matrix result = matrix{
+        (2.f*n) / (r-l),       0.f,               0.0f,         0,
+              0.f,        (2.f*n) / (t-b),        0.0f,         0,
+        (r+l) / (r-l),    (t+b) / (t-b),    -(f+n) / (f-n),    -1,
+              0.f,             0.f,      -(2.f*f*n) / (f-n),    0
+    };
+
+    return result;
+}
+
 }

@@ -17,6 +17,10 @@ struct scene_camera
 {
     ftransform transform;
     vec2 sensor_size;
+    f32 far_clip;
+    f32 near_clip;
+
+    matrix create_perspective_projection();
 };
 
 struct render_context

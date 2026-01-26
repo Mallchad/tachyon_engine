@@ -335,6 +335,8 @@ vec2 pair_divide( vec2 lhs, vec2 rhs );
 vec2 pair_half( vec2 lhs );
 vec2 abs( vec2 arg );
 
+matrix projection_create();
+
 fstring
 format_as( vec2 arg );
 

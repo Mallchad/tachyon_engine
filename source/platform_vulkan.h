@@ -155,6 +155,7 @@ struct vulkan_context
     // Primary graphics pipeline, associated with render pass
     VkPipeline pipeline;
     vulkan_pipeline mesh_pipeline;
+    vulkan_pipeline ui_mesh_pipeline;
 
     // Ungrouped threading primitives
     VkFence frame_begin_fence;
@@ -249,6 +250,8 @@ PROC vulkan_mesh_init( mesh* arg) -> fresult;
 
 /** Create a VkMemory object */
 PROC vulkan_memory_init( vulkan_memory* arg ) -> fresult;
+
+PROC vulkan_init_pipelines() -> void;
 
 PROC vulkan_init() -> fresult;
 

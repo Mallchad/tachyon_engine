@@ -490,9 +490,9 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
     if (pipeline_ok)
     {   VULKAN_ERROR( "Failed to create graphics pipeline" ); return false; }
     VULKAN_LOG( "Created graphics pipeline" );
-    g_vulkan->resources.push_cleanup( [] {
+    g_vulkan->resources.push_cleanup( [pipeline = arg->platform_pipeline] {
         VULKAN_LOG( "Destroying graphics pipeline" );
-        vkDestroyPipeline( g_vulkan->logical_device, g_vulkan->pipeline,
+        vkDestroyPipeline( g_vulkan->logical_device, pipeline,
                            g_vulkan->vk_allocator );
     });
 
@@ -1098,6 +1098,53 @@ PROC vulkan_frame_init( vulkan_frame* arg, vulkan_pipeline* pipeline ) -> fresul
     return true;
 }
 
+PROC vulkan_init_pipelines() -> void
+{
+    // Create shaders of pipeline
+    {
+        vulkan_shader vertex_shader {};
+        vulkan_shader fragment_shader {};
+
+        vertex_shader.name = "test_triangle";
+        vertex_shader.code.filename = "data/shaders/test_utah_teapot.vert.spv";
+        vertex_shader.code_binary = true;
+        vertex_shader.stage_flag = VK_SHADER_STAGE_VERTEX_BIT;
+        fragment_shader.name = "test_triangle";
+        fragment_shader.code.filename = "data/shaders/test_utah_teapot.frag.spv";
+        fragment_shader.code_binary = true;
+        fragment_shader.stage_flag = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        vulkan_shader_init( &vertex_shader );
+        vulkan_shader_init( &fragment_shader );
+
+        vulkan_pipeline& pipeline = g_vulkan->mesh_pipeline;
+        pipeline.shaders.push_tail( vertex_shader );
+        pipeline.shaders.push_tail( fragment_shader );
+        vulkan_pipeline_mesh_init( &g_vulkan->mesh_pipeline );
+    }
+    {
+        vulkan_shader vertex_shader {};
+        vulkan_shader fragment_shader {};
+
+        vertex_shader.name = "ui_mesh_vertex";
+        vertex_shader.code.filename = "data/shaders/ui_mesh_shader.vert.spv";
+        vertex_shader.code_binary = true;
+        vertex_shader.stage_flag = VK_SHADER_STAGE_VERTEX_BIT;
+        fragment_shader.name = "ui_mesh_fragment";
+        fragment_shader.code.filename = "data/shaders/ui_mesh_shader.frag.spv";
+        fragment_shader.code_binary = true;
+        fragment_shader.stage_flag = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        vulkan_shader_init( &vertex_shader );
+        vulkan_shader_init( &fragment_shader );
+
+        vulkan_pipeline& pipeline = g_vulkan->ui_mesh_pipeline;
+        pipeline.shaders.push_tail( vertex_shader );
+        pipeline.shaders.push_tail( fragment_shader );
+        vulkan_pipeline_mesh_init( &g_vulkan->ui_mesh_pipeline );
+    }
+}
+
 PROC vulkan_init() -> fresult
 {
     PROFILE_SCOPE_FUNCTION();
@@ -1555,41 +1602,6 @@ PROC vulkan_init() -> fresult
         );
     } );
 
-    // -- Create graphics pipeline --
-    // Create shaders of pipeline
-    vulkan_shader vertex_shader {};
-    vulkan_shader fragment_shader {};
-
-    vertex_shader.name = "test_triangle";
-    vertex_shader.code.filename = "data/shaders/test_utah_teapot.vert.spv";
-    vertex_shader.code_binary = true;
-    vertex_shader.stage_flag = VK_SHADER_STAGE_VERTEX_BIT;
-    fragment_shader.name = "test_triangle";
-    fragment_shader.code.filename = "data/shaders/test_utah_teapot.frag.spv";
-    fragment_shader.code_binary = true;
-    fragment_shader.stage_flag = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    vulkan_shader_init( &vertex_shader );
-    vulkan_shader_init( &fragment_shader );
-
-    vulkan_pipeline& pipeline = g_vulkan->mesh_pipeline;
-    pipeline.shaders.push_tail( vertex_shader );
-    pipeline.shaders.push_tail( fragment_shader );
-
-    array<VkPipelineShaderStageCreateInfo> stages;
-    stages.change_allocation( pipeline.shaders.size() );
-    for (i64 i=0; i < pipeline.shaders.size(); ++i)
-    {
-        auto& x_shader = pipeline.shaders[i];
-        stages.push_tail( VkPipelineShaderStageCreateInfo {
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                .stage = x_shader.stage_flag,
-                .vk_module = x_shader.platform_module,
-                .pName = x_shader.entry_point.c_str(),
-                .pNext = nullptr
-            });
-    }
-
     // Initialize test mesh data
     g_vulkan->test_triangle = mesh {
         .name = "test_triangle",
@@ -1760,7 +1772,7 @@ PROC vulkan_init() -> fresult
 
     // Create primary generic pipeline
     g_vulkan->mesh_pipeline.vk_resource_pool = frame_descriptor_pool;
-    vulkan_pipeline_mesh_init( &g_vulkan->mesh_pipeline );
+    vulkan_init_pipelines();
 
     /* Create per-frame data, we may have more than one frame going at once and per-frame resources
      NOTE: Dependant on descriptor resource data and pipeline data, must run afterwards */
