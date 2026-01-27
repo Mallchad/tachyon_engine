@@ -33,7 +33,7 @@ layout(std140, binding = 0) uniform frame_data
 const vec3 arbitrary_axis = vec3( 0.662f, 0.2f, 0.722f );
 
 const float scale = 1.0;
-vec3 trans = vec3( 0.0, 50.0, 0.0 );
+vec3 trans = vec3( 0.0, 1.0, 0.0 );
 
 const float ratio_16_9 = 1080.f/1920.f;
 const float tau = 6.283185307;

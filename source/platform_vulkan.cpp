@@ -1921,11 +1921,12 @@ PROC vulkan_draw() -> void
 
     // SECTION: Set up some per frame data
     vulkan_frame* current_frame = g_vulkan->frames_inflight.address( image_index );
-    vulkan_pipeline* current_pipeline = &g_vulkan->mesh_pipeline;
+    vulkan_pipeline* current_pipeline = &g_vulkan->ui_mesh_pipeline;
 
     current_frame->draw_index = current_frame_i;
     current_frame->inflight_index = inflight_frame_i;
-    current_frame->uniform.camera = g_render->main_camera.transform.transform_matrix();
+    current_frame->uniform.camera = (g_render->main_camera.create_perspective_projection() *
+                                     g_render->main_camera.transform.transform_matrix());
 
     // Setup Uniform
     frame_general_uniform* current_uniform = &current_frame->uniform;
@@ -2009,9 +2010,9 @@ PROC vulkan_draw() -> void
     vkCmdSetScissor( command_buffer, 0, 1, &scissor_config );
 
     // SECTION: Select mesh for drawing
-    // mesh* draw_mesh = &g_vulkan->test_triangle;
+    mesh* draw_mesh = &g_vulkan->test_triangle;
     // mesh* draw_mesh = &g_vulkan->test_whale;
-    mesh* draw_mesh = &g_vulkan->test_teapot;
+    // mesh* draw_mesh = &g_vulkan->test_teapot;
     auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
         return arg.id == draw_mesh->id; } );
     vulkan_mesh* vk_draw_mesh = mesh_result.match;

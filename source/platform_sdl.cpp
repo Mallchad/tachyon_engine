@@ -62,6 +62,13 @@ namespace tyon
 
     PROC sdl_destroy() -> fresult
     {
+        SDL_DestroyWindow( g_sdl->windows[0].handle );
+        // TTF_CloseFont( default_font );
+        // default_font = nullptr;
+        // TTF_Quit();
+        SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMEPAD );
+        SDL_Quit();
+
         g_sdl->~sdl_context();
         return true;
     }
@@ -112,6 +119,20 @@ namespace tyon
     PROC sdl_event_process() -> void
     {
         SDL_PumpEvents();
+
+        SDL_Event x_event;
+        while (SDL_PollEvent( &x_event ))
+        {
+            switch (x_event.type)
+            {
+                case SDL_EVENT_MOUSE_WHEEL:
+                    // g_frame->scroll_y += x_event.wheel.y;
+                    break;
+                case SDL_EVENT_QUIT:
+                    global->kill_program = true;
+                    break;
+            }
+        }
     }
 
     PROC sdl_vulkan_surface_create(

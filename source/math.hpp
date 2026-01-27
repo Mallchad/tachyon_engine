@@ -281,7 +281,7 @@ struct transform
 
     matrix
     transform_matrix()
-    { return matrix::one(); }
+    { return matrix::create_translation( translation ); }
 
 };
 

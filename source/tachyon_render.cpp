@@ -19,7 +19,7 @@ PROC render_init() -> void
     if (REFLECTION_PLATFORM_LINUX)
     {   char* renderdoc_env = std::getenv( "ENABLE_VULKAN_RENDERDOC_CAPTURE" );
         if (renderdoc_env && renderdoc_env[0] == '1')
-        {   TYON_LOG( "Renderdoc is attached and doesn't support Wayland, falling back to X11" );
+        {   TYON_LOG( "Renderdoc is attached and doesn't support Wayland, falli3ng back to X11" );
             g_render->renderdoc_attached = true;
         }
     }
@@ -34,6 +34,16 @@ PROC render_init() -> void
         .maximized = true
     };
     sdl.window_open( &default_window );
+
+    /* This "camera" is for UI usage... So the sensor size should be the window
+     * size, and all the primitives exactly on the near clip or slightly
+     * behind. */
+    g_render->main_camera = scene_camera {
+        // Good size for UI, needs to be changed though...
+        .sensor_size = default_window.size,
+        .near_clip = 1.0f,
+        .far_clip = 700.0f
+    };
 
     bool vulkan_ok = false;
     bool opengl_ok = false;

@@ -141,7 +141,7 @@ CONSTRUCTOR matrix::matrix( std::initializer_list<f32> list )
 }
 
 matrix
-matrix::operator* ( matrix& rhs )
+matrix::operator* ( matrix rhs )
 {
     f32* a = this->d;
     f32* b = rhs.d;
@@ -165,6 +165,7 @@ matrix::operator* ( matrix& rhs )
                    a[12] * b[2] + a[13]*b[6] + a[14]*b[10] + a[15]*b[14],
                    a[12] * b[3] + a[13]*b[7] + a[14]*b[11] + a[15]*b[15] };
 }
+
 matrix&
 matrix::operator*= ( matrix& rhs )
 { return (*this = (*this) * rhs); }

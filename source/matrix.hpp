@@ -73,8 +73,8 @@ struct matrix
                  data[12] *rhs, data[13] *rhs, data[14] *rhs, data[15] *rhs };
     }
     /// Vector Product/Multiply
-    matrix
-    operator* ( matrix& rhs );
+    matrix operator* ( matrix rhs );
+
     matrix
     operator+ ( matrix rhs )
     {
