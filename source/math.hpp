@@ -341,9 +341,9 @@ fstring
 format_as( vec2 arg );
 
 
-using v3_f32 = vector3_t<f32>;
-using v3_i32 = vector3_t<fint32>;
-using v3_i64 = vector3_t<fint64>;
+// using v3_f32 = vector3_t<f32>;
+// using v3_i32 = vector3_t<fint32>;
+// using v3_i64 = vector3_t<fint64>;
 
 using v4     = vector4_t<f32>;
 using v4_i32 = vector4_t<fint32>;
