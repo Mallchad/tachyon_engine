@@ -41,8 +41,8 @@ PROC render_init() -> void
     g_render->main_camera = scene_camera {
         // Good size for UI, needs to be changed though...
         .sensor_size = default_window.size,
-        .near_clip = 1.0f,
-        .far_clip = 700.0f
+        .far_clip = 700.0f,
+        .near_clip = 1.0f
     };
 
     bool vulkan_ok = false;

@@ -152,7 +152,6 @@ PROC vulkan_label_object( u64 handle, VkObjectType type, fstring name ) -> void
         .objectType = type,
         .objectHandle = handle,
         .pObjectName = s,
-        .pNext = 0
     };
     dyn::vkSetDebugUtilsObjectNameEXT( g_vulkan->logical_device, &name_args );
 }
@@ -246,7 +245,6 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
                 .stage = x_shader.stage_flag,
                 .vk_module = x_shader.platform_module,
                 .pName = x_shader.entry_point.c_str(),
-                .pNext = nullptr
             });
     }
 
@@ -385,7 +383,6 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .dynamicStateCount = cast<u32>(dynamic_states_selected.size()),
         .pDynamicStates = dynamic_states_selected.data,
-        .pNext = nullptr
     };
 
     /** Official Documentation: Descriptor Set
@@ -411,7 +408,6 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
         .flags = 0x0,
         .bindingCount = u32(resource_descriptors.size()),
         .pBindings = resource_descriptors.data,
-        .pNext = nullptr
     };
 
     /* Pipeline Layout: "An object defining the set of resources (via a
@@ -627,7 +623,6 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             // Start signalled
             .flags = VK_FENCE_CREATE_SIGNALED_BIT,
-            .pNext = nullptr
         };
 
         fence_errors[i] = vkCreateFence(
@@ -1048,7 +1043,6 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
         .memory = g_vulkan->device_memory.memory,
         .offset = 0,
         .size = u64(vk_mesh->vertex_buffer.size),
-        .pNext = nullptr
     };
     // TODO: remove before flight
     // vkFlushMappedMemoryRanges( g_vulkan->logical_device, 1, &range );
@@ -1280,7 +1274,6 @@ PROC vulkan_init() -> fresult
     instance_args.ppEnabledLayerNames = enabled_layers.data;
     instance_args.enabledExtensionCount = enabled_extensions.size();
     instance_args.ppEnabledExtensionNames = enabled_extensions.data;
-    instance_args.pNext = &messenger_args;
 
 
     VkResult instance_ok = vkCreateInstance(
@@ -1549,7 +1542,6 @@ PROC vulkan_init() -> fresult
 
     VkSemaphoreCreateInfo semaphore_args {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-        .pNext = nullptr
     };
     bool semaphore_ok = true;
     semaphore_ok &= VK_SUCCESS == vkCreateSemaphore(
@@ -2070,7 +2062,6 @@ PROC vulkan_draw() -> void
         .pCommandBuffers = &command_buffer,
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = &self->queue_submit_semaphore,
-        .pNext = nullptr
     };
 
     // VkResult sync_ok = vkWaitForFences(
@@ -2098,7 +2089,6 @@ PROC vulkan_draw() -> void
         .pImageIndices = &image_index,
         // This can be used for storing results from each individual swapchain
         .pResults = nullptr,
-        .pNext = nullptr
     };
     VkResult present_bad = vkQueuePresentKHR( self->present_queue, &present_args );
     if (present_bad)
