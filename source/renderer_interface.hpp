@@ -1,34 +1,6 @@
 
 #pragma once
 
-
-/** To check for implimented functions place the INTERFACE_DEFINE_FUNCTION macro
- * at the bottom of the .h file. It will not work properly if it is put in a
- * .cpp file, although it will work it will just throw undefined references and
- * linker error which defeats the point of the macro
- *
- */
-
-#define INTERFACE_DEFINE_FUNCTION(interface_function_name)      \
-    static_assert(1);                                                     \
-    // static_assert( std::is_member_function_pointer<             \
-    //                decltype( &interface_function_name )>()); \
-
-// Use derived class as a debug-only virtual interface
-#ifdef DEBUG_INTERFACE
-    // Use INTERFACE macro after interface defined function to help validate it
-    #define INTERFACE override
-
-    #define INTERFACE_IMPLEMENT_RENDERER(...)
-    #define INTERFACE_RENDERER \
-        : i_renderer
-
-// Fall back to primitive error system
-#else
-    #define INTERFACE
-#define INTERFACE_RENDERER
-#endif
-
 namespace tyon
 {
 
