@@ -24,6 +24,25 @@ PROC render_init() -> void
         }
     }
 
+    cmdline_argument window_arg = g_library->cmdline_arguments.linear_search(
+        []( cmdline_argument& arg ) {
+        return arg.name == "window_platform"; }).copy_default( {} );
+    fstring window_platform = window_arg.value.get_string();
+    if (window_platform.size())
+    {   TYON_LOGF( "Selected window_platform arg '{}'", window_platform );
+        if (window_platform == "x11")
+        {   g_render->window_platform = e_window_platform::x11;
+        }
+        else if (window_platform == "wayland")
+        {   g_render->window_platform = e_window_platform::wayland;
+        }
+        else if (window_platform == "windows")
+        {   g_render->window_platform = e_window_platform::windows;
+        }
+        else
+        {   TYON_ERROR( "window_platform specified on command line does not match known platform" );
+        }
+    }
     // SDL needs to setup after the render context but before vulkan init
     sdl.init();
 

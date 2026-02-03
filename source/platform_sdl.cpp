@@ -10,6 +10,16 @@ namespace tyon
         // NOTE: SDL must not ever move threads
         SDL_SetLogPriorities( SDL_LOG_PRIORITY_TRACE );
 
+        if (g_render->window_platform == e_window_platform::x11)
+        {   SDL_SetHint( SDL_HINT_VIDEO_DRIVER, "x11" );
+        }
+        if (g_render->window_platform == e_window_platform::wayland)
+        {   SDL_SetHint( SDL_HINT_VIDEO_DRIVER, "wayland" );
+        }
+        if (g_render->window_platform == e_window_platform::windows)
+        {   SDL_SetHint( SDL_HINT_VIDEO_DRIVER, "windows" );
+        }
+
         if (REFLECTION_PLATFORM_LINUX)
         {   fstring x11_env = std::getenv( "DISPLAY" );
             fstring wayland_env = std::getenv( "WAYLAND_DISPLAY" );
@@ -49,7 +59,7 @@ namespace tyon
         {   g_render->window_platform = e_window_platform::windows;
         }
 
-        TYON_LOGF( "Current SDL selected video: {}", video_driver );
+        TYON_LOGF( "Current SDL selected Video Driver/Window platform: {}", video_driver );
         TYON_LOG( "Initialization Complete for Platform SDL" );
         return true;
     }
