@@ -318,6 +318,25 @@ struct stl_triangle
 
 #pragma pack(pop)
 
+
+// Type definitions have to go above usage points
+// using v3_f32 = vector3_t<f32>;
+// using v3_i32 = vector3_t<fint32>;
+// using v3_i64 = vector3_t<fint64>;
+
+using v4     = vector4_t<f32>;
+using v4_i32 = vector4_t<fint32>;
+using f4_i64 = vector4_t<fint64>;
+
+using v2 = vec2;
+using v3 = v3f;
+using v4 = vector4_t<f32>;
+
+using rgba  = v4;
+using srgba = v4;
+
+using ftransform = transform;
+
 vec2 operator+(const vec2& v1, const vec2& v2);
 vec2 operator+(const vec2& v1, const f32& c);
 vec2 operator+(const f32& c, const vec2& v1);
@@ -335,27 +354,11 @@ vec2 pair_divide( vec2 lhs, vec2 rhs );
 vec2 pair_half( vec2 lhs );
 vec2 abs( vec2 arg );
 
-matrix projection_create();
+PROC matrix_projection_create() -> matrix;
+// Create a Euler Rotation Matrix with w component being around an arbitrary axis
+PROC matrix_create_rotation( v4 euler ) -> matrix;
 
 fstring
 format_as( vec2 arg );
-
-
-// using v3_f32 = vector3_t<f32>;
-// using v3_i32 = vector3_t<fint32>;
-// using v3_i64 = vector3_t<fint64>;
-
-using v4     = vector4_t<f32>;
-using v4_i32 = vector4_t<fint32>;
-using f4_i64 = vector4_t<fint64>;
-
-using v2 = vec2;
-using v3 = v3f;
-using v4 = vector4_t<f32>;
-
-using rgba  = v4;
-using srgba = v4;
-
-using ftransform = transform;
 
 }

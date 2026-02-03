@@ -118,6 +118,7 @@ struct matrix
 
     matrix
     unreal_to_opengl();
+
 };
 
 }

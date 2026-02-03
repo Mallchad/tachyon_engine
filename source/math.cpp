@@ -236,4 +236,71 @@ matrix::unreal_to_opengl()
     return *this * conversion;
 }
 
+static const v3 arbitrary_axis = v3{ 0.662f, 0.2f, 0.722f };
+// Create a Euler Rotation Matrix with w component being around an arbitrary axis
+PROC matrix_create_rotation( v3 euler, f32 arbitrary ) -> matrix
+{
+    // Rotation amounts
+    v4 r = euler;
+    v3 a = arbitrary_axis;
+    float ar = arbitrary;
+    a = normalize(a);
+
+    // Rotation around an arbitrary axis defined by Euler coordinates
+    matrix arbitraty_matrix =
+    matrix{ cosf(ar)+(a.x*a.x) * (1-cosf(ar)),
+            a.y*a.x *(1 - cosf(ar)) + a.z*sinf(ar),
+            a.z*a.x* (1 - cosf(ar)) - a.y*sinf(ar),
+            0,
+
+            a.x*a.y*(1-cosf(ar)) - a.z*sinf(ar),
+            cosf(ar) + (a.y*a.y)*(1 - cosf(ar)),
+            a.z*a.y* (1 - cosf(ar)) + a.z*sinf(ar),
+            0,
+
+            a.x*a.z*(1-cosf(ar)) + a.y*sinf(ar),
+            a.y*a.z*(1 - cosf(ar)) - a.x*sinf(ar),
+            cosf(ar) + (a.x*a.x) * (1 - cosf(ar)),
+            0,
+
+            0, 0, 0, 1 };
+
+
+    // Math representation rotation matrix, needs to be rearranged to collumn major
+    // [[cosf(y) * cosf(z), -cosf(y) * sinf(z), sinf(y), 0],
+
+    //  [cosf(x) * sinf(z) + cosf(z) * sinf(x) * sinf(y),
+    //  cosf(x) * cosf(z) - sinf(x) * sinf(y) * sinf(z),
+    //   -cosf(y) * sinf(x),
+    //   0],
+
+    //  [sinf(x) * sinf(z) - cosf(x) * cosf(z) * sinf(y),
+    //  cosf(x) * sinf(y) * sinf(z) + cosf(z) * sinf(x),
+    //   cosf(x) * cosf(y),
+    //   0],
+
+    //  [0, 0, 0, 1]]
+
+    // // Euler Combined 3 Axis Rotation Matrix
+    matrix rotation_matrix =
+    // Row 1
+    matrix{ cosf(r.y)*cosf(r.z),
+            -cosf(r.y)*sinf(r.z),
+            sinf(r.y),
+            0,
+            // Row 2
+            cosf(r.x)*sinf(r.z) + cosf(r.z)*sinf(r.x)*sinf(r.y),
+            cosf(r.x)*cosf(r.z) - sinf(r.x)*sinf(r.y)*sinf(r.z),
+            -cosf(r.y)*sinf(r.x),
+            0,
+            // Row 3
+            sinf(r.x)*sinf(r.z) - cosf(r.x)*cosf(r.z)*sinf(r.y),
+            cosf(r.x)*sinf(r.y)*sinf(r.z) + cosf(r.z)*sinf(r.x),
+            cosf(r.x)*cosf(r.y),
+            0,
+            // Row 4
+            0, 0, 0, 1};
+    return rotation_matrix * arbitraty_matrix;
+}
+
 }
