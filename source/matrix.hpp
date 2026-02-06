@@ -17,6 +17,12 @@ struct matrix
         f32 xy[4][4];
         f32 data[16];
         f32 d[16];
+        struct {
+            f64 m11; f64 m12; f64 m13; f64 m14;
+            f64 m21; f64 m22; f64 m23; f64 m24;
+            f64 m31; f64 m32; f64 m33; f64 m34;
+            f64 m41; f64 m42; f64 m43; f64 m44;
+        };
     };
 
     static matrix

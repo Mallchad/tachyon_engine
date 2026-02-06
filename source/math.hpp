@@ -354,11 +354,19 @@ vec2 pair_divide( vec2 lhs, vec2 rhs );
 vec2 pair_half( vec2 lhs );
 vec2 abs( vec2 arg );
 
-PROC matrix_projection_create() -> matrix;
-// Create a Euler Rotation Matrix with w component being around an arbitrary axis
-PROC matrix_create_rotation( v4 euler ) -> matrix;
-
 fstring
 format_as( vec2 arg );
+
+PROC operator*( matrix m, v3 v ) -> v3;
+// PROC operator*( matrix m0,  v3 v0) -> v3;
+
+// PROC matrix_projection_create() -> matrix;
+// Create a Euler Rotation Matrix with w component being around an arbitrary axis
+PROC matrix_create_rotation( v3 euler, f32 arbitrary = 0.0f ) -> matrix;
+
+// Create a Euler Rotation Matrix with w component being around an arbitrary axis
+PROC matrix_create_scale( v3 a ) -> matrix;
+
+PROC matrix_create_transform( ftransform arg ) -> matrix;
 
 }

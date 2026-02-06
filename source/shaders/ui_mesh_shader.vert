@@ -108,6 +108,11 @@ mat4 create_rotation( vec4 euler )
     return rotation_matrix * arbitraty_matrix;
 }
 
+vec4 perspective_divide( vec4 a )
+{
+    return vec4( a.x/a.w, a.y/a.w, a.z/a.w, 1.0f );
+}
+
 void main()
 {
     mat4 identity = mat4( 1., .0, .0, 0,
@@ -139,6 +144,7 @@ void main()
 
     vertex = projection * cam * world * world_anim * local * vertex;
     gl_Position = vertex;
+    gl_Position = perspective_divide( vertex );
 
     v_color = vec4( 0.8, 0.0, 0.0 , 1.0 ) ;
     world_matrix = projection * cam;

@@ -542,9 +542,10 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
         surface_formats.resize( n_surfaces );
         vkGetPhysicalDeviceSurfaceFormatsKHR(
             g_vulkan->device, g_vulkan->surface, &n_surfaces, surface_formats.data );
+
+        TracyCZoneEnd( zone_2 );
     }
 
-    TracyCZoneEnd( zone_2 );
     TracyCZoneNC( zone_3, "Zone 3", 0xA04040, true );
 
     // --  Create swapchan for presentation of images to windows --
@@ -1610,6 +1611,13 @@ PROC vulkan_init() -> fresult
                           { 0.f, 1.f, 0.f, 0.f },
                           { 1.f, 0.f, 0.f, 0.f }}
     };
+    g_vulkan->test_ui_triangle = g_vulkan->test_triangle;
+    matrix modify = matrix_create_scale( v3 {1500.0f, 1500.0f, 1500.0f} ) *
+    matrix_create_rotation( v3 { 0.0f * 6.28, 0.0f, 0.0f } ) *
+        matrix_create_translation( v3 { 0.f, 1.0f, 0.0f } );
+    g_vulkan->test_ui_triangle.vertexes.map_procedure( [=](v3& arg) {
+        arg = modify * arg;
+    });
 
     file teapot_file = file_load_binary( "data/geometry/utah_teapot.stl" );
     file whale_file = file_load_binary( "data/geometry/articulated_whale_shark.stl" );
@@ -1663,6 +1671,7 @@ PROC vulkan_init() -> fresult
     // Don't need to initialize mesh, vulkan_mesh does it automatically.
     // Needs to run after vulkan_memory_init.
     vulkan_mesh_init( &g_vulkan->test_triangle );
+    vulkan_mesh_init( &g_vulkan->test_ui_triangle );
     vulkan_mesh_init( &g_vulkan->test_teapot );
     vulkan_mesh_init( &g_vulkan->test_whale );
 
@@ -1980,29 +1989,32 @@ PROC vulkan_draw() -> void
     vkCmdBindPipeline(
         command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, current_pipeline->platform_pipeline );
 
+    bool resize_viewport = false;
+    if (resize_viewport)
+    {
+        // Resize viewport and scissor
+        VkViewport viewport_config {
+            // Upper left coordinates
+            .x = 0,
+            .y = 0,
+            .width = float(swapchain.present_size.width),
+            .height = float(swapchain.present_size.height),
+            // Configurable viewport depth, can configurable but usually between 0 and 1
+            .minDepth = 0.0,
+            .maxDepth = 1.0
+        };
 
-    // Resize viewport and scissor
-    VkViewport viewport_config {
-        // Upper left coordinates
-        .x = 0,
-        .y = 0,
-        .width = float(swapchain.present_size.width),
-        .height = float(swapchain.present_size.height),
-        // Configurable viewport depth, can configurable but usually between 0 and 1
-        .minDepth = 0.0,
-        .maxDepth = 1.0
-    };
-
-    // Only render into a certain portion of the viewport with scissors
-    VkRect2D scissor_config {
-        VkOffset2D { 0, 0 },
-        swapchain.present_size
-    };
-    vkCmdSetViewport( command_buffer, 0, 1, &viewport_config );
-    vkCmdSetScissor( command_buffer, 0, 1, &scissor_config );
+        // Only render into a certain portion of the viewport with scissors
+        VkRect2D scissor_config {
+            VkOffset2D { 0, 0 },
+            swapchain.present_size
+        };
+        vkCmdSetViewport( command_buffer, 0, 1, &viewport_config );
+        vkCmdSetScissor( command_buffer, 0, 1, &scissor_config );
+    }
 
     // SECTION: Select mesh for drawing
-    mesh* draw_mesh = &g_vulkan->test_triangle;
+    mesh* draw_mesh = &g_vulkan->test_ui_triangle;
     // mesh* draw_mesh = &g_vulkan->test_whale;
     // mesh* draw_mesh = &g_vulkan->test_teapot;
     auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {

@@ -226,6 +226,32 @@ matrix::create_translation( v3f target )
           0.0, 0.0, 0.0, 1.0 });
 }
 
+PROC operator*( matrix m, v3 v ) -> v3
+{
+    return v3 {
+        m.d[0] * v.x + m.d[4] * v.y + m.d[8]  * v.z + m.d[12], // X
+        m.d[1] * v.x + m.d[5] * v.y + m.d[9]  * v.z + m.d[13], // Y
+        m.d[2] * v.x + m.d[6] * v.y + m.d[10] * v.z + m.d[14]  // Z
+    };
+}
+// PROC operator*( matrix m0,  v3 v0) -> v3
+// {
+//     v3 result;
+//     result.x = m0.m11 * v0.x + m0.m12 * v0.y + m0.m13 * v0.z;
+//     result.y = m0.m21 * v0.x + m0.m22 * v0.y + m0.m23 * v0.z;
+//     result.z = m0.m31 * v0.x + m0.m32 * v0.y + m0.m33 * v0.z;
+//     return result;
+// }
+
+PROC matrix_create_translation( v3 a ) -> matrix
+{
+    return matrix(
+        { 1.0, 0.0, 0.0,  a.x,
+          0.0, 1.0, 0.0,  a.y,
+          0.0, 0.0, 1.0,  a.z,
+          0.0, 0.0, 0.0, 1.0 });
+}
+
 matrix
 matrix::unreal_to_opengl()
 {
@@ -237,6 +263,7 @@ matrix::unreal_to_opengl()
 }
 
 static const v3 arbitrary_axis = v3{ 0.662f, 0.2f, 0.722f };
+
 // Create a Euler Rotation Matrix with w component being around an arbitrary axis
 PROC matrix_create_rotation( v3 euler, f32 arbitrary ) -> matrix
 {
@@ -301,6 +328,29 @@ PROC matrix_create_rotation( v3 euler, f32 arbitrary ) -> matrix
             // Row 4
             0, 0, 0, 1};
     return rotation_matrix * arbitraty_matrix;
+}
+
+
+// Create a Euler Rotation Matrix with w component being around an arbitrary axis
+PROC matrix_create_scale( v3 a ) -> matrix
+{
+    return matrix {
+        a.x, 0.0f,  0.0f, 0.0f,
+        0.0f, a.y,  0.0f, 0.0f,
+        0.0f, 0.0f,  a.z, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f,
+    };
+}
+
+PROC matrix_create_transform( ftransform arg ) -> matrix
+{
+    v3 translation = arg.translation;
+    v3 rotation = arg.rotation;
+    v3 scale = arg.scale;
+    // The order is important, we do not want to scale translation, or rotate it
+    return (matrix_create_translation( v3(translation) ) *
+            matrix_create_rotation( v3(rotation) ) *
+            matrix_create_scale( v3(scale) ));
 }
 
 }
