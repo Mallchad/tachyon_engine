@@ -32,15 +32,7 @@ layout(std140, binding = 0) uniform frame_data
 
 const vec3 arbitrary_axis = vec3( 0.662f, 0.2f, 0.722f );
 
-const float scale = 1.0;
-vec3 trans = vec3( 0.0, 1.0, 0.0 );
-
-const float ratio_16_9 = 1080.f/1920.f;
 const float tau = 6.283185307;
-
-float rotation_speed = 0.1f;
-// Euler Rotation
-vec4 rot = vec4(0);
 
 // Create a Euler Rotation Matrix with w component being around an arbitrary axis
 mat4 create_rotation( vec4 euler )
@@ -131,20 +123,13 @@ void main()
 
     mat4 transform = identity;
 
-    local *= create_rotation( vec4((1./8.)*tau, 0.0, 0.0, 0.0 ) );
-    mat4 world_anim = create_rotation( rot );
-    world = mat4(scale,     0.,    0.,  0.,
-                  0.,     scale,    0., 0.,
-                  0.,        0., scale, 0.0,
-                  trans.x, trans.y, trans.z,    1.);
-
     // Normals don't particularly need or want scale and translation so we're skipping some
     // Add back camera rotation when its made available
-    vec4 norm = projection * world_anim * local * vec4( normal, 1.0 );
+    vec4 norm = projection * local * vec4( normal, 1.0 );
 
-    vertex = projection * cam * world * world_anim * local * vertex;
+    vertex = projection * cam * world * local * vertex;
     gl_Position = vertex;
-    gl_Position = perspective_divide( vertex );
+    // gl_Position = perspective_divide( vertex );
 
     v_color = vec4( 0.8, 0.0, 0.0 , 1.0 ) ;
     world_matrix = projection * cam;

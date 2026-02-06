@@ -122,9 +122,17 @@ struct matrix
     // matrix
     // to_left_handed();
 
+    /** Converts coordinate space from Unreal 4 coordinates into Vulkan */
     matrix
     unreal_to_opengl();
 
+    /** Converts coordinate space from Unreal 4 coordinates into Vulkan.
+
+        Vulkan uses similar NDC coordinates to OpenGL but y+ being down instead.
+        Please note Unreal Engine 5 somewhere down the line switched coordinates to
+        be more homogenous with other common VFX progmrams. */
+    matrix
+    unreal_to_vulkan();
 };
 
-}
+} // namespace tyon

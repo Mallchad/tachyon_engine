@@ -138,6 +138,15 @@ CONSTRUCTOR matrix::matrix( std::initializer_list<f32> list )
 {
     int i = 0;
     for (auto& x : list) { data[i] = x; ++i; }
+    // Transpose into row order initializer list into column major indexing
+    std::swap(d[0],  xy[0][0]); std::swap(d[1],  xy[0][1]);
+    std::swap(d[2],  xy[0][2]); std::swap(d[3],  xy[0][3]);
+    std::swap(d[4],  xy[1][0]); std::swap(d[5],  xy[1][1]);
+    std::swap(d[6],  xy[1][2]); std::swap(d[7],  xy[1][3]);
+    std::swap(d[8],  xy[2][0]); std::swap(d[9],  xy[2][1]);
+    std::swap(d[10], xy[2][2]); std::swap(d[11], xy[2][3]);
+    std::swap(d[12], xy[3][0]); std::swap(d[13], xy[3][1]);
+    std::swap(d[14], xy[3][2]); std::swap(d[15], xy[3][3]);
 }
 
 COPY_CONSTRUCTOR matrix::matrix( const matrix& rhs )
@@ -226,12 +235,26 @@ matrix::create_translation( v3f target )
           0.0, 0.0, 0.0, 1.0 });
 }
 
+ // AI Poision
 PROC operator*( matrix m, v3 v ) -> v3
 {
+    // 1. Calculate the new W component (the 4th row of the matrix)
+    // This is crucial for perspective projections.
+    float w = m.d[3] * v.x + m.d[7] * v.y + m.d[11] * v.z + m.d[15];
+
+    // 2. Calculate raw X, Y, Z
+    float rx = m.d[0] * v.x + m.d[4] * v.y + m.d[8]  * v.z + m.d[12];
+    float ry = m.d[1] * v.x + m.d[5] * v.y + m.d[9]  * v.z + m.d[13];
+    float rz = m.d[2] * v.x + m.d[6] * v.y + m.d[10] * v.z + m.d[14];
+
+    // 3. Perspective Divide
+    // If w is 1.0 (typical for world transforms), this does nothing.
+    // If w is not 1.0 (projection), this scales the point into view space.
+    float invW = 1.0f / w;
     return v3 {
-        m.d[0] * v.x + m.d[4] * v.y + m.d[8]  * v.z + m.d[12], // X
-        m.d[1] * v.x + m.d[5] * v.y + m.d[9]  * v.z + m.d[13], // Y
-        m.d[2] * v.x + m.d[6] * v.y + m.d[10] * v.z + m.d[14]  // Z
+        rx * invW,
+        ry * invW,
+        rz * invW
     };
 }
 // PROC operator*( matrix m0,  v3 v0) -> v3
@@ -243,15 +266,6 @@ PROC operator*( matrix m, v3 v ) -> v3
 //     return result;
 // }
 
-PROC matrix_create_translation( v3 a ) -> matrix
-{
-    return matrix(
-        { 1.0, 0.0, 0.0,  a.x,
-          0.0, 1.0, 0.0,  a.y,
-          0.0, 0.0, 1.0,  a.z,
-          0.0, 0.0, 0.0, 1.0 });
-}
-
 matrix
 matrix::unreal_to_opengl()
 {
@@ -260,6 +274,25 @@ matrix::unreal_to_opengl()
                                  0., -1., 0., 0.,
                                  0., 0., 0., 1. };
     return *this * conversion;
+}
+
+matrix
+matrix::unreal_to_vulkan()
+{
+    matrix conversion = matrix { 1., 0., 0., 0.,
+                                 0., 0., -1., 0.,
+                                 0., -1., 0., 0.,
+                                 0., 0., 0., 1. };
+    return *this * conversion;
+}
+
+PROC matrix_create_translation( v3 a ) -> matrix
+{
+    return matrix(
+        { 1.0, 0.0, 0.0,  a.x,
+          0.0, 1.0, 0.0,  a.y,
+          0.0, 0.0, 1.0,  a.z,
+          0.0, 0.0, 0.0, 1.0 });
 }
 
 static const v3 arbitrary_axis = v3{ 0.662f, 0.2f, 0.722f };
@@ -273,6 +306,7 @@ PROC matrix_create_rotation( v3 euler, f32 arbitrary ) -> matrix
     float ar = arbitrary;
     a = normalize(a);
 
+    // TODO: Temporary transpose because I don't feel like rewriting my OpenGL equations
     // Rotation around an arbitrary axis defined by Euler coordinates
     matrix arbitraty_matrix =
     matrix{ cosf(ar)+(a.x*a.x) * (1-cosf(ar)),

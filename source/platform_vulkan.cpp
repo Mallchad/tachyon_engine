@@ -306,6 +306,7 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
     VkPipelineRasterizationStateCreateInfo raster_args {};
     raster_args.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     raster_args.polygonMode = VK_POLYGON_MODE_FILL;
+    // raster_args.polygonMode = VK_POLYGON_MODE_LINE;
     raster_args.lineWidth = 1.0f;
     raster_args.cullMode = VK_CULL_MODE_BACK_BIT;
     // TODO: TEST no cull mode
@@ -1623,9 +1624,8 @@ PROC vulkan_init() -> fresult
                           { 1.f, 0.f, 0.f, 0.f }}
     };
     g_vulkan->test_ui_triangle = g_vulkan->test_triangle;
-    matrix modify = matrix_create_scale( v3 {1500.0f, 1500.0f, 1500.0f} ) *
-    matrix_create_rotation( v3 { 0.0f * 6.28, 0.0f, 0.0f } ) *
-        matrix_create_translation( v3 { 0.f, 1.0f, 0.0f } );
+    matrix modify = matrix_create_translation( v3 { 0.f, -5.0f, 0.0f } ) *
+        matrix_create_scale( v3 {1500.0f, 1500.0f, 1500.0f} );
     g_vulkan->test_ui_triangle.vertexes.map_procedure( [=](v3& arg) {
         arg = modify * arg;
     });
@@ -1946,6 +1946,7 @@ PROC vulkan_draw() -> void
     current_frame->inflight_index = inflight_frame_i;
     current_frame->uniform.camera = (g_render->main_camera.create_perspective_projection() *
                                      g_render->main_camera.transform.transform_matrix());
+    // * matrix_create_rotation( { 0.0f, time_elapsed_seconds(), 0.0f })
 
     // Setup Uniform
     frame_general_uniform* current_uniform = &current_frame->uniform;
@@ -1954,7 +1955,7 @@ PROC vulkan_draw() -> void
 
      // (take copy on purpose for temporary camera data)
     frame_general_uniform uniform_copy = *current_uniform;
-    uniform_copy.camera = current_uniform->camera.unreal_to_opengl().transpose();
+    uniform_copy.camera = current_uniform->camera.unreal_to_vulkan().transpose();
     memory_copy<frame_general_uniform>( current_frame->general_uniform_data, &uniform_copy, 1 );
 
     // Update the descriptor resource associated with the uniform
