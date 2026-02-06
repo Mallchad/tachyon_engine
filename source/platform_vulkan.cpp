@@ -9,8 +9,9 @@ namespace dyn
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = nullptr;
 }
 
-// TODO: Why dd I use this attribute in the first place?
-// VKAPI_ATTR VKAPI_CALL
+// NOTE: This may be called across an API boundry so on Windows it needs dllexport decleration
+// TODO: Need to figure out if this is ACTUALLY necessary
+VKAPI_ATTR VKAPI_CALL
 auto vulkan_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
     VkDebugUtilsMessageTypeFlagsEXT message_type,
@@ -143,6 +144,7 @@ PROC vulkan_allocator_create_callbacks( i_allocator* allocator )
 
 PROC vulkan_label_object( u64 handle, VkObjectType type, fstring name ) -> void
 {
+    PROFILE_SCOPE_FUNCTION();
     // NOTE: This is the depreceated version of the struct/function, this crashed when I used it.
     // VkDebugMarkerObjectNameInfoEXT name_args {};
     char* s = memory_allocate_raw( name.size() );
@@ -213,6 +215,7 @@ PROC vulkan_shader_init( vulkan_shader* arg ) -> fresult
 // Mesh specific pipeline initialization
 PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
 {
+    PROFILE_SCOPE_FUNCTION();
     if (arg->id.valid())
     {   VULKAN_ERRORF("{} Using init on a object that's already initialized doesn't make any sense.",
                       arg->name );
@@ -498,7 +501,8 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
 PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchain )
     -> fresult
 {
-    TIME_SCOPED_FUNCTION();
+    PROFILE_SCOPE_FUNCTION();
+
     TracyCZoneN( zone_1, "Zone 1", true );
     ERROR_GUARD( arg->id.valid() == false,
                  "Using init on a object that's already initialized can't possible make sense." );
@@ -680,7 +684,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
 
 PROC vulkan_swapchain_destroy( vulkan_swapchain* arg ) -> void
 {
-    TIME_SCOPED_FUNCTION();
+    PROFILE_SCOPE_FUNCTION();
     VkAllocationCallbacks allocator = vulkan_allocator_create_callbacks(
         g_vulkan->allocator.get() );
 
@@ -722,6 +726,7 @@ PROC vulkan_buffer_create(
     VkSharingMode sharing_mode
 )   -> vulkan_buffer
 {
+    PROFILE_SCOPE_FUNCTION();
     vulkan_buffer result = {
         .name = name,
         .size = size,
@@ -755,6 +760,7 @@ PROC vulkan_buffer_create(
 
 PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
 {
+    PROFILE_SCOPE_FUNCTION();
     if (arg->id.valid())
     {   VULKAN_ERRORF( "Tried to initialize already initialized memory object {} {}",
                        arg->id, arg->name );
@@ -924,6 +930,7 @@ PROC vulkan_memory_allocate( vulkan_memory* arg ) -> fresult
 
 PROC vulkan_memory_init( vulkan_memory* arg ) -> fresult
 {
+    PROFILE_SCOPE_FUNCTION();
     vulkan_memory_allocate( arg );
 
     return true;
@@ -932,6 +939,7 @@ PROC vulkan_memory_init( vulkan_memory* arg ) -> fresult
 // Returns location of suballlocated memory
 PROC vulkan_memory_suballocate_buffer( vulkan_memory* arg, vulkan_buffer* buffer ) -> fresult
 {
+    PROFILE_SCOPE_FUNCTION();
     if (arg->memory == nullptr)
     {   VULKAN_ERRORF( "No memory device in object '{}'", arg->name );
         return false;
@@ -970,6 +978,7 @@ PROC vulkan_memory_suballocate_buffer( vulkan_memory* arg, vulkan_buffer* buffer
 
 PROC vulkan_mesh_init( mesh* arg ) -> fresult
 {
+    PROFILE_SCOPE_FUNCTION();
     bool init_ok = mesh_init( arg );
     bool mesh_uninitialized = (init_ok == false && arg->id.valid() == false);
     if(mesh_uninitialized)
@@ -1053,6 +1062,7 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
 
 PROC vulkan_frame_init( vulkan_frame* arg, vulkan_pipeline* pipeline ) -> fresult
 {
+    PROFILE_SCOPE_FUNCTION();
     VkDescriptorSetAllocateInfo descriptor_resource_args {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .descriptorPool = pipeline->vk_resource_pool,
@@ -1095,6 +1105,7 @@ PROC vulkan_frame_init( vulkan_frame* arg, vulkan_pipeline* pipeline ) -> fresul
 
 PROC vulkan_init_pipelines() -> void
 {
+    PROFILE_SCOPE_FUNCTION();
     // Create shaders of pipeline
     {
         vulkan_shader vertex_shader {};
@@ -1828,6 +1839,7 @@ PROC vulkan_draw() -> void
 
     // -- Pre-Draw Start Setup and Reset Tasks
     // Clear acquire fence if we skipped the last frame
+    TracyCZoneN( zone_new_frame, "Vulkan Acquire new Frame", true );
     vkResetFences( self->logical_device, 1, &g_vulkan->frame_acquire_fence );
 
     // Set draw commands
@@ -1878,6 +1890,7 @@ PROC vulkan_draw() -> void
             &image_index
         );
     }
+    TracyCZoneEnd( zone_new_frame );
 
     // New new frame needs to be rendered yet, do something else
     if (acquire_bad == VK_NOT_READY)
@@ -1904,7 +1917,8 @@ PROC vulkan_draw() -> void
     auto frame_timeout = vkWaitForFences(
         g_vulkan->logical_device, 1, &self->frame_acquire_fence, true, 16'666'666 );
     if (frame_timeout == VK_TIMEOUT)
-    {   VULKAN_ERRORF( "Frame: {}] | Missed frame!", current_frame_i ); return;
+    {   VULKAN_ERRORF( "Frame: {}] | Missed frame!", current_frame_i );
+        return;
     }
     else if (frame_timeout == VK_ERROR_DEVICE_LOST)
     {   VULKAN_ERROR( "Something really horrible happened, "
@@ -1912,12 +1926,16 @@ PROC vulkan_draw() -> void
         return;
     }
     else if (frame_timeout == VK_SUCCESS)
-    {   VULKAN_LOGF( "Frame: {} | Completed Frame.", current_frame_i ); }
+    {   VULKAN_LOGF( "Frame: {} | Completed Frame.", current_frame_i );
+        FrameMarkEnd( "Vulkan Inflight Frame" );
+    }
+    FrameMarkStart( "Vulkan Inflight Frame" );
 
     VkCommandBuffer command_buffer = self->commands[ image_index ];
     vkResetCommandBuffer( command_buffer, 0x0 );
 
     // -- Get started on new frame --
+    TracyCZoneN( zone_setup_frame, "Vulkan Setup Frame", true );
     ++g_vulkan->frames_started;
 
     // SECTION: Set up some per frame data
@@ -1958,6 +1976,8 @@ PROC vulkan_draw() -> void
         .pBufferInfo = &resource_buffer_info,
         .pTexelBufferView = nullptr
     };
+    TracyCZoneEnd( zone_setup_frame );
+
     // Finalize the copy. No error return.
     vkUpdateDescriptorSets (g_vulkan->logical_device, 1, &resource_write_args, 0, nullptr );
 
@@ -1968,6 +1988,7 @@ PROC vulkan_draw() -> void
     begin_args.pInheritanceInfo = nullptr; // Optional
     // Start recording commands into the command buffer
 
+    TracyCZoneN( zone_record_commands_frame, "Vulkan Frame Record Commands", true );
     VkResult command_ok = vkBeginCommandBuffer( command_buffer, &begin_args );
 
     // -- Start recording into first subpass.--
@@ -1992,6 +2013,7 @@ PROC vulkan_draw() -> void
     bool resize_viewport = false;
     if (resize_viewport)
     {
+        PROFILE_SCOPE( "Vulkan Resize Viewport" );
         // Resize viewport and scissor
         VkViewport viewport_config {
             // Upper left coordinates
@@ -2086,6 +2108,7 @@ PROC vulkan_draw() -> void
     // vkResetFences( self->logical_device, 1, &self->frame_begin_fence );
     vkCmdEndRenderPass( command_buffer );
     vkEndCommandBuffer( command_buffer );
+    TracyCZoneEnd( zone_record_commands_frame );
 
     // if (sync_ok != VK_SUCCESS)
     // { TYON_ERROR( "Failed to wait on frame start fence for some reason" ); }
