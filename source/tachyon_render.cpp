@@ -161,26 +161,25 @@ matrix scene_camera::create_perspective_projection()
 
 PROC scene_camera::create_orthographic_projection() -> matrix
 {
-    f32 camera_width = std::round( sensor_size.x );
-    f32 aspect_ratio_vh = sensor_size.y / sensor_size.x;
+    f32 aspect_vh = (sensor_size.y / sensor_size.x);
     // Clip Plane Dimensions
     // Near
     f32 n = this->near_clip;
     // Far
     f32 f = this->far_clip;
     // Right
-    f32 r = -(camera_width / 2.0) / aspect_ratio_vh;
+    f32 r = -(sensor_size.x / 2.0) * aspect_vh;
     // Left
     f32 l = -r;
     // Top
-    f32 t = (camera_width / 2.0);
+    f32 t = (sensor_size.y / 2.0);
     // Bottom
     f32 b = -t;
 
     // This is rearranged for z up, x right, y backward, Unreal/Tachyon coordinates
     matrix result = matrix{
         2/(r-l),    0.0f,       0.0f,       -(r+l) / (r-l),
-        0.0f,       2/(f-n),    0.0f,       -(f+2) / (f-n),
+        0.0f,       1/(f-n),    0.0f,       -n/(f-n),
         0.0f,       0.0f,       2/(t-b),    -(t+b)/(t-b),
         0.0f,       0.0f,       0.0f,       1.0f
     };
