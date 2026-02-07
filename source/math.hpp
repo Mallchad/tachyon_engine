@@ -62,6 +62,10 @@ struct v3f final
     operator- (const v3f rhs) const
     { return v3f(x - rhs.x, y - rhs.y, z - rhs.z); }
 
+    // Scalar product
+    v3f
+    operator* (const f32 rhs);
+
     /// Cross Product
     v3f
     operator* ( v3f rhs );
@@ -90,7 +94,7 @@ struct v3f final
     v3f
     operator+= (const v3f rhs)
     {
-        this->x += rhs.x; this->y += rhs.y; this->z += rhs.y;
+        this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;
         return *this;
     }
 
@@ -128,9 +132,6 @@ struct vector3_t final
 {
     using t_vector = vector3_t<t_calculable>;
     t_calculable x, y, z;
-
-    static
-    t_vector up();
 
     CONSTRUCTOR vector3_t() = default;
     explicit
@@ -272,9 +273,9 @@ struct transform
 {
     using v4 = vector4_t<f32>;
     using v3 = v3f;
-    v3 translation;
-    v3 rotation;
-    v3 scale;
+    v3 translation = v3(0.0f);
+    v3 rotation = v3(0.0f);
+    v3 scale = v3(1.0f);
 
     matrix
     translation_matrix()

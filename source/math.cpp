@@ -110,17 +110,12 @@ v3f
 FUNCTION v3f::left()
 { return { -1., 0., 0. }; }
 
-template <typename T>
-vector3_t<T>
-vector3_t<T>::up()
-{ return { 0., 0. ,0. }; }
-
 CONSTRUCTOR v3f::v3f( vector4_t<float> v ) :
     x(v.x), y(v.y), z(v.z) {};
 
 /// Scalar Product
 v3f
-v3f::operator* (const f32 rhs) const
+v3f::operator* (const f32 rhs)
 { return v3f(x * rhs, y * rhs, z * rhs); }
 
 v3f

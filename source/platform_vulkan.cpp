@@ -415,6 +415,13 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
         .pBindings = resource_descriptors.data,
     };
 
+    VkPushConstantRange push_constant_range {
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+        // Data start offset
+        .offset = 0,
+        .size = sizeof(  vulkan_mesh_shader_push )
+    };
+
     /* Pipeline Layout: "An object defining the set of resources (via a
        collection of descriptor set layouts) and push constants used by
        pipelines that are created using the layout. Used when creating a
@@ -424,8 +431,8 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
     layout_args.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layout_args.pSetLayouts = &arg->platform_descriptor_layout;
     layout_args.setLayoutCount = 1;
-    layout_args.pushConstantRangeCount = 0;
-    layout_args.pPushConstantRanges = nullptr;
+    layout_args.pushConstantRangeCount = 1;
+    layout_args.pPushConstantRanges = &push_constant_range;
 
     auto descriptor_layout_ok = vkCreateDescriptorSetLayout(
         g_vulkan->logical_device,
@@ -1961,7 +1968,6 @@ PROC vulkan_draw() -> void
     // TODO: Change this if we go back to a 3D pipeline, this was meant for UI rendering
     current_frame->uniform.camera = (g_render->ui_camera.transform.transform_matrix() *
                                      g_render->ui_camera.create_orthographic_projection());
-    TYON_LOG( "Creating orthographic", g_render->ui_camera.sensor_size );
 
     // Setup Uniform
     frame_general_uniform* current_uniform = &current_frame->uniform;
@@ -2049,8 +2055,6 @@ PROC vulkan_draw() -> void
         };
         vkCmdSetViewport( command_buffer, 0, 1, &viewport_config );
         vkCmdSetScissor( command_buffer, 0, 1, &scissor_config );
-        TYON_LOGF( "Swapchain present {} {}", swapchain.vk_present_size.width,
-                   swapchain.vk_present_size.height );
     }
 
     // SECTION: Select mesh for drawing
@@ -2060,7 +2064,7 @@ PROC vulkan_draw() -> void
     auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
         return arg.id == draw_mesh->id; } );
     vulkan_mesh* vk_draw_mesh = mesh_result.match;
-    ERROR_GUARD( mesh_result.match_found, "" );
+    ERROR_GUARD( mesh_result.match_found, "We tried to draw a mesh with no associated Vulkan data" );
 
 
     // Bind vertex/ data to pipeline data slots
@@ -2083,6 +2087,17 @@ PROC vulkan_draw() -> void
         &current_frame->vk_resource,
         dynamic_offsets_n,
         dynamic_offsets
+    );
+    // Pass push constants with basic mesh data
+    vulkan_mesh_shader_push mesh_push;
+    mesh_push.local_space = matrix_create_transform( draw_mesh->transform );
+    vkCmdPushConstants(
+        command_buffer,
+        current_pipeline->platform_layout,
+        VK_SHADER_STAGE_VERTEX_BIT,
+        0,
+        sizeof( vulkan_mesh_shader_push),
+        &mesh_push
     );
 
     // Draw an actual mesh

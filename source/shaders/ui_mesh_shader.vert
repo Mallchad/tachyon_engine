@@ -1,5 +1,9 @@
 #version 430 core
 
+layout(push_constant) uniform mesh {
+    mat4 local_space;
+} push;
+
 layout( location = 0 ) in vec3 normal;
 layout( location = 1 ) in vec3 vert;
 layout( location = 2 ) in vec4 col;
@@ -112,12 +116,12 @@ void main()
                           .0, .0, 1., 0,
                           .0, .0, .0, 1. );
     // Transformation Matrices
-    mat4 local = identity;                  // Local Space
-    mat4 world = identity;                  // Local to World Space
-    mat4 cam = camera;                   // World to Camera Space
-    mat4 projection = identity;             // Orthographic Camera to Clip-Space
-    mat4 viewport = identity;               // Clip-Space to Screen Space
-    // cam = mat4(1);                          // Debug
+    mat4 local = push.local_space;               // Local Space
+    mat4 world = identity;                       // Local to World Space
+    mat4 cam = camera;                           // World to Camera Space
+    mat4 projection = identity;                  // Orthographic Camera to Clip-Space
+    mat4 viewport = identity;                    // Clip-Space to Screen Space
+    // cam = mat4(1);                            // Debug
 
     vec4 vertex = vec4( vert.x, vert.y, vert.z, 1.0 );
 

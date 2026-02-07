@@ -9,6 +9,11 @@ namespace tyon
 #define VULKAN_ERROR( ... ) TYON_BASE_ERROR( "Vulkan", __VA_ARGS__ );
 #define VULKAN_ERRORF( FORMAT_, ... ) TYON_BASE_ERRORF( "Vulkan", FORMAT_, __VA_ARGS__ );
 
+struct vulkan_mesh_shader_push
+{
+    matrix local_space = matrix::one();
+};
+
 struct vulkan_shader
 {
     uid id;

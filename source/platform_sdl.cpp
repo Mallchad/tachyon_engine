@@ -131,6 +131,8 @@ namespace tyon
         SDL_PumpEvents();
 
         SDL_Event x_event;
+        // Actually move step, not move speed
+        f32 move_speed = 50.f;
         while (SDL_PollEvent( &x_event ))
         {
             switch (x_event.type)
@@ -150,6 +152,33 @@ namespace tyon
                                g_render->ui_camera.sensor_size );
                     break;
                 case SDL_EVENT_WINDOW_MOVED:
+                    break;
+                case SDL_EVENT_KEY_DOWN:
+                    // TODO: tmp testing, remove me
+                    if (x_event.key.repeat == false)
+                    {
+                        TYON_LOG( "Move Event", SDL_GetScancodeName( x_event.key.scancode ) );
+                        TYON_LOGF( "[{} {} {}]",
+                                   g_vulkan->test_ui_triangle.transform.translation.x,
+                                   g_vulkan->test_ui_triangle.transform.translation.y,
+                                   g_vulkan->test_ui_triangle.transform.translation.z );
+                        if (x_event.key.scancode == SDL_SCANCODE_W)
+                        {   g_vulkan->test_ui_triangle.transform.translation +=
+                            (v3::up() * move_speed);
+                        }
+                        else if (x_event.key.scancode == SDL_SCANCODE_A)
+                        {   g_vulkan->test_ui_triangle.transform.translation +=
+                            (v3::left() * move_speed);
+                        }
+                        else if (x_event.key.scancode == SDL_SCANCODE_D)
+                        {   g_vulkan->test_ui_triangle.transform.translation +=
+                            (v3::right() * move_speed);
+                        }
+                        else if (x_event.key.scancode == SDL_SCANCODE_S)
+                        {   g_vulkan->test_ui_triangle.transform.translation +=
+                            (v3::down() * move_speed);
+                        }
+                    }
                     break;
                 default:
             }

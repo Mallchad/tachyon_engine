@@ -40,6 +40,7 @@ struct mesh
 {
     uid id;
     fstring name;
+    ftransform transform;
     array<v3> vertexes;
     array<v3> vertex_normals;
     array<i32> vertex_indexes;
