@@ -1625,13 +1625,14 @@ PROC vulkan_init() -> fresult
     };
     g_vulkan->test_ui_triangle = g_vulkan->test_triangle;
     {
-        /* Make the triangle reasonably sized for a screen sized viewport and place
-           on the near clip plane */
-        matrix translation = matrix_create_translation( v3 { 5.f, 0.0f, 0.0f } );
+        /* Make the triangle reasonably sized for a screen sized viewport
+         NOTE: We used to move the triangle into the clip area but now we
+         can move the orthographic camera itself*/
+        matrix translation = matrix_create_translation( v3 { 1.0f, 0.0f, 0.0f } );
         matrix scale = matrix_create_scale( v3 {1500.0f, 1500.0f, 1500.0f} );
         g_vulkan->test_ui_triangle.vertexes.map_procedure( [=](v3& arg) {
             arg = scale * arg;
-            // arg = translation * arg;
+            arg = translation * arg;
         });
     }
 
@@ -1952,7 +1953,6 @@ PROC vulkan_draw() -> void
     // TODO: Change this if we go back to a 3D pipeline, this was meant for UI rendering
     current_frame->uniform.camera = (g_render->main_camera.create_orthographic_projection() *
                                      g_render->main_camera.transform.transform_matrix());
-    // * matrix_create_rotation( { 0.0f, time_elapsed_seconds(), 0.0f })
 
     // Setup Uniform
     frame_general_uniform* current_uniform = &current_frame->uniform;

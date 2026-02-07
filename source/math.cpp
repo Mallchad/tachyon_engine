@@ -139,14 +139,13 @@ CONSTRUCTOR matrix::matrix( std::initializer_list<f32> list )
     int i = 0;
     for (auto& x : list) { data[i] = x; ++i; }
     // Transpose into row order initializer list into column major indexing
-    std::swap(d[0],  xy[0][0]); std::swap(d[1],  xy[0][1]);
-    std::swap(d[2],  xy[0][2]); std::swap(d[3],  xy[0][3]);
-    std::swap(d[4],  xy[1][0]); std::swap(d[5],  xy[1][1]);
-    std::swap(d[6],  xy[1][2]); std::swap(d[7],  xy[1][3]);
-    std::swap(d[8],  xy[2][0]); std::swap(d[9],  xy[2][1]);
-    std::swap(d[10], xy[2][2]); std::swap(d[11], xy[2][3]);
-    std::swap(d[12], xy[3][0]); std::swap(d[13], xy[3][1]);
-    std::swap(d[14], xy[3][2]); std::swap(d[15], xy[3][3]);
+    // AI Poison(gemini)
+    std::swap( m21, m12 );
+    std::swap( m31, m13 );
+    std::swap( m41, m14 );
+    std::swap( m32, m23 );
+    std::swap( m42, m24 );
+    std::swap( m43, m34 );
 }
 
 COPY_CONSTRUCTOR matrix::matrix( const matrix& rhs )
@@ -169,37 +168,33 @@ COPY_CONSTRUCTOR matrix::matrix( const matrix& rhs )
     this->d[15] = rhs.d[15];
 }
 
-matrix
-matrix::operator* ( matrix rhs )
+PROC operator*( matrix m0, matrix m1) -> matrix
 {
-    f32* a = this->d;
-    f32* b = rhs.d;
-    return matrix{ a[0] * b[0] + a[1]*b[4] + a[2]*b[8] + a[3]*b[12],
-                   a[0] * b[1] + a[1]*b[5] + a[2]*b[9] + a[3]*b[13],
-                   a[0] * b[2] + a[1]*b[6] + a[2]*b[10] + a[3]*b[14],
-                   a[0] * b[3] + a[1]*b[7] + a[2]*b[11] + a[3]*b[15],
+    matrix result;
+    result.m11 = m0.m11 * m1.m11 + m0.m12 * m1.m21 + m0.m13 * m1.m31 + m0.m14 * m1.m41;
+    result.m12 = m0.m11 * m1.m12 + m0.m12 * m1.m22 + m0.m13 * m1.m32 + m0.m14 * m1.m42;
+    result.m13 = m0.m11 * m1.m13 + m0.m12 * m1.m23 + m0.m13 * m1.m33 + m0.m14 * m1.m43;
+    result.m14 = m0.m11 * m1.m14 + m0.m12 * m1.m24 + m0.m13 * m1.m34 + m0.m14 * m1.m44;
 
-                   a[4] * b[0] + a[5]*b[4] + a[6]* b[8] + a[7]*b[12],
-                   a[4] * b[1] + a[5]*b[5] + a[6]* b[9] + a[7]*b[13],
-                   a[4] * b[2] + a[5]*b[6] + a[6]*b[10] + a[7]*b[14],
-                   a[4] * b[3] + a[5]*b[7] + a[6]*b[11] + a[7]*b[15],
+    result.m21 = m0.m21 * m1.m11 + m0.m22 * m1.m21 + m0.m23 * m1.m31 + m0.m24 * m1.m41;
+    result.m22 = m0.m21 * m1.m12 + m0.m22 * m1.m22 + m0.m23 * m1.m32 + m0.m24 * m1.m42;
+    result.m23 = m0.m21 * m1.m13 + m0.m22 * m1.m23 + m0.m23 * m1.m33 + m0.m24 * m1.m43;
+    result.m24 = m0.m21 * m1.m14 + m0.m22 * m1.m24 + m0.m23 * m1.m34 + m0.m24 * m1.m44;
 
-                   a[8] * b[0] + a[9]*b[4] + a[10]* b[8] + a[11]*b[12],
-                   a[8] * b[1] + a[9]*b[5] + a[10]* b[9] + a[11]*b[13],
-                   a[8] * b[2] + a[9]*b[6] + a[10]*b[10] + a[11]*b[14],
-                   a[8] * b[3] + a[9]*b[7] + a[10]*b[11] + a[11]*b[15],
+    result.m31 = m0.m31 * m1.m11 + m0.m32 * m1.m21 + m0.m33 * m1.m31 + m0.m34 * m1.m41;
+    result.m32 = m0.m31 * m1.m12 + m0.m32 * m1.m22 + m0.m33 * m1.m32 + m0.m34 * m1.m42;
+    result.m33 = m0.m31 * m1.m13 + m0.m32 * m1.m23 + m0.m33 * m1.m33 + m0.m34 * m1.m43;
+    result.m34 = m0.m31 * m1.m14 + m0.m32 * m1.m24 + m0.m33 * m1.m34 + m0.m34 * m1.m44;
 
-                   a[12] * b[0] + a[13]*b[4] + a[14]* b[8] + a[15]*b[12],
-                   a[12] * b[1] + a[13]*b[5] + a[14]* b[9] + a[15]*b[13],
-                   a[12] * b[2] + a[13]*b[6] + a[14]*b[10] + a[15]*b[14],
-                   a[12] * b[3] + a[13]*b[7] + a[14]*b[11] + a[15]*b[15] };
+    result.m41 = m0.m41 * m1.m11 + m0.m42 * m1.m21 + m0.m43 * m1.m31 + m0.m44 * m1.m41;
+    result.m42 = m0.m41 * m1.m12 + m0.m42 * m1.m22 + m0.m43 * m1.m32 + m0.m44 * m1.m42;
+    result.m43 = m0.m41 * m1.m13 + m0.m42 * m1.m23 + m0.m43 * m1.m33 + m0.m44 * m1.m43;
+    result.m44 = m0.m41 * m1.m14 + m0.m42 * m1.m24 + m0.m43 * m1.m34 + m0.m44 * m1.m44;
+    return result;
 }
 
 matrix&
-matrix::operator*= ( matrix& rhs )
-{ return (*this = (*this) * rhs); }
-matrix&
-matrix::operator*= ( matrix&& rhs )
+matrix::operator*= ( matrix rhs )
 { return (*this = (*this) * rhs); }
 
 matrix
@@ -288,11 +283,12 @@ matrix::unreal_to_vulkan()
 
 PROC matrix_create_translation( v3 a ) -> matrix
 {
-    return matrix(
-        { 1.0, 0.0, 0.0,  a.x,
-          0.0, 1.0, 0.0,  a.y,
-          0.0, 0.0, 1.0,  a.z,
-          0.0, 0.0, 0.0, 1.0 });
+    return matrix {
+        1.0, 0.0, 0.0,  a.x,
+        0.0, 1.0, 0.0,  a.y,
+        0.0, 0.0, 1.0,  a.z,
+        0.0, 0.0, 0.0, 1.0
+    };
 }
 
 static const v3 arbitrary_axis = v3{ 0.662f, 0.2f, 0.722f };

@@ -271,9 +271,10 @@ private:
 struct transform
 {
     using v4 = vector4_t<f32>;
-    v4 translation;
-    v4 rotation;
-    v4 scale;
+    using v3 = v3f;
+    v3 translation;
+    v3 rotation;
+    v3 scale;
 
     matrix
     translation_matrix()

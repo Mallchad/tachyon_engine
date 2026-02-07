@@ -18,10 +18,10 @@ struct matrix
         f32 data[16];
         f32 d[16];
         struct {
-            f64 m11; f64 m12; f64 m13; f64 m14;
-            f64 m21; f64 m22; f64 m23; f64 m24;
-            f64 m31; f64 m32; f64 m33; f64 m34;
-            f64 m41; f64 m42; f64 m43; f64 m44;
+            f32 m11; f32 m12; f32 m13; f32 m14;
+            f32 m21; f32 m22; f32 m23; f32 m24;
+            f32 m31; f32 m32; f32 m33; f32 m34;
+            f32 m41; f32 m42; f32 m43; f32 m44;
         };
     };
 
@@ -62,8 +62,6 @@ struct matrix
                  data[8] *rhs, data[9] *rhs, data[10] *rhs, data[11] *rhs,
                  data[12] *rhs, data[13] *rhs, data[14] *rhs, data[15] *rhs };
     }
-    /// Vector Product/Multiply
-    matrix operator* ( matrix rhs );
 
     matrix
     operator+ ( matrix rhs )
@@ -82,11 +80,6 @@ struct matrix
                  data[12]* rhs[12], data[13]* rhs[13], data[14]* rhs[14], data[15]* rhs[15] };
     }
 
-    matrix&
-    operator*= ( matrix& rhs );
-    matrix&
-    operator*= ( matrix&& rhs );
-
     matrix
     transpose()
     {
@@ -100,6 +93,9 @@ struct matrix
     matrix
     operator+= ( matrix rhs )
     { return *this = (*this) + rhs; }
+
+    matrix&
+    operator*= ( matrix rhs );
 
     static matrix
     create_translation( v3f target );
@@ -134,5 +130,7 @@ struct matrix
     matrix
     unreal_to_vulkan();
 };
+
+PROC operator*( matrix m0, matrix m1) -> matrix;
 
 } // namespace tyon
