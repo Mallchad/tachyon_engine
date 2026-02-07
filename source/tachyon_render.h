@@ -13,6 +13,27 @@ enum class e_window_platform : i32
     windows = 4
 };
 
+/** physical shader types that a gpu may be able to support
+ */
+enum class shader_type
+{
+    vertex,
+    fragment,
+    geometry,
+    compute,
+    tesselation_control,
+    tesselation_eval
+    };
+
+// enum class e_vsync_mode
+// {
+//     off,
+//     adaptive,
+//     double_buffered,
+//     triple_buffered,
+//     variable_refresh
+// };
+
 struct scene_camera
 {
     ftransform transform;
