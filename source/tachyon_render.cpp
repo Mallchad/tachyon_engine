@@ -160,13 +160,12 @@ matrix scene_camera::create_perspective_projection()
 
 PROC scene_camera::create_orthographic_projection() -> matrix
 {
-    f32 aspect_vh = (sensor_size.y / sensor_size.x);
     // Clip Plane Dimensions
     // Near
     f32 n = this->near_clip;
     // Far
     f32 f = this->far_clip;
-    // Right - device by aspect to stop the meshes deforming changing aspect ratio
+    // Right - NOTE: aspect divide doesn't seem to be nessesary
     f32 r = -(sensor_size.x / 2.0);
     // Left
     f32 l = -r;
