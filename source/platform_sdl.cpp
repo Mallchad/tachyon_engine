@@ -21,11 +21,7 @@ namespace tyon
         }
 
         if (REFLECTION_PLATFORM_LINUX)
-        {   cstring x11_env_cstring = std::getenv( "DISPLAY" );
-            cstring wayland_env_cstring = std::getenv( "WAYLAND_DISPLAY" );
-            fstring x11_env = x11_env_cstring;
-            fstring wayland_env = wayland_env_cstring;
-
+        {
             if (g_render->renderdoc_attached || g_render->nsight_attached)
             {   SDL_SetHint( SDL_HINT_VIDEO_DRIVER, "x11" );
                 g_render->window_platform = e_window_platform::x11;

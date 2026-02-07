@@ -18,8 +18,12 @@ PROC render_init() -> void
        should try to disable pre-emptively that if possible. */
     if (REFLECTION_PLATFORM_LINUX)
     {   char* renderdoc_env = std::getenv( "ENABLE_VULKAN_RENDERDOC_CAPTURE" );
+        cstring x11_env_cstring = std::getenv( "DISPLAY" );
+        cstring wayland_env_cstring = std::getenv( "WAYLAND_DISPLAY" );
+        fstring x11_env = (x11_env_cstring ? x11_env_cstring : "");
+        fstring wayland_env = (wayland_env_cstring ? wayland_env_cstring : "");
         if (renderdoc_env && renderdoc_env[0] == '1')
-        {   TYON_LOG( "Renderdoc is attached and doesn't support Wayland, falli3ng back to X11" );
+        {   TYON_LOG( "Renderdoc is attached and doesn't support Wayland on Linux, falling back to X11" );
             g_render->renderdoc_attached = true;
         }
     }
