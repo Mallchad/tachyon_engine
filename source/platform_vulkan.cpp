@@ -11,8 +11,9 @@ namespace dyn
 
 // NOTE: This may be called across an API boundry so on Windows it needs dllexport decleration
 // TODO: Need to figure out if this is ACTUALLY necessary
-VKAPI_ATTR VKAPI_CALL
-auto vulkan_debug_callback(
+// NOTE: Very likely yes.
+VKAPI_ATTR
+auto  VKAPI_CALL vulkan_debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
     VkDebugUtilsMessageTypeFlagsEXT message_type,
     const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
@@ -310,7 +311,7 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
     raster_args.lineWidth = 1.0f;
     raster_args.cullMode = VK_CULL_MODE_BACK_BIT;
     // TODO: TEST no cull mode
-    // raster_args.cullMode = VK_CULL_MODE_NONE;
+    raster_args.cullMode = VK_CULL_MODE_NONE;
     raster_args.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     raster_args.depthBiasEnable = VK_FALSE;
     raster_args.depthBiasConstantFactor = 0.0f;         // Optional

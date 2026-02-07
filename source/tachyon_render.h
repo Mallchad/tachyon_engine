@@ -17,8 +17,8 @@ struct scene_camera
 {
     ftransform transform;
     vec2 sensor_size;
-    f32 far_clip;
     f32 near_clip;
+    f32 far_clip;
 
     PROC create_perspective_projection() -> matrix;
     PROC create_orthographic_projection() -> matrix;

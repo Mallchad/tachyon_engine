@@ -58,13 +58,10 @@ PROC render_init() -> void
      * size, and all the primitives exactly on the near clip or slightly
      * behind. */
     g_render->main_camera = scene_camera {
-        // Move the camera back to allow -1 to 1 layer depths
-        .transform { .translation = { 0.0, -1, 0.0  }},
-
         // TODO: Good size for UI, needs to be updated on the fly though...
         .sensor_size = default_window.size,
-        .far_clip = 2.0f,
-        .near_clip = 1.0f
+        .near_clip = 1.0f,
+        .far_clip = 3.0f
     };
 
     bool vulkan_ok = false;
