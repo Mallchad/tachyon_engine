@@ -20,7 +20,8 @@ struct scene_camera
     f32 far_clip;
     f32 near_clip;
 
-    matrix create_perspective_projection();
+    PROC create_perspective_projection() -> matrix;
+    PROC create_orthographic_projection() -> matrix;
 };
 
 struct render_context

@@ -1624,11 +1624,16 @@ PROC vulkan_init() -> fresult
                           { 1.f, 0.f, 0.f, 0.f }}
     };
     g_vulkan->test_ui_triangle = g_vulkan->test_triangle;
-    matrix modify = matrix_create_translation( v3 { 0.f, -5.0f, 0.0f } ) *
-        matrix_create_scale( v3 {1500.0f, 1500.0f, 1500.0f} );
-    g_vulkan->test_ui_triangle.vertexes.map_procedure( [=](v3& arg) {
-        arg = modify * arg;
-    });
+    {
+        /* Make the triangle reasonably sized for a screen sized viewport and place
+           on the near clip plane */
+        matrix translation = matrix_create_translation( v3 { 5.f, 0.0f, 0.0f } );
+        matrix scale = matrix_create_scale( v3 {1500.0f, 1500.0f, 1500.0f} );
+        g_vulkan->test_ui_triangle.vertexes.map_procedure( [=](v3& arg) {
+            arg = scale * arg;
+            // arg = translation * arg;
+        });
+    }
 
     file teapot_file = file_load_binary( "data/geometry/utah_teapot.stl" );
     file whale_file = file_load_binary( "data/geometry/articulated_whale_shark.stl" );
@@ -1944,7 +1949,8 @@ PROC vulkan_draw() -> void
 
     current_frame->draw_index = current_frame_i;
     current_frame->inflight_index = inflight_frame_i;
-    current_frame->uniform.camera = (g_render->main_camera.create_perspective_projection() *
+    // TODO: Change this if we go back to a 3D pipeline, this was meant for UI rendering
+    current_frame->uniform.camera = (g_render->main_camera.create_orthographic_projection() *
                                      g_render->main_camera.transform.transform_matrix());
     // * matrix_create_rotation( { 0.0f, time_elapsed_seconds(), 0.0f })
 
