@@ -141,6 +141,17 @@ namespace tyon
                 case SDL_EVENT_QUIT:
                     global->kill_program = true;
                     break;
+                case SDL_EVENT_WINDOW_RESIZED:
+                    // NOTE: UI Camera sensor must always match the viewport,
+                    // you can clip it however you like after
+                    g_render->ui_camera.sensor_size.x = f32(x_event.window.data1);
+                    g_render->ui_camera.sensor_size.y = f32(x_event.window.data2);
+                    TYON_LOGF( "SDL Window resize event, new size: {}",
+                               g_render->ui_camera.sensor_size );
+                    break;
+                case SDL_EVENT_WINDOW_MOVED:
+                    break;
+                default:
             }
         }
     }

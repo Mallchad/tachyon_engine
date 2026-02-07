@@ -30,6 +30,8 @@ struct vulkan_swapchain
     /** Vulkan dependant size of presentable surface, often close to window size.
     ultra pedantic about timing and exact size on most platforms. */
     VkExtent2D present_size;
+    // Internal size actually being used,vs in the intended size
+    VkExtent2D vk_present_size;
     i32 n_images = 0;
     bool initialized = false;
     resource_arena resources;

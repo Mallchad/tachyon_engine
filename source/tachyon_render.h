@@ -32,7 +32,8 @@ struct render_context
     bool renderdoc_attached = false;
     bool nsight_attached = false;
 
-    scene_camera main_camera;
+    /* Orthographic UI camera */
+    scene_camera ui_camera;
 };
 
 struct mesh

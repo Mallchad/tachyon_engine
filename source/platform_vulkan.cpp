@@ -322,8 +322,8 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
         // Upper left coordinates
         .x = 0,
         .y = 0,
-        .width = float(arg->swapchain->present_size.width),
-        .height = float(arg->swapchain->present_size.height),
+        .width = float(arg->swapchain->vk_present_size.width),
+        .height = float(arg->swapchain->vk_present_size.height),
         // Configurable viewport depth, can configurable but usually between 0 and 1
         .minDepth = 0.0,
         .maxDepth = 1.0
@@ -332,7 +332,7 @@ PROC vulkan_pipeline_mesh_init( vulkan_pipeline* arg ) -> fresult
     // Only render into a certain portion of the viewport with scissors
     VkRect2D scissor_config {
         VkOffset2D { 0, 0 },
-        arg->swapchain->present_size
+        arg->swapchain->vk_present_size
     };
 
     VkPipelineViewportStateCreateInfo viewport_args {};
@@ -522,7 +522,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
         VkSurfaceCapabilitiesKHR surface_capabilities {};
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
             g_vulkan->device, g_vulkan->surface, &surface_capabilities );
-        arg->present_size = surface_capabilities.currentExtent;
+        arg->vk_present_size = surface_capabilities.currentExtent;
         VkExtent2D min = surface_capabilities.minImageExtent;
         VkExtent2D max = surface_capabilities.maxImageExtent;
         VkExtent2D current = surface_capabilities.currentExtent;
@@ -534,8 +534,8 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
 
         if (current.width == u32(-1) || current.height == u32(-1) )
         {   VULKAN_LOG( "Found weird current surface size, we will try to request an appropriate size" );
-            arg->present_size.width = std::clamp( arg->present_size.width, min.width, max.width );
-            arg->present_size.height = std::clamp( arg->present_size.height, min.height, max.height );
+            arg->vk_present_size.width = std::clamp( arg->present_size.width, min.width, max.width );
+            arg->vk_present_size.height = std::clamp( arg->present_size.height, min.height, max.height );
         }
 
         TracyCZoneEnd( zone_1 );
@@ -569,7 +569,7 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
     swapchain_args.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     // The format must match the physical surface formats
     swapchain_args.imageFormat = self->swapchain_image_format;
-    swapchain_args.imageExtent = arg->present_size;
+    swapchain_args.imageExtent = arg->vk_present_size;
     swapchain_args.imageArrayLayers = 1; // More than 1 if a stereoscopic application
     swapchain_args.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     swapchain_args.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -597,6 +597,11 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
 
     TracyCZoneEnd( zone_3 );
     TracyCZoneNC( zone_4, "Zone 4", 0xA040A0, true );
+
+    VkSurfaceCapabilitiesKHR surface_capabilities_2 {};
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        g_vulkan->device, g_vulkan->surface, &surface_capabilities_2 );
+
     array<VkImage>& swapchain_images = g_vulkan->swapchain_images;
     u32 n_swapchain_images = 0;
     vkGetSwapchainImagesKHR( g_vulkan->logical_device, arg->platform_swapchain,
@@ -666,8 +671,8 @@ PROC vulkan_swapchain_init( vulkan_swapchain* arg, VkSwapchainKHR reuse_swapchai
         framebuffer_args.renderPass = self->render_pass;
         framebuffer_args.attachmentCount = 1;
         framebuffer_args.pAttachments = attachments;
-        framebuffer_args.width = arg->present_size.width;
-        framebuffer_args.height = arg->present_size.height;
+        framebuffer_args.width = arg->vk_present_size.width;
+        framebuffer_args.height = arg->vk_present_size.height;
         framebuffer_args.layers = 1;
 
         framebuffer_errors[i] = vkCreateFramebuffer(
@@ -1747,6 +1752,7 @@ PROC vulkan_init() -> fresult
     /* Create swapchain before pipeline so we can pass present surface current extent
        But after render pass... because it gets passed in the swapchain */
     g_vulkan->swapchain.name = "version_0";
+    g_vulkan->swapchain.present_size = as<VkExtent2D>( g_render->ui_camera.sensor_size );
     vulkan_swapchain_init( &g_vulkan->swapchain, VK_NULL_HANDLE );
 
     /* NOTE Descriptor pools are fixed size, so they need to be created on
@@ -1886,6 +1892,7 @@ PROC vulkan_draw() -> void
         VkSwapchainKHR reuse_swapchain = g_vulkan->swapchain.platform_swapchain;
         vulkan_swapchain_destroy( &g_vulkan->swapchain );
         g_vulkan->swapchain.name = fmt::format( "version_{}", current_frame_i );
+        g_vulkan->swapchain.vk_present_size = as<VkExtent2D>( g_render->ui_camera.sensor_size );
         vulkan_swapchain_init( &g_vulkan->swapchain, reuse_swapchain );
 
         acquire_bad = vkAcquireNextImageKHR(
@@ -1952,8 +1959,9 @@ PROC vulkan_draw() -> void
     current_frame->draw_index = current_frame_i;
     current_frame->inflight_index = inflight_frame_i;
     // TODO: Change this if we go back to a 3D pipeline, this was meant for UI rendering
-    current_frame->uniform.camera = (g_render->main_camera.transform.transform_matrix() *
-                                     g_render->main_camera.create_orthographic_projection());
+    current_frame->uniform.camera = (g_render->ui_camera.transform.transform_matrix() *
+                                     g_render->ui_camera.create_orthographic_projection());
+    TYON_LOG( "Creating orthographic", g_render->ui_camera.sensor_size );
 
     // Setup Uniform
     frame_general_uniform* current_uniform = &current_frame->uniform;
@@ -2010,7 +2018,7 @@ PROC vulkan_draw() -> void
     render_pass_args.renderPass = self->render_pass;
     render_pass_args.framebuffer = self->swapchain_framebuffers[ image_index ];
     render_pass_args.renderArea.offset = {0, 0};
-    render_pass_args.renderArea.extent = swapchain.present_size;
+    render_pass_args.renderArea.extent = swapchain.vk_present_size;
     render_pass_args.clearValueCount = 1;
     render_pass_args.pClearValues = &clear_value;
     vkCmdBeginRenderPass( command_buffer, &render_pass_args, VK_SUBPASS_CONTENTS_INLINE );
@@ -2018,7 +2026,7 @@ PROC vulkan_draw() -> void
     vkCmdBindPipeline(
         command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, current_pipeline->platform_pipeline );
 
-    bool resize_viewport = false;
+    bool resize_viewport = true;
     if (resize_viewport)
     {
         PROFILE_SCOPE( "Vulkan Resize Viewport" );
@@ -2027,8 +2035,8 @@ PROC vulkan_draw() -> void
             // Upper left coordinates
             .x = 0,
             .y = 0,
-            .width = float(swapchain.present_size.width),
-            .height = float(swapchain.present_size.height),
+            .width = float(swapchain.vk_present_size.width),
+            .height = float(swapchain.vk_present_size.height),
             // Configurable viewport depth, can configurable but usually between 0 and 1
             .minDepth = 0.0,
             .maxDepth = 1.0
@@ -2037,10 +2045,12 @@ PROC vulkan_draw() -> void
         // Only render into a certain portion of the viewport with scissors
         VkRect2D scissor_config {
             VkOffset2D { 0, 0 },
-            swapchain.present_size
+            swapchain.vk_present_size
         };
         vkCmdSetViewport( command_buffer, 0, 1, &viewport_config );
         vkCmdSetScissor( command_buffer, 0, 1, &scissor_config );
+        TYON_LOGF( "Swapchain present {} {}", swapchain.vk_present_size.width,
+                   swapchain.vk_present_size.height );
     }
 
     // SECTION: Select mesh for drawing

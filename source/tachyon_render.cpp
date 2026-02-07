@@ -57,8 +57,9 @@ PROC render_init() -> void
     /* This "camera" is for UI usage... So the sensor size should be the window
      * size, and all the primitives exactly on the near clip or slightly
      * behind. */
-    g_render->main_camera = scene_camera {
+    g_render->ui_camera = scene_camera {
         // TODO: Good size for UI, needs to be updated on the fly though...
+        // This has been done for Vulkan, but no other backend
         .sensor_size = default_window.size,
         .near_clip = 1.0f,
         .far_clip = 3.0f
@@ -165,8 +166,8 @@ PROC scene_camera::create_orthographic_projection() -> matrix
     f32 n = this->near_clip;
     // Far
     f32 f = this->far_clip;
-    // Right
-    f32 r = -(sensor_size.x / 2.0) * aspect_vh;
+    // Right - device by aspect to stop the meshes deforming changing aspect ratio
+    f32 r = -(sensor_size.x / 2.0);
     // Left
     f32 l = -r;
     // Top
