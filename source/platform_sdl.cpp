@@ -179,6 +179,9 @@ namespace tyon
                     }
                     break;
                 default:
+                {
+                    // break;
+                }
             }
         }
     }
