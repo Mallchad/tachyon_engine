@@ -96,19 +96,19 @@ FUNCTION v3f::up()
 { return { 0., 0., 1. }; }
 v3f
 FUNCTION v3f::forward()
-{ return { 0., 1., 0. }; }
+{ return { 1.0, 0.0, 0. }; }
 v3f
 FUNCTION v3f::right()
-{ return { 1., 0., 0. }; }
+{ return { 0.0, 1.0, 0. }; }
 v3f
 FUNCTION v3f::down()
 { return { 0., 0., -1. }; }
 v3f
 FUNCTION v3f::backward()
-{ return { 0., -1, 0. }; }
+{ return { -1.0, 0.0, 0. }; }
 v3f
 FUNCTION v3f::left()
-{ return { -1., 0., 0. }; }
+{ return { 0.0, -1.0, 0. }; }
 
 CONSTRUCTOR v3f::v3f( vector4_t<float> v ) :
     x(v.x), y(v.y), z(v.z) {};

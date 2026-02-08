@@ -43,6 +43,12 @@ struct scene_camera
 
     PROC create_perspective_projection() -> matrix;
     PROC create_orthographic_projection() -> matrix;
+    // Create local normalized foward vector
+    PROC forward() -> v3;
+    // Create local normalized up vector
+    PROC up() -> v3;
+    // Create local normalized right vector
+    PROC right() -> v3;
 };
 
 struct render_context

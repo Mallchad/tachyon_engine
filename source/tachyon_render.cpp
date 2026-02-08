@@ -62,6 +62,10 @@ PROC render_init() -> void
      * size, and all the primitives exactly on the near clip or slightly
      * behind. */
     g_render->ui_camera = scene_camera {
+        .transform {
+            // Rotate the camera to
+            .rotation = { 0.0, 0.0, 0.0 * 6.28 }
+        },
         // TODO: Good size for UI, needs to be updated on the fly though...
         // This has been done for Vulkan, but no other backend
         .sensor_size = default_window.size,
@@ -187,6 +191,19 @@ PROC scene_camera::create_orthographic_projection() -> matrix
     };
 
     return result;
+}
+
+// Create local normalized foward vector
+PROC scene_camera::forward() -> v3
+{   return matrix_create_rotation( transform.rotation ) * v3::forward();
+}
+// Create local normalized up vector
+PROC scene_camera::up() -> v3
+{   return matrix_create_rotation( transform.rotation ) * v3::up();
+}
+// Create local normalized right vector
+PROC scene_camera::right() -> v3
+{   return matrix_create_rotation( transform.rotation ) * v3::right();
 }
 
 }
