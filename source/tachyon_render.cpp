@@ -63,13 +63,15 @@ PROC render_init() -> void
      * behind. */
     g_render->ui_camera = scene_camera {
         .transform {
-            // Rotate the camera to
+            // Move it back a bit to make -1 to 1 fit inside the view frustum
+            .translation = { -1.0, 0.0, 0.0 },
             .rotation = { 0.0, 0.0, 0.0 * 6.28 }
         },
         // TODO: Good size for UI, needs to be updated on the fly though...
         // This has been done for Vulkan, but no other backend
         .sensor_size = default_window.size,
         .near_clip = 1.0f,
+        // near clip + 2 (-1 to 1)
         .far_clip = 3.0f
     };
 
@@ -174,7 +176,7 @@ PROC scene_camera::create_orthographic_projection() -> matrix
     // Far
     f32 f = this->far_clip;
     // Right - NOTE: aspect divide doesn't seem to be nessesary
-    f32 r = -(sensor_size.x / 2.0);
+    f32 r = (sensor_size.x / 2.0);
     // Left
     f32 l = -r;
     // Top
@@ -182,10 +184,19 @@ PROC scene_camera::create_orthographic_projection() -> matrix
     // Bottom
     f32 b = -t;
 
-    // This is rearranged for z up, x right, y backward, Unreal/Tachyon coordinates
+    /* This is rearranged for z up, x forward, y right, Unreal/Tachyon coordinates
+
+       NOTE: This used to be X right to make it a bit like screen coordinates,
+       but I think that's a bit stupid and using forward-up-right declerations
+       is much more user friendly. Additionally it means coordinate versions are
+       done in one time constants, not constantly throughout the code.
+
+    NOTE: This is also a Vulkan specific function. It generates a Vulkan
+    compatible projection but the coordinate rearrangement to NDC is performed
+    later. This does format depth in 0-1.0 however.*/
     matrix result = matrix{
-        2/(r-l),    0.0f,       0.0f,       -(r+l) / (r-l),
-        0.0f,       1/(f-n),    0.0f,       -n/(f-n),
+        1/(f-n),    0.0f,       0.0f,       -n/(f-n),
+        0.0f,       2/(r-l),    0.0f,       -(r+l) / (r-l),
         0.0f,       0.0f,       2/(t-b),    -(t+b)/(t-b),
         0.0f,       0.0f,       0.0f,       1.0f
     };

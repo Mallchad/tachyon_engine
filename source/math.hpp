@@ -363,6 +363,9 @@ PROC operator*( matrix m, v3 v ) -> v3;
 // PROC operator*( matrix m0,  v3 v0) -> v3;
 
 // PROC matrix_projection_create() -> matrix;
+
+PROC matrix_create_translation( v3 a ) -> matrix;
+
 // Create a Euler Rotation Matrix with w component being around an arbitrary axis
 PROC matrix_create_rotation( v3 euler, f32 arbitrary = 0.0f ) -> matrix;
 
@@ -370,5 +373,14 @@ PROC matrix_create_rotation( v3 euler, f32 arbitrary = 0.0f ) -> matrix;
 PROC matrix_create_scale( v3 a ) -> matrix;
 
 PROC matrix_create_transform( ftransform arg ) -> matrix;
+
+/** Create a 3D coordinate using Forward Right Up (FRU) cardinal directions.
+
+    NOTE: This is valid for UI oriented cameras too.
+ */
+PROC v3_fru( f32 forward, f32 right, f32 up ) -> v3;
+
+/** Create a 3D coordinate using Left Up Right (LUF) cardinal directions */
+PROC v3_luf( f32 left, f32 up, f32 forward ) -> v3;
 
 }

@@ -1641,7 +1641,7 @@ PROC vulkan_init() -> fresult
         /* Make the triangle reasonably sized for a screen sized viewport
          NOTE: We used to move the triangle into the clip area but now we
          can move the orthographic camera itself*/
-        matrix translation = matrix_create_translation( v3 { 1.0f, 0.0f, 0.0f } );
+        matrix translation = matrix_create_translation( v3 { 0.0f, 0.0f, 0.0f } );
         matrix scale = matrix_create_scale( v3 {1500.0f, 1500.0f, 1500.0f} );
         matrix rotation = matrix_create_rotation( v3 {0.0, 0.0, 0.25 * 6.28 } );
         g_vulkan->test_ui_triangle.vertexes.map_procedure( [=](v3& arg) {

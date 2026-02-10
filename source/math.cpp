@@ -269,10 +269,22 @@ matrix::unreal_to_opengl()
 matrix
 matrix::unreal_to_vulkan()
 {
-    matrix conversion = matrix { 1., 0., 0., 0.,
+    /* x+ to z+ (forward)
+       y+ to x+ (right)
+       z+ to y- (up)
+
+    NOTE: I got this very wrong before, I was trying to remap the xyz
+    coordinates into their respective positions in Vulkan NDC coordinates,
+    flipping the axis as necessary, this is NOT what I should have been doing. I
+    should have been swapping the axis based on the *cardinal directions* I
+    wanted. You may consider this North, West and Up, but in our semantics (and
+    industry semantics) it is Forward-Right-Up (xyz in our system, z -y x in
+    Vulkan NDC). Getting this wrong lead to the camera being rotated 90 degrees,
+    and it is not trivial to debug why this is the case. */
+    matrix conversion = matrix { 0., 1.,  0., 0.,
                                  0., 0., -1., 0.,
-                                 0., -1., 0., 0.,
-                                 0., 0., 0., 1. };
+                                 1., 0.,  0., 0.,
+                                 0., 0.,  0., 1. };
     return *this * conversion;
 }
 
@@ -376,6 +388,15 @@ PROC matrix_create_transform( ftransform arg ) -> matrix
     return (matrix_create_translation( v3(translation) ) *
             matrix_create_rotation( v3(rotation) ) *
             matrix_create_scale( v3(scale) ));
+}
+
+PROC v3_fru( f32 forward, f32 right, f32 up ) -> v3
+{   return v3{ forward, right, up };
+}
+
+PROC v3_luf( f32 left, f32 up, f32 forward ) -> v3
+{
+    return v3{ forward, -left, up };
 }
 
 }
