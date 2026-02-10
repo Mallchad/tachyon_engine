@@ -63,8 +63,9 @@ PROC render_init() -> void
      * behind. */
     g_render->ui_camera = scene_camera {
         .transform {
-            // Move it back a bit to make -1 to 1 fit inside the view frustum
-            .translation = { -1.0, 0.0, 0.0 },
+            /* Move it back a bit to make -1 to 1 fit inside the view frustum.
+               2 seems to be the right number for this. */
+            .translation = { -2.0, 0.0, 0.0 },
             .rotation = { 0.0, 0.0, 0.0 * 6.28 }
         },
         // TODO: Good size for UI, needs to be updated on the fly though...
