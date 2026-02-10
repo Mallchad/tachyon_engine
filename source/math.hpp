@@ -367,17 +367,25 @@ PROC operator*( matrix m, v3 v ) -> v3;
 PROC matrix_create_translation( v3 a ) -> matrix;
 
 // Create a Euler Rotation Matrix with w component being around an arbitrary axis
-PROC matrix_create_rotation( v3 euler, f32 arbitrary = 0.0f ) -> matrix;
+PROC matrix_create_rotation( v3 euler, f32 arbitrary = 0 ) -> matrix;
 
 // Create a Euler Rotation Matrix with w component being around an arbitrary axis
 PROC matrix_create_scale( v3 a ) -> matrix;
 
 PROC matrix_create_transform( ftransform arg ) -> matrix;
 
+/** Specialized form of the transform matrix which applies to the whole world rather than an object.
+
+    This means the rotation is inversed and the translation negated such that
+    world transforms such that the subject of the camera (where it's pointing)
+    arrives forward of the origin of clip space. Because we're moving the world
+    in front of the camera, instead of the camera towards the world- it is
+    inversed. */
+PROC matrix_camera_view( ftransform arg ) -> matrix;
+
 /** Create a 3D coordinate using Forward Right Up (FRU) cardinal directions.
 
-    NOTE: This is valid for UI oriented cameras too.
- */
+    NOTE: This is valid for UI oriented cameras too. */
 PROC v3_fru( f32 forward, f32 right, f32 up ) -> v3;
 
 /** Create a 3D coordinate using Left Up Right (LUF) cardinal directions */

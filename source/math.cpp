@@ -311,6 +311,7 @@ PROC matrix_create_rotation( v3 euler, f32 arbitrary ) -> matrix
 
     // TODO: Temporary transpose because I don't feel like rewriting my OpenGL equations
     // Rotation around an arbitrary axis defined by Euler coordinates
+    // TODO: Arbitrary axis is supposed to be a seperate function for runtime utility
     matrix arbitraty_matrix =
     matrix{ cosf(ar)+(a.x*a.x) * (1-cosf(ar)),
             a.y*a.x *(1 - cosf(ar)) + a.z*sinf(ar),
@@ -324,10 +325,10 @@ PROC matrix_create_rotation( v3 euler, f32 arbitrary ) -> matrix
 
             a.x*a.z*(1-cosf(ar)) + a.y*sinf(ar),
             a.y*a.z*(1 - cosf(ar)) - a.x*sinf(ar),
-            cosf(ar) + (a.x*a.x) * (1 - cosf(ar)),
+            cosf(ar) + (a.z*a.z) * (1 - cosf(ar)),
             0,
 
-            0, 0, 0, 1 };
+            0, 0, 0, 1 }.transpose();
 
 
     // Math representation rotation matrix, needs to be rearranged to collumn major
@@ -363,8 +364,9 @@ PROC matrix_create_rotation( v3 euler, f32 arbitrary ) -> matrix
             cosf(r.x)*cosf(r.y),
             0,
             // Row 4
-            0, 0, 0, 1};
-    return rotation_matrix * arbitraty_matrix;
+            0, 0, 0, 1}.transpose();
+    // return rotation_matrix * arbitraty_matrix;
+    return rotation_matrix;
 }
 
 
@@ -389,6 +391,21 @@ PROC matrix_create_transform( ftransform arg ) -> matrix
             matrix_create_rotation( v3(rotation) ) *
             matrix_create_scale( v3(scale) ));
 }
+
+PROC matrix_camera_view( ftransform arg ) -> matrix
+{
+    v3 translation = arg.translation;
+    v3 rotation = arg.rotation;
+    v3 scale = arg.scale;
+    /* NOTE: The order is important, we do not want to scaled or rotated translation
+       NOTE: The transpose of an orthongal matrix is the inverse, so we can cheat here.
+
+       NOTE: Whilst it's unusual to scale a camera it does have some utility, you
+       should check scales the sensor instead if this is useful to you */
+    return (matrix_create_translation( -v3(translation) ) *
+            matrix_create_rotation( v3(rotation) ).transpose());
+}
+
 
 PROC v3_fru( f32 forward, f32 right, f32 up ) -> v3
 {   return v3{ forward, right, up };
