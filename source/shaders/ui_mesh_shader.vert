@@ -136,15 +136,42 @@ void main()
     // gl_Position = perspective_divide( vertex );
 
     // Vertex Color
-    bool debug_color_by_vertex = true;
-    if (debug_color_by_vertex == false)
+    bool debug_color_by_vertex = false;
+    bool debug_color_by_triangle = true;
+    v_color = vec4( 0.8, 0.0, 0.0 , 1.0 );
+
+    if (debug_color_by_vertex)
     {
-        v_color = vec4( 0.8, 0.0, 0.0 , 1.0 );
+        /*  Orange
+        Mod 3 returns integers in the range 0, 1, 2
+        divide by 2 remaps it into 0, 0.5, 1.0
+        which is more useful for colours. */
+        float col = mod( gl_VertexIndex,3.0 ) / 2;
+        // Even-odd
+        int triangle_vertex = (gl_VertexIndex % 3);
+        float col1 = (triangle_vertex == 0 ? 0.8 : 0.0);
+        float col2 = (triangle_vertex == 1 ? 0.6 : 0.0);
+        float col3 = (triangle_vertex == 2 ? 0.8 : 0.0);
+
+        v_color = vec4( 1.0-col, col, col2, 1.0 );
+        v_color = vec4( col1, col2, col3, 1.0 );
+
+        if (triangle_vertex == 0)
+        {   v_color = vec4( 0.4, 0.0, 0.0, 1.0 );
+        }
+        if (triangle_vertex == 1)
+        {   v_color = vec4( 0.0, 0.0, 0.0, 1.0 );
+        }
+        if (triangle_vertex == 2)
+        {   v_color = vec4( 0.8, 0.8, 0.8, 1.0 );
+        }
     }
-    else
+    if (debug_color_by_triangle)
     {
-        float col = mod( gl_VertexIndex/3.0, 1.0);
-        v_color = vec4( col, col/2.0, 0.0, 1.0 );
+        float vertex_index = floor( gl_VertexIndex/3.0 );
+        // offset by small float (0.5) to make prevent adjacent triangles being *exactly* identical
+        float t = (mod(vertex_index, 5.0) / 5.0) * 1;
+        v_color = vec4( t, t, t, 1.0 );
     }
     world_matrix = projection * cam;
 

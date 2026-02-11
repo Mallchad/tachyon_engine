@@ -120,6 +120,7 @@ namespace tyon
 
     PROC sdl_window_close( window* arg ) -> fresult
     {
+        TYON_LOGF( "Closed platform window '{}'", arg->name );
         return false;
     }
 

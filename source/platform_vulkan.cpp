@@ -2082,6 +2082,8 @@ PROC vulkan_draw() -> void
     // make test UI meshes resize with window for convenience
     g_vulkan->test_ui_triangle.transform.scale = (v3{0.7} * g_render->ui_camera.sensor_size.y);
     g_vulkan->test_ui_square.transform.scale = (v3{0.7} * g_render->ui_camera.sensor_size.y);
+    g_vulkan->test_teapot.transform.scale = (v3{40});
+    g_vulkan->test_teapot.transform.rotation.z = 6.28 * 0.25;
 
     // Find the associated vulkan mesh
     auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
