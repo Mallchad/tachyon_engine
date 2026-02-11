@@ -433,4 +433,38 @@ PROC geometry_rectangle( v2 size /* TODO: front face direction */ ) -> array<v3>
     return result;
 }
 
+PROC geometry_circle( f32 radius, f32 segments /* TODO: front face direction */ ) -> array<v3>
+{
+    array<v3> result;
+    f32 angle = 0;
+    f32 next_angle = 0;
+    f32 segment_arc = (6.283185307 / segments);
+    v3 point;
+    v3 point2;
+    for (i32 i_segment=0; i_segment < segments; ++i_segment)
+    {
+        // We make points clockwise but wind the triangles anti-clockwise (front-face)
+        next_angle += segment_arc;
+
+        point = {
+            0.0,                  // Forward axis not used, 2D
+            sinf(angle) * radius, // opposite is Up/Down axis
+            cosf(angle) * radius // adjacent is Right/Left axis
+        };
+        point2 = {
+            0.0,
+            sinf(next_angle) * radius, // opposite is Up/Down axis
+            cosf(next_angle) * radius // adjacent is Right/Left axis
+        };
+        /* We make the first vertex on the outside the first vertex of each
+           triangle don't overlap in the middle for debugging convenience */
+        result.push_back( point );
+        result.push_back( v3{0.0} );
+        result.push_back( point2 );
+
+        angle += segment_arc;
+    }
+    return result;
+}
+
 }

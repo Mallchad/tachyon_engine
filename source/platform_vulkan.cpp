@@ -1645,6 +1645,11 @@ PROC vulkan_init() -> fresult
         .name = "test_ui_square",
         .vertexes = geometry_rectangle( {1.0f, 1.0f } )
     };
+    mesh* test_ui_circle = memory_allocate<mesh>(1);
+    *test_ui_circle = mesh {
+        .name = "test_ui_circle",
+        .vertexes = geometry_circle( 500/2, 16 ),
+    };
 
     file teapot_file = file_load_binary( "data/geometry/utah_teapot.stl" );
     file whale_file = file_load_binary( "data/geometry/articulated_whale_shark.stl" );
@@ -1702,10 +1707,12 @@ PROC vulkan_init() -> fresult
     vulkan_mesh_init( &g_vulkan->test_ui_square );
     vulkan_mesh_init( &g_vulkan->test_teapot );
     vulkan_mesh_init( &g_vulkan->test_whale );
+    vulkan_mesh_init( test_ui_circle );
     g_vulkan->tmp_meshes = {
         &g_vulkan->test_triangle,
         &g_vulkan->test_ui_triangle,
         &g_vulkan->test_ui_square,
+        test_ui_circle,
         &g_vulkan->test_teapot,
         &g_vulkan->test_whale
     };

@@ -395,4 +395,7 @@ PROC v3_luf( f32 left, f32 up, f32 forward ) -> v3;
 /** Generate a 'back' facing 2 triangle rectangle with counter clockwise winding order */
 PROC geometry_rectangle( v2 size /* TODO: front face direction */ ) -> array<v3>;
 
+/** Generate a 'back' facing fan-arranged circle with counter clockwise winding order */
+PROC geometry_circle( f32 radius, f32 segments /* TODO: front face direction */ ) -> array<v3>;
+
 }

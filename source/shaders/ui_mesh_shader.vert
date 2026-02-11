@@ -135,7 +135,17 @@ void main()
     gl_Position = vertex;
     // gl_Position = perspective_divide( vertex );
 
-    v_color = vec4( 0.8, 0.0, 0.0 , 1.0 ) ;
+    // Vertex Color
+    bool debug_color_by_vertex = true;
+    if (debug_color_by_vertex == false)
+    {
+        v_color = vec4( 0.8, 0.0, 0.0 , 1.0 );
+    }
+    else
+    {
+        float col = mod( gl_VertexIndex/3.0, 1.0);
+        v_color = vec4( col, col/2.0, 0.0, 1.0 );
+    }
     world_matrix = projection * cam;
 
     // Debug Coloring
