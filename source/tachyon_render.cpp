@@ -72,8 +72,8 @@ PROC render_init() -> void
         // This has been done for Vulkan, but no other backend
         .sensor_size = default_window.size,
         .near_clip = 1.0f,
-        // near clip + 2 (-1 to 1)
-        .far_clip = 3.0f
+        // Fairly generous far clip for random 3D UI effects if we want that
+        .far_clip = 2000.0f
     };
 
     bool vulkan_ok = false;
