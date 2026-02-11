@@ -1637,19 +1637,7 @@ PROC vulkan_init() -> fresult
                           { 1.f, 0.f, 0.f, 0.f }}
     };
     g_vulkan->test_ui_triangle = g_vulkan->test_triangle;
-    {
-        /* Make the triangle reasonably sized for a screen sized viewport
-         NOTE: We used to move the triangle into the clip area but now we
-         can move the orthographic camera itself*/
-        matrix translation = matrix_create_translation( v3 { 0.0f, 0.0f, 0.0f } );
-        matrix scale = matrix_create_scale( v3 {1500.0f, 1500.0f, 1500.0f} );
-        matrix rotation = matrix_create_rotation( v3 {0.0, 0.0, 0.25 * 6.283185 } );
-        g_vulkan->test_ui_triangle.vertexes.map_procedure( [=](v3& arg) {
-            arg = scale * arg;
-            arg = translation * arg;
-            arg = rotation * arg;
-        });
-    }
+    g_vulkan->test_ui_triangle.transform.rotation.z = 0.25 * 6.283185;
 
     file teapot_file = file_load_binary( "data/geometry/utah_teapot.stl" );
     file whale_file = file_load_binary( "data/geometry/articulated_whale_shark.stl" );
@@ -2063,6 +2051,11 @@ PROC vulkan_draw() -> void
     mesh* draw_mesh = &g_vulkan->test_ui_triangle;
     // mesh* draw_mesh = &g_vulkan->test_whale;
     // mesh* draw_mesh = &g_vulkan->test_teapot;
+
+    // make UI triangle resize with window for convenience
+    g_vulkan->test_ui_triangle.transform.scale = (v3{0.7} * g_render->ui_camera.sensor_size.y);
+
+    // Find the associated vulkan mesh
     auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
         return arg.id == draw_mesh->id; } );
     vulkan_mesh* vk_draw_mesh = mesh_result.match;
