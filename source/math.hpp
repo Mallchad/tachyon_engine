@@ -18,6 +18,7 @@ struct vec2
     CONSTRUCTOR vec2() {}
     CONSTRUCTOR vec2( f32 arg ) : x(arg), y(arg) {}
     CONSTRUCTOR vec2( f32 _x, f32 _y ) : x(_x), y(_y) {}
+    explicit CONSTRUCTOR vec2( f64 _x, f64 _y ) : x(_x), y(_y) {}
     explicit CONSTRUCTOR vec2( u32 _x, u32 _y ) : x(_x), y(_y) {}
     explicit CONSTRUCTOR vec2( i32 _x, i32 _y ) : x(_x), y(_y) {}
 
@@ -390,5 +391,8 @@ PROC v3_fru( f32 forward, f32 right, f32 up ) -> v3;
 
 /** Create a 3D coordinate using Left Up Right (LUF) cardinal directions */
 PROC v3_luf( f32 left, f32 up, f32 forward ) -> v3;
+
+/** Generate a 'back' facing 2 triangle rectangle with counter clockwise winding order */
+PROC geometry_rectangle( v2 size /* TODO: front face direction */ ) -> array<v3>;
 
 }

@@ -179,6 +179,13 @@ namespace tyon
                         {   g_vulkan->test_ui_triangle.transform.translation +=
                             (-up * move_speed);
                         }
+
+                        static i32 i_mesh = 0;
+                        if (x_event.key.scancode == SDL_SCANCODE_SPACE)
+                        {   i_mesh = (i_mesh + 1) % g_vulkan->tmp_meshes.size();
+                            g_vulkan->draw_mesh = g_vulkan->tmp_meshes[ i_mesh ];
+                            TYON_LOGF( "selected mesh {}", i_mesh );
+                        }
                     }
                     break;
                 }

@@ -1636,8 +1636,15 @@ PROC vulkan_init() -> fresult
                           { 0.f, 1.f, 0.f, 0.f },
                           { 1.f, 0.f, 0.f, 0.f }}
     };
+
     g_vulkan->test_ui_triangle = g_vulkan->test_triangle;
+    g_vulkan->test_ui_triangle.name = "test_ui_triangle";
     g_vulkan->test_ui_triangle.transform.rotation.z = 0.25 * 6.283185;
+
+    g_vulkan->test_ui_square = mesh {
+        .name = "test_ui_square",
+        .vertexes = geometry_rectangle( {1.0f, 1.0f } )
+    };
 
     file teapot_file = file_load_binary( "data/geometry/utah_teapot.stl" );
     file whale_file = file_load_binary( "data/geometry/articulated_whale_shark.stl" );
@@ -1692,8 +1699,17 @@ PROC vulkan_init() -> fresult
     // Needs to run after vulkan_memory_init.
     vulkan_mesh_init( &g_vulkan->test_triangle );
     vulkan_mesh_init( &g_vulkan->test_ui_triangle );
+    vulkan_mesh_init( &g_vulkan->test_ui_square );
     vulkan_mesh_init( &g_vulkan->test_teapot );
     vulkan_mesh_init( &g_vulkan->test_whale );
+    g_vulkan->tmp_meshes = {
+        &g_vulkan->test_triangle,
+        &g_vulkan->test_ui_triangle,
+        &g_vulkan->test_ui_square,
+        &g_vulkan->test_teapot,
+        &g_vulkan->test_whale
+    };
+
 
     /* SECTION: Render Pass - "An object that represents a set of
        framebuffer attachments and phases of rendering using those
@@ -1937,7 +1953,8 @@ PROC vulkan_draw() -> void
         return;
     }
     else if (frame_timeout == VK_SUCCESS)
-    {   VULKAN_LOGF( "Frame: {} | Completed Frame.", current_frame_i );
+    {
+        // VULKAN_LOGF( "Frame: {} | Completed Frame.", current_frame_i );
         FrameMarkEnd( "Vulkan Inflight Frame" );
     }
     FrameMarkStart( "Vulkan Inflight Frame" );
@@ -2048,12 +2065,16 @@ PROC vulkan_draw() -> void
     }
 
     // SECTION: Select mesh for drawing
-    mesh* draw_mesh = &g_vulkan->test_ui_triangle;
+    if (g_vulkan->draw_mesh == nullptr)
+    {   g_vulkan->draw_mesh = &g_vulkan->test_ui_triangle;
+    }
+    mesh* draw_mesh = g_vulkan->draw_mesh;
     // mesh* draw_mesh = &g_vulkan->test_whale;
     // mesh* draw_mesh = &g_vulkan->test_teapot;
 
-    // make UI triangle resize with window for convenience
+    // make test UI meshes resize with window for convenience
     g_vulkan->test_ui_triangle.transform.scale = (v3{0.7} * g_render->ui_camera.sensor_size.y);
+    g_vulkan->test_ui_square.transform.scale = (v3{0.7} * g_render->ui_camera.sensor_size.y);
 
     // Find the associated vulkan mesh
     auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {

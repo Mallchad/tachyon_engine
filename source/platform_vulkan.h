@@ -178,16 +178,20 @@ struct vulkan_context
     i32 frames_inflight_count = 3;
     vulkan_swapchain swapchain;
 
+    array<mesh*> tmp_meshes;
     array<vulkan_mesh> meshes;
     array<vulkan_frame> frames_inflight;
     vulkan_memory device_memory;
+
+    mesh* draw_mesh;
 
     // Test Data
     VkDeviceMemory vertex_memory;
     VkBuffer test_triangle_buffer {};
     mesh test_triangle;
-    // Bigger version for window sized viewports
+    // Different version for window sized viewports
     mesh test_ui_triangle;
+    mesh test_ui_square;
     mesh test_teapot;
     mesh test_whale;
     // OpenGL coordinates

@@ -388,7 +388,7 @@ PROC matrix_create_transform( ftransform arg ) -> matrix
     v3 scale = arg.scale;
     // The order is important, we do not want to scale translation, or rotate it
     return ( matrix_create_scale( v3(scale) )) *
-            matrix_create_rotation( v3(rotation) ) *
+    matrix_create_rotation( v3(rotation) ) *
     matrix_create_translation( v3(translation) );
 }
 
@@ -414,6 +414,23 @@ PROC v3_fru( f32 forward, f32 right, f32 up ) -> v3
 PROC v3_luf( f32 left, f32 up, f32 forward ) -> v3
 {
     return v3{ forward, -left, up };
+}
+
+PROC geometry_rectangle( v2 size /* TODO: front face direction */ ) -> array<v3>
+{
+    f32 half_w = size.x/2;
+    f32 half_h = size.y/2;
+    // Counter clockwise
+    array<v3> result = {
+        { 0.0, -half_w,  half_h },
+        { 0.0,  half_w,  half_h },
+        { 0.0,  half_w, -half_h },
+
+        { 0.0, -half_w,  half_h },
+        { 0.0,  half_w, -half_h },
+        { 0.0, -half_w, -half_h },
+    };
+    return result;
 }
 
 }
