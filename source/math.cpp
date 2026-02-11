@@ -387,9 +387,9 @@ PROC matrix_create_transform( ftransform arg ) -> matrix
     v3 rotation = arg.rotation;
     v3 scale = arg.scale;
     // The order is important, we do not want to scale translation, or rotate it
-    return (matrix_create_translation( v3(translation) ) *
+    return ( matrix_create_scale( v3(scale) )) *
             matrix_create_rotation( v3(rotation) ) *
-            matrix_create_scale( v3(scale) ));
+    matrix_create_translation( v3(translation) );
 }
 
 PROC matrix_camera_view( ftransform arg ) -> matrix

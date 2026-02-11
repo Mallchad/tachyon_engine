@@ -130,7 +130,7 @@ namespace tyon
 
         SDL_Event x_event;
         // Actually move step, not move speed
-        f32 move_speed = 50.f;
+        f32 move_speed = 50.0f;
         while (SDL_PollEvent( &x_event ))
         {
             switch (x_event.type)
