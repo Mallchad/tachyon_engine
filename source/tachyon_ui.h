@@ -1,0 +1,7 @@
+
+#pragma
+
+namespace tyon
+{
+
+}
