@@ -90,6 +90,7 @@
 #include "platform_linux_x11.h"
 #include "tachyon_render.h"
 #include "platform_vulkan.h"
+#include "tachyon_ui.h"
 
 // Experimental module support
 // import platform_vulkan;
