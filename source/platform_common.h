@@ -16,18 +16,6 @@ namespace tyon
 
     };
 
-    struct platform_procs
-    {
-        typed_procedure<fresult()> init;
-        typed_procedure<fresult()> tick;
-        typed_procedure<fresult()> destroy;
-        typed_procedure<fresult( window* arg )> window_open;
-        typed_procedure<fresult( window* arg )> window_close;
-
-        typed_procedure< fresult(window*, VkInstance,
-            const struct VkAllocationCallbacks*, VkSurfaceKHR* ) > vulkan_surface_create;
-    };
-
     /* NOTE: [2026-02-13 Fri 17:05] Maybe instead of trying to randomally call
        single functions it would be better to register callbacks for this
        event. I have devised this platform_event structure of all possible
@@ -41,12 +29,13 @@ namespace tyon
        interface to added onto a list and use that as an "event driver", then it
        can be removed or disabled at will. I'm modify it slightly to carry some
        context with it. */
-     struct platform_subsystem;
+     struct platform_subsystem
      {
         fstring name;
         uid id;
         bool active = false;
         array<fstring> subsystem_dependencies;
+        // TODO: Not sure how to fill this pointer right now.
         void* context = nullptr;
 
         typed_procedure<fresult()> init;
@@ -59,23 +48,14 @@ namespace tyon
             const struct VkAllocationCallbacks*, VkSurfaceKHR* ) > vulkan_surface_create;
     };
 
-    struct platform_events
-    {
-      delegate<fresult()> init;
-      delegate<fresult()> tick;
-      delegate<fresult()> destroy;
-      delegate<fresult( window* arg )> window_open;
-      delegate<fresult( window* arg )> window_close;
-
-      delegate< fresult(window*, VkInstance,
-                        const struct VkAllocationCallbacks*, VkSurfaceKHR* ) > vulkan_surface_create;
-    };
-
     struct platform_context
     {
-      platform_events events;
+        array<platform_subsystem> subsystems;
     };
     extern platform_context* g_platform;
+
+    // TODO: Temporary
+    FORWARD PROC sdl_create_platform_subsystem() -> platform_subsystem;
 
     template<>
     struct entity_type_definition<window>
@@ -93,8 +73,9 @@ namespace tyon
         }
         PROC destroy( t_entity* arg ) -> void
         {
-          g_platform->events.window_open.invoke_all( arg );
-          *arg = {};
+            auto sdl = sdl_create_platform_subsystem();
+            sdl.window_close( arg );
+            *arg = {};
         }
 
         PROC tick() -> void

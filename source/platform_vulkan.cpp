@@ -1339,7 +1339,7 @@ PROC vulkan_init() -> fresult
     // -- Setup default window surfaces --
     if (g_sdl)
     {
-        auto sdl = tyon::sdl_platform_procs_create();
+        auto sdl = tyon::sdl_create_platform_subsystem();
         bool surface_ok = sdl.vulkan_surface_create(
             g_sdl->main_window,
             g_vulkan->instance,

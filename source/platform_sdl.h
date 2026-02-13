@@ -35,7 +35,7 @@ namespace tyon
     // Internal
     PROC sdl_event_process() -> void;
 
-    PROC sdl_platform_procs_create() -> platform_procs;
+    PROC sdl_create_platform_subsystem() -> platform_subsystem;
 
     extern sdl_context* g_sdl;
 

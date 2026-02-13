@@ -121,7 +121,7 @@ namespace tyon
     PROC sdl_window_close( window* arg ) -> fresult
     {
         sdl_window* platform_window = entity_search<sdl_window>( arg->id ).copy_default({});
-        SDL_DestroyWindow( platform_window );
+        SDL_DestroyWindow( platform_window->handle );
         TYON_LOGF( "Closed platform window '{}'", arg->name );
         return false;
     }
@@ -228,27 +228,14 @@ namespace tyon
         return true;
     }
 
-    PROC sdl_platform_procs_create() -> platform_procs
-    {
-        platform_procs result = {
-            .init = sdl_init,
-            .tick = sdl_tick,
-            .destroy = sdl_destroy,
-            .window_open = sdl_window_open,
-            .window_close = sdl_window_close,
-            .vulkan_surface_create = sdl_vulkan_surface_create
-        };
-        return result;
-    }
-
     PROC sdl_create_platform_subsystem() -> platform_subsystem
     {
-        platform_procs result = {
+        platform_subsystem result = {
             .name = "tyon::sdl",
             .id = uuid_generate(),
             .active = true,
 
-            subsystem_dependencies = { "tyon::library", "tyon::render" },
+            .subsystem_dependencies = { "tyon::library", "tyon::render" },
             .init = sdl_init,
             .tick = sdl_tick,
             .destroy = sdl_destroy,

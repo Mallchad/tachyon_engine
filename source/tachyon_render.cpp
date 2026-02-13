@@ -6,7 +6,7 @@ namespace tyon
 
 render_context* g_render = nullptr;
 
-auto sdl = tyon::sdl_platform_procs_create();
+auto sdl = tyon::sdl_create_platform_subsystem();
 
 PROC render_init() -> void
 {
@@ -31,7 +31,7 @@ PROC render_init() -> void
     cmdline_argument window_arg = g_library->cmdline_arguments.linear_search(
         []( cmdline_argument& arg ) {
         return arg.name == "window_platform"; }).copy_default( {} );
-    fstring window_platform = window_arg.value.get_string();
+    fstring window_platform = window_arg.value.get_string().copy_default("");
     if (window_platform.size())
     {   TYON_LOGF( "Selected window_platform arg '{}'", window_platform );
         if (window_platform == "x11")
