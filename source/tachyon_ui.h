@@ -1,39 +1,65 @@
 
 #pragma
 
+/* TODO: Things we need to to impliment
+   viewport
+   video/media viewer (include audio) and static image
+
+*/
+
 namespace tyon
 {
-template<>
-struct entity_type_definition<window>
+enum class e_media_source : i32
 {
-  using t_entity = window;
-  using t_context = entity_type_context<t_entity>;
-  static constexpr cstring name = "tyon::window";
-  static constexpr u128 id = uuid("965fd378-6573-4844-aa34-e6645cc3ac7a");
+    none         = 0_bit,
+    raster_image = 1_bit,
+    vector_image = 2_bit,
+    video        = 3_bit,
+    render_batch = 20_bit
+};
 
-PROC allocate() -> void
-{}
-
-PROC init( t_entity* arg ) -> fresult
+enum class e_ui_anchor : i32
 {
-  return false;
-}
-PROC destroy( t_entity* arg ) -> void
+    center        = (1 << 0),
+    top_left      = (1 << 1),
+    top_center    = (1 << 2),
+    top_right     = (1 << 3),
+    center_left   = (1 << 4),
+    center_right  = (1 << 5),
+    bottom_left   = (1 << 6),
+    bottom_center = (1 << 7),
+    bottom_right  = (1 << 8)
+};
+
+enum class e_ui_arrangement : i32
 {
-  auto sdl = sdl_create_platform_subsystem();
-  sdl.window_close( arg );
-  *arg = {};
-}
+    horizontal_strip ,
+    vertical_strip,
+    diagonal_strip,
+    grid,
+    circle,
+    spiral,
+    full
+};
 
-PROC tick() -> void
-{}
+enum class f_mouse_button : i32
+{
+    left   = (1 << 0),
+    middle = (1 << 1),
+    right  = (1 << 2),
+    side1  = (1 << 3),
+    side2  = (1 << 4),
+};
 
-static PROC context_tick( void* context ) -> void
-{}
 
-static PROC destroy_all( void* context ) -> void
-{}
-
+enum class e_ui_drawable : i32
+{
+    none      = 0,
+    any       = 1,
+    image     = 2,
+    vector    = 3,
+    mesh      = 4,
+    text      = 5
 };
 
 /** An action is a generic interface into binding events that happen to user facing input.
@@ -68,15 +94,6 @@ struct action
   // NOTE: Actions should not who invokes the action, they should instead link to the action.
 };
 
-enum class f_mouse_button : i32
-{
-  left   = (1 << 0),
-  middle = (1 << 1),
-  right  = (1 << 2),
-  side1  = (1 << 3),
-  side2  = (1 << 4),
-};
-
 struct keybind_chain_step
 {
   SDL_Scancode scancode;
@@ -92,9 +109,12 @@ struct keybind_chain_step
 
 struct keybind
 {
-  action bound_action;
-  /// Describes the multi-part keybind that makes up the keybind
-  array<keybind_chain_step> chain;
+    action bound_action;
+    /// Describes the multi-part keybind that makes up the keybind
+    array<keybind_chain_step> chain;
+    /** Action is a continious hold, last key combo can be held down
+        continiously and will be maintained. */
+    bool held_bind = false;
 };
 
 struct gesture_chain_step
@@ -109,16 +129,6 @@ struct gesture_chain_step
 struct gesture
 {
   array<gesture_chain_step> chain;
-};
-
-enum class e_ui_drawable : i32
-{
-  none      = 0,
-  any       = 1,
-  image     = 2,
-  vector    = 3,
-  mesh      = 4,
-  text      = 5
 };
 
 /** A standard rgba color container.
@@ -145,39 +155,229 @@ struct rgba
 };
 #endif // REFLECTION_LITTLE_ENDIAN
 
+struct text_drawable
+{
+    fstring text = "";
+    transform_2d transform;
+    e_ui_anchor anchor = e_ui_anchor::center;
+    sdl::TTF_Font* font = nullptr;
+    rgba color = rgba{.hex = 0xFFFFFF };
+    rgba background_color;
+    vec2 bounding_box;
+    vec2 rendered_size;
+    f32 size_pt = 0.0f;
+    f32 size_rendered_pt = 0.0f;
+    uid base_widget;
+
+    // NOTE: These SDL surfaces are only with the SDL Render subsystem
+    // SDL_Surface* surface = nullptr;
+    // SDL_Texture* texture = nullptr;
+
+    bool dirty = true;
+    bool drawn_on_lcd = true;
+    // LCD sub-pixel rendering can only be done if the background colour is known and uniform
+    bool uniform_background_color = false;
+    bool wrapped = false;
+};
+
 struct ui_drawable
 {
-    e_ui_drawable type = drawable::none;
+    e_ui_drawable type = e_ui_drawable::none;
     image<rgba> image_;
+    // vector_image vector;
     text_drawable text;
-    rgba8 color;
+    // Base colour for untextured meshes, text, or tint
+    rgba color;
+};
 
-    transform_2d transform;
+/** Base UI component
+ *
+ * Widgets have an id, a parent widget, a tarnsform, and a drawable. Widgets
+ * are only meant to orchestrate positioning and final draw
+ * calls. Everything else is up to other code. */
+struct widget
+{
+    uid id = -1;
+    fstring name;
+    // Short string identifying what kind of widget this is
+    // fstring type;
+
+    uid parent = -1;
+    /// What order to draw widgets in, default to drawing child widgets above parents
+    /// Lower depth values are more likely to draw above other widgets
     i32 depth = 0;
+    vec2 box_size = 0;
+
+    /** Transform to apply to the widget
+
+       There's no real reason to assume UIs should be relegated to 2D space, and
+       we need a depth component anyway which already *is* a third
+       dimension. This also makes it easier to do fancy UI effects.
+       NOTE: This used to be duplicate on the drawable this this is completely pointless honestly. */
+    transform_3d transform;
+
+    /// Where to place origin based on extents of the parent's box
+    e_ui_anchor anchor = e_ui_anchor::center;
+    /// What part of box to treat as the origin
+    e_ui_anchor origin_anchor = e_ui_anchor::center;
+
+    /// Whether this widget particupates in all processing, transformation, collisions, etc
+    bool active = true;
+    /// Whether this widget participates in collision checks
+    bool collisions_enabled = true;
+    /// Whether or not the user can manually relocate this widget
+    bool user_relocation_enabled = true;
+    bool inherit_transform = true;
+    bool inherit_scale = true;
+    bool inherit_rotation = true;
+    /// Don't allow scales that have unmatched forward/up/right components
+    bool preserve_aspect_ratio = true;
+
+    /** Interaction Events
+     * See 'interaction_data' for documentaton of these events */
+    // procedure<interaction_data> on_interaction;
+    // procedure<interaction_data> on_initiated_once;
+    // procedure<interaction_data> on_initiated;
+    // procedure<interaction_data> on_initiated_end;
+    // procedure<interaction_data> on_hover;
+    // procedure<interaction_data> on_hover_end;
+
+    ui_drawable drawable;
+
+    // -- Functions --
+    /** Get list of all this widget and all its parents */
+    vector<widget>
+    get_widget_hierarchy();
+
+    /** Get tree of all widgets and set 'start_node' to this widget */
+    n_tree<widget*>
+    get_tree();
+
+    //* Combine transforms of parents all the way until the root widget */
+    transform_2d
+    get_root_transform();
+
+    bool
+    point_collision( vec2 point );
+
+    vec2
+    get_pin_position();
+};
+
+struct ui_layout
+{
+    array< entity_uid<widget> > widgets;
+    /** A layout many have a various number of positions to arrange widgets into.
+        This specifies where in the arrangement to put it. Shared slots may be auto-arranged. */
+    i32 layout_slot = 0;
+    e_ui_arrangement arrangement_pattern = e_ui_arrangement::horizontal_strip;
+    /// Whether or not this widget should participate in automatic placement in layouts
+    bool auto_arrangement = true;
+    /// Whether to use calculated spacing values or provided ones
+    bool auto_spacing = true;
+    /// Spacing, may be modified by a layout widget
+    f32 spacing = 40.0;
+    // Angle
+    f32 radial_distance;
 };
 
 struct ui_frame
 {
-  array<ui_drawable> draw_queue;
-  vector<u8> scancode_states;
-  vector<u8> scancode_single_press;
-  f_mouse_button mouse_button_state;
-  f_mouse_button mouse_button_single_press;
+    array<ui_drawable> draw_queue;
+    vector<u8> scancode_states;
+    vector<u8> scancode_single_press;
+    f_mouse_button mouse_button_state;
+    f_mouse_button mouse_button_single_press;
 
-  vec2 window_size = 0;
-  vec2 window_halfsize = 0;
+    vec2 window_size = 0;
+    vec2 window_halfsize = 0;
 
-  time_monotonic tooltip_hover_time = time_now();
-  vec2 cursor;
-  vec2 cursor_canvas;
-  f32 canvas_scale;
-  vec2 canvas_position;
-  vec2 canvas_origin = 0;
-  vec2 mouse_delta = 0;
-  vec2 mouse_delta_canvas = 0;
-  f32 scroll_x = 0;
-  f32 scroll_y = 0;
-  // if scroll has been read this frame
-  bool scroll_consumed = false;
+    time_monotonic tooltip_hover_time = time_now();
+    vec2 cursor;
+    vec2 cursor_canvas;
+    f32 canvas_scale;
+    vec2 canvas_position;
+    vec2 canvas_origin = 0;
+    vec2 mouse_delta = 0;
+    vec2 mouse_delta_canvas = 0;
+    f32 scroll_x = 0;
+    f32 scroll_y = 0;
+    // if scroll has been read this frame
+    bool scroll_consumed = false;
 };
+
+struct ui_context
+{
+    entity_uid<widget> canvas;
+    memory_heap_allocator permanant;
+};
+
+template<>
+struct entity_type_definition<window>
+{
+    using t_entity = window;
+    using t_context = entity_type_context<t_entity>;
+    static constexpr cstring name = "tyon::window";
+    static constexpr u128 id = uuid("965fd378-6573-4844-aa34-e6645cc3ac7a");
+
+    PROC allocate() -> void
+    {}
+
+    PROC init( t_entity* arg ) -> fresult
+    {
+        return false;
+    }
+    PROC destroy( t_entity* arg ) -> void
+    {
+        auto sdl = sdl_create_platform_subsystem();
+        sdl.window_close( arg );
+        *arg = {};
+    }
+
+    PROC tick() -> void
+    {}
+
+    static PROC context_tick( void* context ) -> void
+    {}
+
+    static PROC destroy_all( void* context ) -> void
+    {}
+
+};
+
+template<>
+struct entity_type_definition<widget>
+{
+    using t_entity = widget;
+    using t_context = entity_type_context<t_entity>;
+    static constexpr cstring name = "tyon::widget";
+    static constexpr u128 id = uuid("a2a6cb83-8820-496b-a9e3-8ffc09c52c3f");
+
+    PROC allocate() -> void
+    {}
+
+    PROC init( t_entity* arg ) -> fresult
+    {
+        return false;
+    }
+    PROC destroy( t_entity* arg ) -> void
+    {
+        *arg = {};
+    }
+
+    PROC tick() -> void
+    {}
+
+    static PROC context_tick( void* context ) -> void
+    {}
+
+    static PROC destroy_all( void* context ) -> void
+    {}
+
+};
+
+PROC ui_init() -> fresult;
+PROC ui_tick() -> void;
+PROC ui_destroy() -> void;
+
 }
