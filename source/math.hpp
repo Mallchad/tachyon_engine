@@ -335,8 +335,8 @@ using v2 = vec2;
 using v3 = v3f;
 using v4 = vector4_t<f32>;
 
-using rgba  = v4;
-using srgba = v4;
+// using rgba  = v4;
+// using srgba = v4;
 
 using ftransform = transform;
 
