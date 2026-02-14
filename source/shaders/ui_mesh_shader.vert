@@ -2,6 +2,8 @@
 
 layout(push_constant) uniform mesh {
     mat4 local_space;
+    vec4 base_color;
+    int debug_mode;
 } push;
 
 layout( location = 0 ) in vec3 normal;
@@ -33,6 +35,11 @@ layout(std140, binding = 0) uniform frame_data
     // Primary activate camera
     mat4 camera;
 };
+
+const int none = 0;
+const int any = 1;
+const int vertex_weighted = 2;
+const int triangle_mosaic = 3;
 
 const vec3 arbitrary_axis = vec3( 0.662f, 0.2f, 0.722f );
 
@@ -138,9 +145,9 @@ void main()
     // Vertex Color
     bool debug_color_by_vertex = false;
     bool debug_color_by_triangle = true;
-    v_color = vec4( 0.8, 0.0, 0.0 , 1.0 );
+    v_color = push.base_color;
 
-    if (debug_color_by_vertex)
+    if (push.debug_mode == vertex_weighted)
     {
         /*  Orange
         Mod 3 returns integers in the range 0, 1, 2
@@ -166,7 +173,7 @@ void main()
         {   v_color = vec4( 0.8, 0.8, 0.8, 1.0 );
         }
     }
-    if (debug_color_by_triangle)
+    else if (push.debug_mode == triangle_mosaic)
     {
         float vertex_index = floor( gl_VertexIndex/3.0 );
         // offset by small float (0.5) to make prevent adjacent triangles being *exactly* identical

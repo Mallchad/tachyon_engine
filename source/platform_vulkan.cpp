@@ -2116,6 +2116,7 @@ PROC vulkan_draw() -> void
     // Pass push constants with basic mesh data
     vulkan_mesh_shader_push mesh_push;
     mesh_push.local_space = matrix_create_transform( draw_mesh->transform );
+    mesh_push.debug_mode = g_vulkan->mesh_debug_mode;
     vkCmdPushConstants(
         command_buffer,
         current_pipeline->platform_layout,

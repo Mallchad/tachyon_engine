@@ -7,6 +7,8 @@ namespace tyon
     PROC sdl_init() -> fresult
     {   TYON_LOG( "Initialization Start for Platform SDL" );
         g_sdl = memory_allocate<sdl_context>( 1 );
+        entity_type_register<sdl_window>();
+
         // NOTE: SDL must not ever move threads
         SDL_SetLogPriorities( SDL_LOG_PRIORITY_TRACE );
 
@@ -188,6 +190,18 @@ namespace tyon
                         {   i_mesh = (i_mesh + 1) % g_vulkan->tmp_meshes.size();
                             g_vulkan->draw_mesh = g_vulkan->tmp_meshes[ i_mesh ];
                             TYON_LOGF( "selected mesh {}", i_mesh );
+                        }
+                        if (x_event.key.scancode == SDL_SCANCODE_F2)
+                        {
+                            // Cycle through all debug modes
+                            array<e_vulkan_shader_debug> modes = {
+                                e_vulkan_shader_debug::none,
+                                e_vulkan_shader_debug::vertex_weighted,
+                                e_vulkan_shader_debug::triangle_mosaic
+                            };
+                            i32 selected_mode = g_vulkan->mesh_debug_mode_cycle++ % modes.size();
+                            g_vulkan->mesh_debug_mode = modes[ selected_mode ];
+                            TYON_LOG( "Changed mesh debug mode to {}", selected_mode );
                         }
                     }
                     break;

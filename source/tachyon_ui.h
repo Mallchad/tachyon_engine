@@ -388,5 +388,8 @@ struct entity_type_definition<widget>
 PROC ui_init() -> fresult;
 PROC ui_tick() -> void;
 PROC ui_destroy() -> void;
+PROC ui_destroy() -> void;
+PROC ui_frame_start() -> void;
+PROC ui_frame_end() -> void;
 
 }

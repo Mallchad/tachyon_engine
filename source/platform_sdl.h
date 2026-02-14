@@ -21,6 +21,7 @@ namespace tyon
     struct sdl_window
     {
         uid id;
+        fstring name;
         SDL_Window* handle = nullptr;
     };
 

@@ -27,7 +27,14 @@ namespace tyon
 
     PROC ui_tick() -> void
     {}
+
     PROC ui_destroy() -> void
+    {}
+
+    PROC ui_frame_start() -> void
+    {}
+
+    PROC ui_frame_end() -> void
     {}
 
 }

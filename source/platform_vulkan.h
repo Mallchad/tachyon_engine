@@ -9,9 +9,19 @@ namespace tyon
 #define VULKAN_ERROR( ... ) TYON_BASE_ERROR( "Vulkan", __VA_ARGS__ );
 #define VULKAN_ERRORF( FORMAT_, ... ) TYON_BASE_ERRORF( "Vulkan", FORMAT_, __VA_ARGS__ );
 
+enum class e_vulkan_shader_debug : i32
+{
+    none = 0,
+    any = 1,
+    vertex_weighted = 2,
+    triangle_mosaic = 3
+};
+
 struct vulkan_mesh_shader_push
 {
     matrix local_space = matrix::one();
+    v4_f32 base_color = v4_f32 { 0.4, 0.4, 0.4, 1.0 };
+    e_vulkan_shader_debug debug_mode = e_vulkan_shader_debug::triangle_mosaic;
 };
 
 struct vulkan_shader
@@ -182,6 +192,8 @@ struct vulkan_context
     array<vulkan_mesh> meshes;
     array<vulkan_frame> frames_inflight;
     vulkan_memory device_memory;
+    i32 mesh_debug_mode_cycle = 0;
+    e_vulkan_shader_debug mesh_debug_mode = e_vulkan_shader_debug::none;
 
     mesh* draw_mesh;
 
