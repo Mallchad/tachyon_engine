@@ -6,13 +6,15 @@ namespace tyon
 
 render_context* g_render = nullptr;
 
-auto sdl = tyon::sdl_create_platform_subsystem();
+platform_subsystem* sdl = nullptr;
 
 PROC render_init() -> void
 {
     PROFILE_SCOPE_FUNCTION();
 
     g_render = memory_allocate<render_context>( 1 );
+    sdl = memory_allocate<platform_subsystem>(1);
+    *sdl = tyon::sdl_create_platform_subsystem();
 
     /* If nsight or renderdoc is attached it will break with wayland, so we
        should try to disable pre-emptively that if possible. */
@@ -48,7 +50,7 @@ PROC render_init() -> void
         }
     }
     // SDL needs to setup after the render context but before vulkan init
-    sdl.init();
+    sdl->init();
 
     tyon::window default_window = {
         .name = "VMEC | Spectral Renderer",
@@ -56,7 +58,7 @@ PROC render_init() -> void
         .position = tyon::v2 { 0.0f, 0.0f },
         .maximized = true
     };
-    sdl.window_open( &default_window );
+    sdl->window_open( &default_window );
 
     /* This "camera" is for UI usage... So the sensor size should be the window
      * size, and all the primitives exactly on the near clip or slightly
@@ -99,7 +101,7 @@ PROC render_tick() -> void
 {
     PROFILE_SCOPE_FUNCTION();
 
-    sdl.tick();
+    sdl->tick();
     switch (global->render_backend)
     {
         case e_render_backend::vulkan:

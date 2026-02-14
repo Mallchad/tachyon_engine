@@ -306,11 +306,20 @@ struct ui_frame
     bool scroll_consumed = false;
 };
 
+struct ui_font
+{
+    sdl::TTF_Font* platform_font;
+    f32 size_points = 0.0;
+};
+
 struct ui_context
 {
     entity_uid<widget> canvas;
     memory_heap_allocator permanant;
+    ui_font default_font;
 };
+
+extern ui_context* g_ui;
 
 template<>
 struct entity_type_definition<window>
