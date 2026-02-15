@@ -51,18 +51,6 @@ struct scene_camera
     PROC right() -> v3;
 };
 
-struct render_context
-{
-    // Primary window size
-    v2 window_size = { 1920.0f, 1080.0f };
-    e_window_platform window_platform = e_window_platform::none;
-    bool renderdoc_attached = false;
-    bool nsight_attached = false;
-
-    /* Orthographic UI camera */
-    scene_camera ui_camera;
-};
-
 struct mesh
 {
     uid id;
@@ -107,6 +95,21 @@ struct frame_general_uniform
     matrix camera;
 };
 #pragma pack(pop)
+
+// NOTE: Context structs should always be as near the bottom of the decleration order as possible.
+struct render_context
+{
+    // Primary window size
+    v2 window_size = { 1920.0f, 1080.0f };
+    e_window_platform window_platform = e_window_platform::none;
+    bool renderdoc_attached = false;
+    bool nsight_attached = false;
+
+    /* Orthographic UI camera */
+    scene_camera ui_camera;
+
+    array<mesh*> draw_queue_mesh;
+};
 
 extern render_context* g_render;
 

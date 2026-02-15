@@ -95,13 +95,18 @@ PROC render_init() -> void
         default: break;
 
     }
+    // Should be good to start the UI now
+    ui_init();
 }
 
 PROC render_tick() -> void
 {
     PROFILE_SCOPE_FUNCTION();
+    // SECTION: Reset data for new frame
+    g_render->draw_queue_mesh.reset();
 
     sdl->tick();
+    ui_tick();
     switch (global->render_backend)
     {
         case e_render_backend::vulkan:
@@ -116,12 +121,13 @@ PROC render_tick() -> void
 
 PROC mesh_init( mesh* arg ) -> fresult
 {
+    PROFILE_SCOPE_FUNCTION();
     if (arg->id.valid())
-    {   VULKAN_ERRORF( "Tried to initialize already initialize mesh '{}'", arg->name );
+    {   TYON_ERRORF( "Tried to initialize already initialize mesh '{}'", arg->name );
         return false;
     }
     if (arg->vertexes.size() <= 0)
-    {   VULKAN_ERRORF( "Tried to initialize mesh '{}' with {} vertexes",
+    {   TYON_ERRORF( "Tried to initialize mesh '{}' with {} vertexes",
                        arg->name, arg->vertexes.size() * 3 );
         return false;
     }

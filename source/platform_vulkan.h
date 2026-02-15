@@ -139,6 +139,7 @@ struct vulkan_frame
     raw_pointer general_uniform_data;
     /* VkDescriptorPool descriptor_resource_pool; */
     VkDescriptorSet vk_resource;
+    array<mesh*> draw_queue_meshes;
 };
 
 struct vulkan_context

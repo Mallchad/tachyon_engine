@@ -188,6 +188,8 @@ struct ui_drawable
     text_drawable text;
     // Base colour for untextured meshes, text, or tint
     rgba color;
+    /// All drawables must be backed by a mesh unless using raw image copies.
+    mesh geometry;
 };
 
 /** Base UI component
@@ -195,7 +197,7 @@ struct ui_drawable
  * Widgets have an id, a parent widget, a tarnsform, and a drawable. Widgets
  * are only meant to orchestrate positioning and final draw
  * calls. Everything else is up to other code. */
-struct widget
+struct ui_widget
 {
     uid id = -1;
     fstring name;
@@ -242,15 +244,13 @@ struct widget
     // procedure<interaction_data> on_hover;
     // procedure<interaction_data> on_hover_end;
 
-    ui_drawable drawable;
-
     // -- Functions --
     /** Get list of all this widget and all its parents */
-    vector<widget>
+    vector<ui_widget>
     get_widget_hierarchy();
 
     /** Get tree of all widgets and set 'start_node' to this widget */
-    n_tree<widget*>
+    n_tree<ui_widget*>
     get_tree();
 
     //* Combine transforms of parents all the way until the root widget */
@@ -266,7 +266,7 @@ struct widget
 
 struct ui_layout
 {
-    array< entity_uid<widget> > widgets;
+    array< entity_uid<ui_widget> > widgets;
     /** A layout many have a various number of positions to arrange widgets into.
         This specifies where in the arrangement to put it. Shared slots may be auto-arranged. */
     i32 layout_slot = 0;
@@ -312,9 +312,24 @@ struct ui_font
     f32 size_points = 0.0;
 };
 
+/** Very basic widget type only for displaying graphics on.
+
+ NOTE: Previously I tried to give every widgeto a drawable but honestly it just
+overloads the meaning of a widget and made the object really bloated and
+unweidly to manage. This v2 iteration of the UI will split each thing into it's
+own unique struct and use ui_widget as a spatial positioning tool */
+struct ui_drawable_widget
+{
+    uid id;
+    fstring name;
+    uid widget;
+    ui_drawable drawable;
+    bool active = true;
+};
+
 struct ui_context
 {
-    entity_uid<widget> canvas;
+    entity_uid<ui_widget> canvas;
     memory_heap_allocator permanant;
     ui_font default_font;
 };
@@ -355,11 +370,11 @@ struct entity_type_definition<window>
 };
 
 template<>
-struct entity_type_definition<widget>
+struct entity_type_definition<ui_widget>
 {
-    using t_entity = widget;
+    using t_entity = ui_widget;
     using t_context = entity_type_context<t_entity>;
-    static constexpr cstring name = "tyon::widget";
+    static constexpr cstring name = "tyon::ui_widget";
     static constexpr u128 id = uuid("a2a6cb83-8820-496b-a9e3-8ffc09c52c3f");
 
     PROC allocate() -> void
@@ -382,6 +397,39 @@ struct entity_type_definition<widget>
 
     static PROC destroy_all( void* context ) -> void
     {}
+
+};
+
+template<>
+struct entity_type_definition<ui_drawable_widget>
+{
+    using t_entity = ui_drawable_widget;
+    using t_context = entity_type_context<t_entity>;
+    static constexpr cstring name = "tyon::ui_drawable_widget";
+    static constexpr u128 id = uuid( "3e73fc4a-9d81-4fae-ad5d-49d2c0d68cb7" );
+
+    PROC allocate() -> void
+    {}
+
+    PROC init( t_entity* arg ) -> fresult
+    {
+        return false;
+    }
+    PROC destroy( t_entity* arg ) -> void
+    {
+        *arg = {};
+    }
+
+    PROC tick( t_entity* arg ) -> void
+    {
+        if (arg->active == false)
+        {   return; }
+        // Queue the drawable for drawing
+        g_render->draw_queue_mesh.push_tail( &arg->drawable.geometry );
+    }
+
+    static PROC context_tick( void* context ) -> void {}
+    static PROC destroy_all( void* context ) -> void {}
 
 };
 

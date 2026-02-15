@@ -5,7 +5,8 @@ namespace tyon
 
     // Platform Hooks
     PROC sdl_init() -> fresult
-    {   TYON_LOG( "Initialization Start for Platform SDL" );
+    {   PROFILE_SCOPE_FUNCTION();
+        TYON_LOG( "Initialization Start for Platform SDL" );
         g_sdl = memory_allocate<sdl_context>( 1 );
         entity_type_register<sdl_window>();
 
@@ -66,12 +67,14 @@ namespace tyon
 
     PROC sdl_tick() -> fresult
     {
+        PROFILE_SCOPE_FUNCTION();
         sdl_event_process();
         return true;
     }
 
     PROC sdl_destroy() -> fresult
     {
+        PROFILE_SCOPE_FUNCTION();
         SDL_DestroyWindow( g_sdl->windows[0].handle );
         // TTF_CloseFont( default_font );
         // default_font = nullptr;
@@ -122,6 +125,7 @@ namespace tyon
 
     PROC sdl_window_close( window* arg ) -> fresult
     {
+        PROFILE_SCOPE_FUNCTION();
         sdl_window* platform_window = entity_search<sdl_window>( arg->id ).copy_default({});
         SDL_DestroyWindow( platform_window->handle );
         TYON_LOGF( "Closed platform window '{}'", arg->name );
@@ -131,6 +135,7 @@ namespace tyon
     // Internal
     PROC sdl_event_process() -> void
     {
+        PROFILE_SCOPE_FUNCTION();
         SDL_PumpEvents();
 
         SDL_Event x_event;
@@ -221,6 +226,7 @@ namespace tyon
         VkSurfaceKHR* surface
     ) -> fresult
     {
+        PROFILE_SCOPE_FUNCTION();
         if (arg == nullptr)
         {   TYON_ERROR( "Window is nullptr" );
             return false;
@@ -244,6 +250,7 @@ namespace tyon
 
     PROC sdl_create_platform_subsystem() -> platform_subsystem
     {
+        PROFILE_SCOPE_FUNCTION();
         platform_subsystem result = {
             .name = "tyon::sdl",
             .id = uuid_generate(),

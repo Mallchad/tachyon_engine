@@ -993,8 +993,9 @@ PROC vulkan_memory_suballocate_buffer( vulkan_memory* arg, vulkan_buffer* buffer
 PROC vulkan_mesh_init( mesh* arg ) -> fresult
 {
     PROFILE_SCOPE_FUNCTION();
-    bool init_ok = mesh_init( arg );
-    bool mesh_uninitialized = (init_ok == false && arg->id.valid() == false);
+    // Initialize the mesh if it hasn't been done so already but don't worry if it's already been done.
+    bool init_ok = (arg->id.valid() || mesh_init( arg ));
+    bool mesh_uninitialized = (init_ok == false);
     if(mesh_uninitialized)
     {   return false;
     }
@@ -1071,6 +1072,7 @@ PROC vulkan_mesh_init( mesh* arg ) -> fresult
     // TODO: remove before flight
     // vkFlushMappedMemoryRanges( g_vulkan->logical_device, 1, &range );
     // return false;
+    VULKAN_LOGF( "Initialized vulkan_mesh Name: {}    UUID: {}", arg->name, arg->id );
     return true;
 }
 
@@ -1977,6 +1979,11 @@ PROC vulkan_draw() -> void
     vulkan_frame* current_frame = g_vulkan->frames_inflight.address( image_index );
     vulkan_pipeline* current_pipeline = &g_vulkan->ui_mesh_pipeline;
 
+    /* NOTE: We can have multiple frames inflight so we need to copy a seperate
+       draw queue for each frame */
+    current_frame->draw_queue_meshes.reset();
+    current_frame->draw_queue_meshes = g_render->draw_queue_mesh;
+
     current_frame->draw_index = current_frame_i;
     current_frame->inflight_index = inflight_frame_i;
     // TODO: Change this if we go back to a 3D pipeline, this was meant for UI rendering
@@ -2071,76 +2078,89 @@ PROC vulkan_draw() -> void
         vkCmdSetScissor( command_buffer, 0, 1, &scissor_config );
     }
 
-    // SECTION: Select mesh for drawing
-    if (g_vulkan->draw_mesh == nullptr)
-    {   g_vulkan->draw_mesh = &g_vulkan->test_ui_triangle;
+    for (i32 i=0; i < g_render->draw_queue_mesh.size(); ++i)
+    {
+        // SECTION: Select mesh for drawing
+        mesh* draw_mesh = g_render->draw_queue_mesh[i];
+
+        // Test Draw Meshes
+        // draw_mesh = g_vulkan->draw_mesh;
+        // draw_mesh = &g_vulkan->test_whale;
+        // draw_mesh = &g_vulkan->test_teapot;
+
+        // make test UI meshes resize with window for convenience
+        g_vulkan->test_ui_triangle.transform.scale = (v3{0.7} * g_render->ui_camera.sensor_size.y);
+        g_vulkan->test_ui_square.transform.scale = (v3{0.7} * g_render->ui_camera.sensor_size.y);
+        g_vulkan->test_teapot.transform.scale = (v3{40});
+        g_vulkan->test_teapot.transform.rotation.z = 6.28 * 0.25;
+
+        // Find the associated vulkan mesh
+        auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
+            return arg.id == draw_mesh->id && arg.id.valid(); } );
+        vulkan_mesh* vk_draw_mesh = nullptr;
+        bool no_vulkan_mesh = (draw_mesh->id.valid() && mesh_result.match_found == false);
+        if (no_vulkan_mesh)
+        {
+            // Recreate and search again
+            vulkan_mesh_init( draw_mesh );
+            mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
+                return arg.id == draw_mesh->id && arg.id.valid(); } );
+        }
+        // NOTE: Pointer copy covers both no_vulkan_mesh search and first search
+        vk_draw_mesh = mesh_result.match;
+        ERROR_GUARD( mesh_result.match_found,
+                    "We tried to draw a mesh with no associated Vulkan data" );
+
+
+        // Bind vertex/ data to pipeline data slots
+        VkBuffer vertex_buffers[] = { vk_draw_mesh->vertex_buffer.buffer };
+        /** NOTE: This is the offset for the binding being described by the
+         * buffer. NOT the buffer in a memory object. */
+        VkDeviceSize offsets[] = { u64(0) };
+        u32 n_buffers = 1;
+        vkCmdBindVertexBuffers( command_buffer, 0, n_buffers, vertex_buffers, offsets );
+        u32 first_set_offset = 0;
+        u32 resource_n = 1;
+        const uint32_t* dynamic_offsets = nullptr;
+        u32 dynamic_offsets_n = 0;
+        vkCmdBindDescriptorSets(
+                                command_buffer,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                current_pipeline->platform_layout,
+                                first_set_offset,
+                                resource_n,
+                                &current_frame->vk_resource,
+                                dynamic_offsets_n,
+                                dynamic_offsets
+                                );
+        // Pass push constants with basic mesh data
+        vulkan_mesh_shader_push mesh_push;
+        mesh_push.local_space = matrix_create_transform( draw_mesh->transform );
+        mesh_push.debug_mode = g_vulkan->mesh_debug_mode;
+        vkCmdPushConstants(
+                           command_buffer,
+                           current_pipeline->platform_layout,
+                           VK_SHADER_STAGE_VERTEX_BIT,
+                           0,
+                           sizeof( vulkan_mesh_shader_push),
+                           &mesh_push
+                           );
+
+        // Draw an actual mesh
+        auto mesh_args = vulkan_mesh_draw_args {
+            .n_vertexes = u32(draw_mesh->vertexes_n),
+            .n_instances = 1,
+            .first_vertex = 0,
+            .first_instance = 0
+        };
+        vkCmdDraw(
+                  command_buffer,
+                  mesh_args.n_vertexes,
+                  mesh_args.n_instances,
+                  mesh_args.first_vertex,
+                  mesh_args.first_instance
+                  );
     }
-    mesh* draw_mesh = g_vulkan->draw_mesh;
-    // mesh* draw_mesh = &g_vulkan->test_whale;
-    // mesh* draw_mesh = &g_vulkan->test_teapot;
-
-    // make test UI meshes resize with window for convenience
-    g_vulkan->test_ui_triangle.transform.scale = (v3{0.7} * g_render->ui_camera.sensor_size.y);
-    g_vulkan->test_ui_square.transform.scale = (v3{0.7} * g_render->ui_camera.sensor_size.y);
-    g_vulkan->test_teapot.transform.scale = (v3{40});
-    g_vulkan->test_teapot.transform.rotation.z = 6.28 * 0.25;
-
-    // Find the associated vulkan mesh
-    auto mesh_result = g_vulkan->meshes.linear_search( [=]( vulkan_mesh& arg ) {
-        return arg.id == draw_mesh->id; } );
-    vulkan_mesh* vk_draw_mesh = mesh_result.match;
-    ERROR_GUARD( mesh_result.match_found, "We tried to draw a mesh with no associated Vulkan data" );
-
-
-    // Bind vertex/ data to pipeline data slots
-    VkBuffer vertex_buffers[] = { vk_draw_mesh->vertex_buffer.buffer };
-    /** NOTE: This is the offset for the binding being described by the
-     * buffer. NOT the buffer in a memory object. */
-    VkDeviceSize offsets[] = { u64(0) };
-    u32 n_buffers = 1;
-    vkCmdBindVertexBuffers( command_buffer, 0, n_buffers, vertex_buffers, offsets );
-    u32 first_set_offset = 0;
-    u32 resource_n = 1;
-    const uint32_t* dynamic_offsets = nullptr;
-    u32 dynamic_offsets_n = 0;
-    vkCmdBindDescriptorSets(
-        command_buffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        current_pipeline->platform_layout,
-        first_set_offset,
-        resource_n,
-        &current_frame->vk_resource,
-        dynamic_offsets_n,
-        dynamic_offsets
-    );
-    // Pass push constants with basic mesh data
-    vulkan_mesh_shader_push mesh_push;
-    mesh_push.local_space = matrix_create_transform( draw_mesh->transform );
-    mesh_push.debug_mode = g_vulkan->mesh_debug_mode;
-    vkCmdPushConstants(
-        command_buffer,
-        current_pipeline->platform_layout,
-        VK_SHADER_STAGE_VERTEX_BIT,
-        0,
-        sizeof( vulkan_mesh_shader_push),
-        &mesh_push
-    );
-
-    // Draw an actual mesh
-    auto mesh_args = vulkan_mesh_draw_args {
-        .n_vertexes = u32(draw_mesh->vertexes_n),
-        .n_instances = 1,
-        .first_vertex = 0,
-        .first_instance = 0
-    };
-    vkCmdDraw(
-        command_buffer,
-        mesh_args.n_vertexes,
-        mesh_args.n_instances,
-        mesh_args.first_vertex,
-        mesh_args.first_instance
-    );
-
     VkPipelineStageFlags wait_stages[] { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
     // Finalize frame and submit all commands

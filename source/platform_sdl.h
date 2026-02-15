@@ -65,7 +65,7 @@ namespace tyon
             *arg = {};
         }
 
-        PROC tick() -> void
+        PROC tick( t_entity* arg ) -> void
         {}
 
         static PROC context_tick( void* context ) -> void
